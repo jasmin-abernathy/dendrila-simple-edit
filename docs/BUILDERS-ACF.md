@@ -41,7 +41,7 @@ L’interface propose un diagnostic non destructif. Ce n'est ni un scanner exhau
 - Ni historique ACF, ni restauration ACF, ni validation avant publication pour le moment ; ces fonctionnalités doivent être ajoutées avant de présenter le flux ACF comme complet.
 
 ## Images
-L’administrateur choisit des images existantes et renseigne leurs identifiants dans « Images autorisées » (60 maximum). La zone « Photo principale » devient configurable comme les champs de texte. Le Responsable du site ne voit que les images approuvées et peut sélectionner une photo ; l’ancienne image reste publiée si sa référence est ensuite retirée de la liste. La bibliothèque complète, l’import de fichiers, les images ACF, le traitement de formats et la suppression restent réservés à des lots ultérieurs.
+L’administrateur choisit des images existantes et renseigne leurs identifiants dans « Images autorisées » (60 maximum). La zone « Photo principale » devient configurable comme les champs de texte. Le Responsable du site ne voit que les images approuvées et peut sélectionner une photo ; l’ancienne image reste publiée si sa référence est ensuite retirée de la liste. Une image retirée de la liste ne peut pas être réintroduite par une restauration historique ; cette restauration laisse alors la photo courante inchangée. La bibliothèque complète, l’import de fichiers, les images ACF, le traitement de formats et la suppression restent réservés à des lots ultérieurs.
 
 ## Cas actuellement non pris en charge
 - Options globales ACF, profils utilisateurs, taxonomies, blocs ACF, écrans d’administration d’autres plugins.

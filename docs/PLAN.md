@@ -43,6 +43,7 @@ Permettre à un **Responsable du site** de modifier les données autorisées san
 - [ ] Test de diff du rendu public, des caches, de la conservation de la structure.
 - [ ] Raccorder la purge des caches pleine page/CDN du site pilote à l'événement dse_fields_updated.
 - [x] Sélection d'une photo parmi des images WordPress préalablement approuvées par l'administration.
+- [x] Préservation d'une photo publiée après révocation de sa sélection, y compris lors d'une sauvegarde d'autres champs ou d'une restauration.
 - [ ] Import d’images autorisé par zone : MIME, taille, dimensions, réencodage et droits à définir et tester avant activation.
 
 ## Lot 3 — intégrations et pilote

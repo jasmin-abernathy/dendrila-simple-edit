@@ -9,6 +9,11 @@ function get_option($key, $fallback = null) { return $GLOBALS['dse_options'][$ke
 function wp_attachment_is_image($id) { return in_array($id, array(12, 19, 21, 23), true); }
 function wp_unslash($value) { return stripslashes($value); }
 function shortcode_atts($defaults, $atts, $name = '') { return array_merge($defaults, $atts); }
+function esc_attr($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
+function esc_html($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
+function selected($current, $expected, $echo = true) { return $current === $expected ? 'selected' : ''; }
+function get_the_title($id) { return 'Image ' . $id; }
+
 function wp_get_attachment_image($id, $size, $icon = false, $attributes = array()) {
     return '<img src="image-' . $id . '.jpg" alt="Image de test">';
 }
@@ -34,4 +39,9 @@ ensure_media(DSE_Media::render_image('not-an-id') === '', 'Invalid photo cannot 
 $GLOBALS['dse_options']['dse_media_allowlist'] = array(19);
 ensure_media(DSE_Media::render_image('12') !== '', 'Published photo survives whitelist narrowing');
 reject_media(function () { DSE_Media::sanitize_selection('12'); }, 'Removed image blocked for new selection');
+ob_start();
+DSE_Media::render_picker('photo', '12', 'dse-image');
+$html = ob_get_clean();
+ensure_media(strpos($html, 'disabled selected') !== false, 'Revoked current photo remains selected but not submitted');
+ensure_media(strpos($html, 'name="dse_fields[photo]"') !== false, 'Picker uses scoped field');
 echo "OK — media allowlist, sanitizer, shortcode and publication retention\n";

@@ -57,6 +57,11 @@ final class DSE_Media
         echo '<select id="' . esc_attr($id) . '" name="dse_fields[' . esc_attr($key) .
             ']" aria-describedby="' . esc_attr($id . '-help') . '">';
         echo '<option value="">Aucune image</option>';
+        if ($current && !in_array($current, $known, true)) {
+            // Disabled selected option is not submitted: keep existing image
+            // instead of clearing it when another field is saved.
+            echo '<option value="" disabled selected>Image publiée — conservée, non modifiable</option>';
+        }
         foreach ($known as $attachment_id) {
             echo '<option value="' . esc_attr((string) $attachment_id) . '" ' .
                 selected($current, $attachment_id, false) . '>' .

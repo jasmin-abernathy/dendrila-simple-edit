@@ -280,8 +280,20 @@ final class DSE_Plugin
             $changes = array();
             // A later change to the allowlist must never unlock hidden fields.
             foreach ($enabled as $key) {
-                $changes[$key] = self::sanitize_field($key, isset($snapshot[$key]) && is_string($snapshot[$key]) ?
-                    $snapshot[$key] : '');
+                $previous = isset($snapshot[$key]) && is_string($snapshot[$key]) ?
+                    $snapshot[$key] : '';
+                // An image removed from the admin-approved pool cannot be
+                // reselected by restoring an older version. Preserve the live
+                // image while restoring other still-authorized fields.
+                if ($key === 'photo') {
+                    $curated = DSE_Media::curated_ids();
+                    $current_image = isset($old['values']['photo']) ? (string) $old['values']['photo'] : '';
+                    if (($current_image !== '' && !in_array((int) $current_image, $curated, true)) ||
+                        ($previous !== '' && !in_array((int) $previous, $curated, true))) {
+                        continue;
+                    }
+                }
+                $changes[$key] = self::sanitize_field($key, $previous);
             }
         } else {
             $changes = self::validate_changes($changes, $enabled);
