@@ -35,6 +35,12 @@ C’est le premier adaptateur **champs globaux reliés**. Les zones Gutenberg s�
 
 Voir [le plan](docs/PLAN.md) et [l'architecture](docs/ARCHITECTURE.md). Ne pas installer directement en production sans essai complet du site concerné.
 
+## Essai sur un site actif
+
+Un essai de production limité est possible uniquement avec une sauvegarde des fichiers et de la base, un compte de test sans privilèges et une validation progressive **sans publication initiale**. Le ZIP installable est produit comme artefact par GitHub Actions, après réussite des contrôles. Il ne faut pas installer l'archive ZIP du dépôt lui-même : elle inclut des fichiers de développement et un dossier racine inadapté.
+
+Consulter le [protocole d'essai contrôlé et de retour arrière](docs/ESSAI-SITE-LIVE.md). Les essais réels Divi, Elementor, Gutenberg et ACF n'ont pas encore été réalisés sur un site pilote.
+
 ## Qualité
 Exécuter php -l sur les fichiers PHP et php tests/smoke.php. Les tests livrés couvrent le contrat des champs et des autorisations avec des doubles de WordPress ; une installation réelle reste nécessaire pour vérifier les formulaires, rôles, caches et rendus.
 

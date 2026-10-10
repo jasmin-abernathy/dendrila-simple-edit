@@ -37,3 +37,33 @@ jobs:
           php tests/smoke.php
           php tests/builders-acf.php
           php tests/media.php
+  package:
+    name: Installation ZIP
+    needs: php
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Assemble installable extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/dendrila-simple-edit
+          cp dendrila-simple-edit.php readme.txt dist/dendrila-simple-edit/
+          cp -R includes assets dist/dendrila-simple-edit/
+          (cd dist && zip -qr ../dendrila-simple-edit-0.1.0.zip dendrila-simple-edit)
+          unzip -t dendrila-simple-edit-0.1.0.zip
+          test "$(unzip -Z1 dendrila-simple-edit-0.1.0.zip | grep -c '^dendrila-simple-edit/dendrila-simple-edit.php$')" -eq 1
+          if unzip -Z1 dendrila-simple-edit-0.1.0.zip | grep -E '(^|/)(tests|docs|\.git|\.github)/'; then
+            echo 'Unexpected development files in the installable archive' >&2
+            exit 1
+          fi
+      - name: Attach installable archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: dendrila-simple-edit-installation
+          path: dendrila-simple-edit-0.1.0.zip
+          if-no-files-found: error
+          retention-days: 14
