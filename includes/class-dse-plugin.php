@@ -102,6 +102,8 @@ final class DSE_Plugin
         add_shortcode('dendrila_simple_edit', array(__CLASS__, 'shortcode'));
         DSE_ACF::boot();
         DSE_Media::boot();
+        DSE_Modules::boot();
+        DSE_Newsletters::boot();
     }
 
     public static function can_access()
@@ -442,7 +444,7 @@ final class DSE_Plugin
 
     private static function redirect($notice)
     {
-        $allowed = array('saved', 'unchanged', 'conflict', 'unconfigured', 'missing_revision', 'error', 'configured', 'field_added', 'acf_added', 'acf_removed', 'acf_duplicate', 'acf_saved', 'acf_unchanged', 'acf_conflict', 'acf_error', 'media_configured');
+        $allowed = array('saved', 'unchanged', 'conflict', 'unconfigured', 'missing_revision', 'error', 'configured', 'field_added', 'acf_added', 'acf_removed', 'acf_duplicate', 'acf_saved', 'acf_unchanged', 'acf_conflict', 'acf_error', 'media_configured', 'module_configured');
         if (!in_array($notice, $allowed, true)) {
             $notice = 'error';
         }
@@ -467,6 +469,7 @@ final class DSE_Plugin
             'acf_conflict' => array('error', 'Le champ ACF a changé entre-temps. Rechargez la page avant de réessayer.'),
             'acf_error' => array('error', 'Champ ACF non enregistré. Aucun succès ne peut être confirmé.'),
             'media_configured' => array('updated', 'La sélection des images autorisées a été mise à jour.'),
+            'module_configured' => array('updated', 'Autorisations du module mises à jour.'),
             'conflict' => array('error', 'Une autre modification a eu lieu. Rechargez la page avant de réessayer.'),
             'unconfigured' => array('error', 'Aucun champ n’a été autorisé par l’administration.'),
             'missing_revision' => array('error', 'Cette révision n’est plus disponible.'),
@@ -594,6 +597,7 @@ final class DSE_Plugin
         }
         echo '</section>';
         DSE_ACF::render();
+        DSE_Newsletters::render();
         echo '</main>';
 
         echo '<aside class="dse-aside"><section class="dse-card"><h2>Où apparaissent ces informations ?</h2>';
@@ -655,6 +659,7 @@ final class DSE_Plugin
             echo '</form>';
         }
         DSE_Media::render_admin();
+        DSE_Modules::render_admin();
         DSE_Builders::render();
         echo '</aside></div></div>';
     }

@@ -30,6 +30,14 @@ Le rôle délégué n’a accès qu’aux champs cochés. Les pages ne sont **pa
 - Comparaison atomique de version, historique des 15 versions précédentes et restauration strictement limitée aux champs encore autorisés.
 - Aucun compte créé, aucune connexion externe, aucun tracking.
 
+## Modules délégués (en développement)
+
+Une configuration administrateur distincte permet d'activer individuellement les modules Newsletters et WooCommerce et d'attribuer des actions précises à chaque Responsable du site. Aucune capacité native WooCommerce, MailPoet ou WordPress n'est ajoutée au rôle.
+
+Le premier parcours newsletters produit des brouillons éditoriaux privés, prévisualisables et soumis à validation, **sans accès aux abonnés ni expédition**. Ce ne sont pas des campagnes MailPoet. L'intégration officielle avec un fournisseur d'envoi reste à développer.
+
+La matrice des droits, les limitations et les phases WooCommerce figurent dans [la feuille de route des modules](docs/MODULES-DELEGUES.md).
+
 ## Limites et travaux suivants
 C’est le premier adaptateur **champs globaux reliés**. Les zones Gutenberg sélectionnables, l'aperçu réel, les médias, le workflow de validation et les adaptateurs Divi/Elementor viendront ensuite. Les shortcodes doivent être ajoutés par un administrateur. Les champs cachés à l'éditeur peuvent rester affichés publiquement lorsque le shortcode correspondant est déjà utilisé.
 

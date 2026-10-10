@@ -20,6 +20,8 @@ require_once __DIR__ . '/includes/class-dse-plugin.php';
 require_once __DIR__ . '/includes/class-dse-acf.php';
 require_once __DIR__ . '/includes/class-dse-builders.php';
 require_once __DIR__ . '/includes/class-dse-media.php';
+require_once __DIR__ . '/includes/class-dse-modules.php';
+require_once __DIR__ . '/includes/class-dse-newsletters.php';
 
 register_activation_hook(__FILE__, array('DSE_Plugin', 'activate'));
 add_action('plugins_loaded', array('DSE_Plugin', 'boot'));
