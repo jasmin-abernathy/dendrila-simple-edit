@@ -22,6 +22,7 @@ Le rôle délégué n’a accès qu’aux champs cochés. Les pages ne sont **pa
 - Formulaire lisible sur mobile, sauvegarde explicite, retours d’erreur et libellés accessibles.
 - Création par l’administrateur de 20 zones de contenu personnalisées supplémentaires (titre ou texte multiligne), nommées automatiquement et accessibles par shortcode.
 - Repérage partiel des pages/articles publics contenant les shortcodes, plus diagnostic dédié des widgets Elementor Shortcode sur des pages publiées (sans éditer leur JSON).
+- Photo principale : sélection parmi les pièces jointes image que l’administrateur a explicitement autorisées. Aucun droit général à la médiathèque, aucun téléversement par le rôle délégué.
 - Connexion optionnelle à Advanced Custom Fields : un administrateur peut rechercher les champs existants d’un contenu public puis autoriser un champ de texte, URL ou e-mail précis d’une page, d’un article ou d’un type de contenu public. Le responsable le modifie sans droits natifs d’édition des pages. Les autorisations sont révocables.
 - Rôle dédié et contrôle de permissions côté serveur (incluant les POST directs).
 - Liste blanche des champs. Aucun accès natif aux éditeurs Gutenberg / Divi / Elementor.

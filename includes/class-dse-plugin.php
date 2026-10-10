@@ -44,6 +44,12 @@ final class DSE_Plugin
                 'type' => 'textarea',
                 'max' => 3000,
             ),
+            'photo' => array(
+                'label' => 'Photo principale',
+                'help' => 'Choisissez une image préalablement autorisée par l’administration.',
+                'type' => 'image',
+                'max' => 15,
+            ),
         );
         $custom = get_option(self::CUSTOM_OPTION, array());
         if (is_array($custom)) {
@@ -82,6 +88,7 @@ final class DSE_Plugin
         add_option(self::STATE_OPTION, self::empty_state(), '', false);
         add_option(self::ENABLED_OPTION, array(), '', false);
         add_option(self::CUSTOM_OPTION, array(), '', false);
+        add_option(DSE_Media::OPTION, array(), '', false);
     }
 
     public static function boot()
@@ -94,6 +101,7 @@ final class DSE_Plugin
         add_action('admin_post_dse_add_field', array(__CLASS__, 'add_field'));
         add_shortcode('dendrila_simple_edit', array(__CLASS__, 'shortcode'));
         DSE_ACF::boot();
+        DSE_Media::boot();
     }
 
     public static function can_access()
@@ -164,6 +172,9 @@ final class DSE_Plugin
             throw new InvalidArgumentException('Champ inconnu ou valeur invalide.');
         }
         $value = wp_unslash($value);
+        if ($definitions[$key]['type'] === 'image') {
+            return DSE_Media::sanitize_selection($value);
+        }
         $value = $definitions[$key]['type'] === 'textarea' ?
             sanitize_textarea_field($value) : sanitize_text_field($value);
         if (strlen($value) > $definitions[$key]['max'] * 4) {
@@ -411,12 +422,15 @@ final class DSE_Plugin
         $state = self::state();
         $value = isset($state['values'][$key]) && is_string($state['values'][$key]) ?
             $state['values'][$key] : '';
+        if ($key === 'photo') {
+            return DSE_Media::render_image($value);
+        }
         return nl2br(esc_html($value), false);
     }
 
     private static function redirect($notice)
     {
-        $allowed = array('saved', 'unchanged', 'conflict', 'unconfigured', 'missing_revision', 'error', 'configured', 'field_added', 'acf_added', 'acf_removed', 'acf_duplicate', 'acf_saved', 'acf_unchanged', 'acf_conflict', 'acf_error');
+        $allowed = array('saved', 'unchanged', 'conflict', 'unconfigured', 'missing_revision', 'error', 'configured', 'field_added', 'acf_added', 'acf_removed', 'acf_duplicate', 'acf_saved', 'acf_unchanged', 'acf_conflict', 'acf_error', 'media_configured');
         if (!in_array($notice, $allowed, true)) {
             $notice = 'error';
         }
@@ -440,6 +454,7 @@ final class DSE_Plugin
             'acf_unchanged' => array('updated', 'Ce champ ACF est déjà à jour.'),
             'acf_conflict' => array('error', 'Le champ ACF a changé entre-temps. Rechargez la page avant de réessayer.'),
             'acf_error' => array('error', 'Champ ACF non enregistré. Aucun succès ne peut être confirmé.'),
+            'media_configured' => array('updated', 'La sélection des images autorisées a été mise à jour.'),
             'conflict' => array('error', 'Une autre modification a eu lieu. Rechargez la page avant de réessayer.'),
             'unconfigured' => array('error', 'Aucun champ n’a été autorisé par l’administration.'),
             'missing_revision' => array('error', 'Cette révision n’est plus disponible.'),
@@ -508,7 +523,9 @@ final class DSE_Plugin
                     esc_html($definition['label']) . '</label>';
                 echo '<p class="description" id="' . esc_attr($id . '-help') . '">' .
                     esc_html($definition['help']) . '</p>';
-                if ($definition['type'] === 'textarea') {
+                if ($definition['type'] === 'image') {
+                    DSE_Media::render_picker($key, $value, $id);
+                } elseif ($definition['type'] === 'textarea') {
                     echo '<textarea id="' . esc_attr($id) . '" name="dse_fields[' . esc_attr($key) .
                         ']" rows="4" maxlength="' . esc_attr((string) $definition['max']) .
                         '" aria-describedby="' . esc_attr($id . '-help') . '">' . esc_textarea($value) . '</textarea>';
@@ -625,6 +642,7 @@ final class DSE_Plugin
             echo '<p class="description">20 zones personnalisées maximum. Insérez le shortcode dans les pages ou modèles pour afficher la zone.</p>';
             echo '</form>';
         }
+        DSE_Media::render_admin();
         DSE_Builders::render();
         echo '</aside></div></div>';
     }

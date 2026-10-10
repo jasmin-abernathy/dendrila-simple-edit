@@ -34,3 +34,4 @@ jobs:
         run: |
           php tests/smoke.php
           php tests/builders-acf.php
+          php tests/media.php

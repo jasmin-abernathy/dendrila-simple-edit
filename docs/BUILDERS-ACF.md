@@ -40,6 +40,9 @@ L’interface propose un diagnostic non destructif. Ce n'est ni un scanner exhau
 - Les hooks dse_acf_field_updated(post_id, field_key) et dse_fields_updated(changed_keys, revision) permettent de connecter la purge du cache externe.
 - Ni historique ACF, ni restauration ACF, ni validation avant publication pour le moment ; ces fonctionnalités doivent être ajoutées avant de présenter le flux ACF comme complet.
 
+## Images
+L’administrateur choisit des images existantes et renseigne leurs identifiants dans « Images autorisées » (60 maximum). La zone « Photo principale » devient configurable comme les champs de texte. Le Responsable du site ne voit que les images approuvées et peut sélectionner une photo ; l’ancienne image reste publiée si sa référence est ensuite retirée de la liste. La bibliothèque complète, l’import de fichiers, les images ACF, le traitement de formats et la suppression restent réservés à des lots ultérieurs.
+
 ## Cas actuellement non pris en charge
 - Options globales ACF, profils utilisateurs, taxonomies, blocs ACF, écrans d’administration d’autres plugins.
 - Répéteurs, Flexible Content, Group, Clone, Relation, Post Object, Image, Gallery, WYSIWYG et contenus HTML.

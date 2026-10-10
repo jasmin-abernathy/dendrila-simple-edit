@@ -42,7 +42,8 @@ Permettre à un **Responsable du site** de modifier les données autorisées san
 - [ ] Prévisualisation réelle, révisions natives, restauration sur objets WordPress et gestion de validation.
 - [ ] Test de diff du rendu public, des caches, de la conservation de la structure.
 - [ ] Raccorder la purge des caches pleine page/CDN du site pilote à l'événement dse_fields_updated.
-- [ ] Choix de médias et import borné côté serveur (MIME, dimensions, taille, permissions).
+- [x] Sélection d'une photo parmi des images WordPress préalablement approuvées par l'administration.
+- [ ] Import d’images autorisé par zone : MIME, taille, dimensions, réencodage et droits à définir et tester avant activation.
 
 ## Lot 3 — intégrations et pilote
 - [ ] Adaptateur Divi, puis Elementor, uniquement à partir de formats vérifiés.
