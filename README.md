@@ -16,7 +16,7 @@ Dans **Modifier mon site**, l'administrateur coche les informations qu'il souhai
 - [dendrila_simple_edit field="address"]
 - [dendrila_simple_edit field="presentation"]
 
-Le rôle délégué n’a accès qu’aux champs cochés. Les pages ne sont **pas** inspectées ni modifiées automatiquement. Un champ absent du thème tant que son shortcode n’a pas été placé ne s’affichera nulle part. La modification est publique immédiatement pour chaque emplacement effectivement relié.
+Le rôle délégué n’a accès qu’aux champs cochés. Les pages ne sont **pas** inspectées ni modifiées automatiquement. Un champ absent du thème tant que son shortcode n’a pas été placé ne s’affichera nulle part. La modification alimente immédiatement les shortcodes reliés côté WordPress, mais un cache pleine page ou CDN peut retarder sa visibilité publique. Un événement dse_fields_updated permet de raccorder les purges de caches du site.
 
 ## Fonctionnalités du premier lot
 - Formulaire lisible sur mobile, sauvegarde explicite, retours d’erreur et libellés accessibles.

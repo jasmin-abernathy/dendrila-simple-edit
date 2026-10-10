@@ -7,7 +7,7 @@ Dendrila CMS fournit les principes : schémas déclaratifs, permissions atomique
 - dse_enabled_fields : liste bornée d’identifiants de champs intégrés ou configurés. Configuration administrateur uniquement.
 - dse_custom_fields : maximum 20 zones textuelles déclaratives (nom, type, identifiant généré), sans code exécutable ni mappage arbitraire vers une option WP.
 - dse_state : une unique option WordPress (revision, values, history), autoload désactivé.
-- Un UPDATE SQL atomique compare la sérialisation ancienne en égalité binaire pour éviter qu'une concurrence entre deux POST n'écrase une valeur sans avertissement. Après succès le cache d’options WP est invalidé.
+- Un UPDATE SQL atomique compare la sérialisation ancienne en égalité binaire pour éviter qu'une concurrence entre deux POST n'écrase une valeur sans avertissement. Après succès le cache d’options WP est invalidé et un événement dse_fields_updated est envoyé. Les caches HTML/CDN externes requièrent un raccordement spécifique ou une purge du site.
 - Le public lit la valeur depuis WordPress au moyen du shortcode dendrila_simple_edit inséré volontairement par l’administrateur.
 - Les champs désactivés ne sont plus éditables, mais les shortcodes existants peuvent toujours afficher les valeurs publiques déjà publiées.
 

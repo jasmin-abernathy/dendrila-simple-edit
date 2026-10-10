@@ -299,7 +299,13 @@ final class DSE_Plugin
             'values' => $updated_values,
             'history' => array_slice($history, 0, 15),
         );
-        return self::compare_and_swap($old, $new);
+        $result = self::compare_and_swap($old, $new);
+        if ($result === 'saved') {
+            // Cache plugins can listen to this event; WP cannot invalidate every
+            // reverse proxy / external full-page cache by itself.
+            do_action('dse_fields_updated', $changed_keys, $new['revision']);
+        }
+        return $result;
     }
 
     public static function save()
@@ -422,7 +428,7 @@ final class DSE_Plugin
         $notice = isset($_GET['dse_notice']) && is_string($_GET['dse_notice']) ?
             sanitize_key(wp_unslash($_GET['dse_notice'])) : '';
         $messages = array(
-            'saved' => array('updated', 'Modifications publiées. Les emplacements reliés sont à jour.'),
+            'saved' => array('updated', 'Modifications enregistrées. Vérifiez le site public : un cache peut retarder l’affichage.'),
             'unchanged' => array('updated', 'Aucune modification à enregistrer.'),
             'configured' => array('updated', 'Champs autorisés mis à jour.'),
             'field_added' => array('updated', 'Zone créée et autorisée. Son shortcode est disponible ci-dessous.'),

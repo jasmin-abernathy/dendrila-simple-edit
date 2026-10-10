@@ -22,6 +22,7 @@ function current_time($type, $gmt = false) { return '2026-10-10 12:00:00'; }
 function get_current_user_id() { return 31; }
 function maybe_serialize($value) { return is_array($value) ? serialize($value) : $value; }
 function wp_cache_delete($key, $group) { return true; }
+function do_action($name, ...$args) { $GLOBALS['dse_actions'][] = array($name, $args); }
 
 class DSE_Test_DB {
     public $options = 'wp_options';
@@ -99,4 +100,6 @@ expect(DSE_Plugin::enabled_fields() === array('phone', 'zone_bienvenue'), 'Inval
 expect($write->invoke(null, 3, array('zone_bienvenue' => '<b>Bonjour</b>')) === 'saved', 'Custom field edit');
 expect(DSE_Plugin::shortcode(array('field' => 'zone_bienvenue')) === 'Bonjour', 'Custom zone renders safely');
 
+expect(count($GLOBALS['dse_actions']) === 4, 'Each successful change emits exactly one invalidation event');
+expect($GLOBALS['dse_actions'][3][0] === 'dse_fields_updated', 'Cache extension hook name is stable');
 echo "OK — permissions, allowlist, sanitization, concurrency, shortcode, restore\n";

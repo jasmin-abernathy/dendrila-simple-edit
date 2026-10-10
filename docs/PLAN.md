@@ -41,6 +41,7 @@ Permettre à un **Responsable du site** de modifier les données autorisées san
 - [ ] Bloquer la lecture/écriture d’un bloc non déclaré, d’un bloc synchronisé ou d’un format inconnu.
 - [ ] Prévisualisation réelle, révisions natives, restauration sur objets WordPress et gestion de validation.
 - [ ] Test de diff du rendu public, des caches, de la conservation de la structure.
+- [ ] Raccorder la purge des caches pleine page/CDN du site pilote à l'événement dse_fields_updated.
 - [ ] Choix de médias et import borné côté serveur (MIME, dimensions, taille, permissions).
 
 ## Lot 3 — intégrations et pilote
