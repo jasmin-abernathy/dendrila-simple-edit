@@ -46,7 +46,10 @@ Permettre à un **Responsable du site** de modifier les données autorisées san
 
 ## Lot 3 — intégrations et pilote
 - [ ] Adaptateur Divi, puis Elementor, uniquement à partir de formats vérifiés.
-- [ ] ACF / types personnalisés si le pilote le justifie.
+- [x] Premier adaptateur ACF : clé exacte, post public, types textuels simples, autorisation et révocation explicites.
+- [x] Diagnostic des widgets Elementor Shortcode sur les pages publiées.
+- [ ] Adapter les champs ACF complexes après tests dédiés (répéteurs, galeries, relation, flexibles).
+- [ ] Adapter directement Elementor et Divi 4/5 uniquement avec fixtures de versions et tests non destructifs.
 - [ ] Tester mobile, clavier, lecteur d’écran et une personne non technique.
 - [ ] Former l’administrateur à attribuer le rôle sans accorder de droits d’édition natifs.
 - [ ] Documenter site pilote, installation, configuration, révisions et comportement des constructeurs.

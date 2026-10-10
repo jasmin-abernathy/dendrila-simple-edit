@@ -17,6 +17,8 @@ Cette première version de travail permet :
 * la création d’un rôle « Responsable du site » aux permissions minimales ;
 * le choix des champs délégués par un administrateur ;
 * la création de 20 zones de texte personnalisées au maximum, affichées par shortcode ;
+* une connexion facultative à Advanced Custom Fields (ACF) pour modifier uniquement des champs texte, zone de texte, URL ou e-mail explicitement autorisés par un administrateur ;
+* un diagnostic des widgets Shortcode dans le contenu Elementor publié, sans altérer les structures du constructeur ;
 * la modification du téléphone, des horaires, de l’adresse et d’un court texte de présentation ;
 * l’insertion volontaire de ces données par les shortcodes prévus ;
 * l’historique limité, la restauration autorisée et le refus d’écrasement de changements concurrents.

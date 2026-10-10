@@ -22,4 +22,5 @@ Administrateur configure les champs → insère shortcodes dans le site → dél
 ## Tests et zones non couvertes
 - Tests isolés pour les rôles, l’allowlist, l'assainissement, les conflits et la restauration.
 - Installation pilote nécessaire pour vérifier activation/désactivation, REST natif, autres plugins accordant des droits, shortcodes des thèmes et mise en cache.
-- Pas de lecture/écriture des données Divi, Elementor, Gutenberg, ACF ni des métadonnées privées tant qu’un adaptateur explicite et des tests de préservation du contenu ne sont pas ajoutés.
+- Le premier adaptateur ACF peut modifier des champs textuels explicitement reliés à un contenu publié public ; il ne réécrit pas la structure du contenu WordPress. La vérification de conflit ACF repose sur une empreinte de valeur et n'est pas un verrou atomique contre un éditeur tiers concurrent.
+- Elementor est inspecté en lecture seule pour détecter les widgets Shortcode canoniques. Aucune écriture dans les données Elementor ou Divi ; les blocs Gutenberg, les médias et les champs ACF complexes restent hors périmètre.

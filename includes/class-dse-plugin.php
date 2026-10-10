@@ -93,6 +93,7 @@ final class DSE_Plugin
         add_action('admin_post_dse_configure', array(__CLASS__, 'configure'));
         add_action('admin_post_dse_add_field', array(__CLASS__, 'add_field'));
         add_shortcode('dendrila_simple_edit', array(__CLASS__, 'shortcode'));
+        DSE_ACF::boot();
     }
 
     public static function can_access()
@@ -415,7 +416,7 @@ final class DSE_Plugin
 
     private static function redirect($notice)
     {
-        $allowed = array('saved', 'unchanged', 'conflict', 'unconfigured', 'missing_revision', 'error', 'configured', 'field_added');
+        $allowed = array('saved', 'unchanged', 'conflict', 'unconfigured', 'missing_revision', 'error', 'configured', 'field_added', 'acf_added', 'acf_removed', 'acf_duplicate', 'acf_saved', 'acf_unchanged', 'acf_conflict', 'acf_error');
         if (!in_array($notice, $allowed, true)) {
             $notice = 'error';
         }
@@ -432,6 +433,13 @@ final class DSE_Plugin
             'unchanged' => array('updated', 'Aucune modification à enregistrer.'),
             'configured' => array('updated', 'Champs autorisés mis à jour.'),
             'field_added' => array('updated', 'Zone créée et autorisée. Son shortcode est disponible ci-dessous.'),
+            'acf_added' => array('updated', 'Champ ACF autorisé.'),
+            'acf_removed' => array('updated', 'Autorisation ACF retirée. La valeur publique a été conservée.'),
+            'acf_duplicate' => array('updated', 'Ce champ ACF est déjà autorisé.'),
+            'acf_saved' => array('updated', 'Champ ACF mis à jour. Le cache public peut nécessiter une purge.'),
+            'acf_unchanged' => array('updated', 'Ce champ ACF est déjà à jour.'),
+            'acf_conflict' => array('error', 'Le champ ACF a changé entre-temps. Rechargez la page avant de réessayer.'),
+            'acf_error' => array('error', 'Champ ACF non enregistré. Aucun succès ne peut être confirmé.'),
             'conflict' => array('error', 'Une autre modification a eu lieu. Rechargez la page avant de réessayer.'),
             'unconfigured' => array('error', 'Aucun champ n’a été autorisé par l’administration.'),
             'missing_revision' => array('error', 'Cette révision n’est plus disponible.'),
@@ -555,7 +563,9 @@ final class DSE_Plugin
             }
             echo '</ul>';
         }
-        echo '</section></main>';
+        echo '</section>';
+        DSE_ACF::render();
+        echo '</main>';
 
         echo '<aside class="dse-aside"><section class="dse-card"><h2>Où apparaissent ces informations ?</h2>';
         echo '<p>Seuls les emplacements reliés à un champ se mettront à jour. Un texte saisi directement ailleurs ne sera pas remplacé.</p>';
@@ -615,6 +625,7 @@ final class DSE_Plugin
             echo '<p class="description">20 zones personnalisées maximum. Insérez le shortcode dans les pages ou modèles pour afficher la zone.</p>';
             echo '</form>';
         }
+        DSE_Builders::render();
         echo '</aside></div></div>';
     }
 }
