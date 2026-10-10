@@ -60,7 +60,7 @@ class DSE_Test_Query {
                 array('elType' => 'container', 'elements' => array(
                     array('widgetType' => 'shortcode',
                         'settings' => array('shortcode' => '[dendrila_simple_edit field="zone_intro"]'))
-                )))
+                ))
             ))
         ));
     }
