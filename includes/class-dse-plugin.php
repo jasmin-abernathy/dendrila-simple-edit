@@ -372,6 +372,34 @@ final class DSE_Plugin
         }
     }
 
+    /**
+     * Advisory discovery only: published WordPress pages/posts whose raw body
+     * mentions the exact, canonical field shortcode. Theme templates and page
+     * builder metadata are intentionally not claimed as detected.
+     */
+    public static function public_locations($field)
+    {
+        if (!in_array($field, self::enabled_fields(), true)) {
+            return array();
+        }
+        global $wpdb;
+        $needle = '%' . $wpdb->esc_like('[dendrila_simple_edit') . '%';
+        $field_needle = '%' . $wpdb->esc_like('field="' . $field . '"') . '%';
+        $query = $wpdb->prepare(
+            "SELECT ID, post_title FROM {$wpdb->posts}
+             WHERE post_status = 'publish'
+               AND post_type IN ('page', 'post')
+               AND post_content LIKE %s
+               AND post_content LIKE %s
+             ORDER BY post_title ASC
+             LIMIT 30",
+            $needle,
+            $field_needle
+        );
+        $pages = $wpdb->get_results($query);
+        return is_array($pages) ? $pages : array();
+    }
+
     public static function render()
     {
         if (!self::can_access()) {
@@ -467,9 +495,24 @@ final class DSE_Plugin
                 if (current_user_can('manage_options')) {
                     echo '<code>[dendrila_simple_edit field="' . esc_html($key) . '"]</code>';
                 }
+                $locations = self::public_locations($key);
+                if ($locations) {
+                    echo '<span class="dse-usage-label">Pages et articles publics repérés :</span><ul class="dse-usage">';
+                    foreach ($locations as $location) {
+                        $url = get_permalink((int) $location->ID);
+                        if (!$url) {
+                            continue;
+                        }
+                        echo '<li><a href="' . esc_url($url) . '" target="_blank" rel="noopener noreferrer">' .
+                            esc_html($location->post_title ? $location->post_title : '(Sans titre)') .
+                            ' <span class="screen-reader-text">(nouvel onglet)</span></a></li>';
+                    }
+                    echo '</ul>';
+                }
                 echo '</li>';
             }
             echo '</ul>';
+            echo '<p class="description">Repérage partiel : les modèles de thème et données des constructeurs ne sont pas analysés.</p>';
         }
         echo '</section>';
         if (current_user_can('manage_options')) {

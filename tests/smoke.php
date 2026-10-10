@@ -25,8 +25,12 @@ function wp_cache_delete($key, $group) { return true; }
 
 class DSE_Test_DB {
     public $options = 'wp_options';
+    public $posts = 'wp_posts';
+    public $last_sql;
     public $args;
-    public function prepare($query, ...$args) { $this->args = $args; return 'prepared'; }
+    public function prepare($query, ...$args) { $this->args = $args; $this->last_sql = $query; return 'prepared'; }
+    public function esc_like($value) { return addcslashes($value, '%_\\'); }
+    public function get_results($query) { return array((object) array('ID' => 16, 'post_title' => 'Accueil')); }
     public function query($query) {
         if (maybe_serialize($GLOBALS['dse_options']['dse_state']) !== $this->args[2]) {
             return 0;
@@ -81,4 +85,7 @@ $GLOBALS['dse_options']['dse_enabled_fields'] = array('phone');
 expect($write->invoke(null, 2, array(), 1) === 'saved', 'Restore respects latest allowlist');
 expect(DSE_Plugin::state()['values']['hours'] === 'Lundi 9–18', 'Newly disabled field untouched');
 
+expect(DSE_Plugin::public_locations('phone')[0]->post_title === 'Accueil', 'Shortcode reference discovered');
+expect(strpos($wpdb->last_sql, "post_status = 'publish'") !== false, 'Private pages excluded from discovery');
+expect(DSE_Plugin::public_locations('hours') === array(), 'Disabled field discovery refused');
 echo "OK — permissions, allowlist, sanitization, concurrency, shortcode, restore\n";

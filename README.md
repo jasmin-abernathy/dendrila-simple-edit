@@ -20,6 +20,7 @@ Le rôle délégué n’a accès qu’aux champs cochés. Les pages ne sont **pa
 
 ## Fonctionnalités du premier lot
 - Formulaire lisible sur mobile, sauvegarde explicite, retours d’erreur et libellés accessibles.
+- Repérage partiel des pages/articles publics contenant les shortcodes (constructeurs et modèles non inspectés).
 - Rôle dédié et contrôle de permissions côté serveur (incluant les POST directs).
 - Liste blanche des champs. Aucun accès natif aux éditeurs Gutenberg / Divi / Elementor.
 - Échappement public, assainissement des valeurs et stockage dans les options WordPress.

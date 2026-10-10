@@ -13,3 +13,6 @@
 @media(max-width:920px){.dse-layout{grid-template-columns:minmax(0,1fr)}.dse-card{padding:18px}}
 @media(max-width:480px){.dse-history li{align-items:stretch;flex-direction:column}.dse-history form,.dse-history button{width:100%}.dse-card .button-hero{width:100%;font-size:1rem}}
 @media(prefers-reduced-motion:reduce){.dse-wrap *{scroll-behavior:auto;transition:none!important}}
+
+.dse-usage-label{display:block;margin-top:10px;font-size:.88rem;color:var(--dse-muted)}
+.dse-usage{margin:4px 0 12px 20px;list-style:disc}.dse-usage a{overflow-wrap:anywhere}

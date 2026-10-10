@@ -28,6 +28,7 @@ Permettre à un **Responsable du site** de modifier les données autorisées san
 - [x] Écran « Modifier mon site » + configuration des champs pour l’administrateur.
 - [x] Première édition de téléphone, horaires, adresse, présentation avec liste blanche et assainissement côté serveur.
 - [x] Shortcode explicite par champ pour les pages/modèles compatibles.
+- [x] Repérage limité des pages/articles publiés contenant littéralement les shortcodes.
 - [x] Révision globale, restauration limitée aux champs actuels, comparaison atomique contre l’écrasement concurrent.
 - [x] Tests de contrat sans WP + syntaxe PHP CI (à confirmer par l'exécution de la CI).
 - [ ] Valider les chemins admin sur une instance WordPress réelle, avec et sans rôle supplémentaire.
