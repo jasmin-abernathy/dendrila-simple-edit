@@ -4,6 +4,8 @@
 
 **Statut :** site public consulté ; aucune connexion à son administration, aucun plugin installé, aucune sauvegarde confirmée, aucun essai WordPress réel effectué.
 
+**Attention aux versions :** ce protocole de pilote concerne le socle éditorial 0.1.0. Les nouveaux modules 0.2.0 sont encore en validation et ne sont pas à activer sur ce site en production pour un premier essai.
+
 ## Informations disponibles et limites
 
 - La page publique fonctionne et présente les activités de l’association.

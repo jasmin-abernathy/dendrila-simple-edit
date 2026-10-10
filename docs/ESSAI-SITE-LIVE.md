@@ -51,4 +51,6 @@ Les champs ACF simples ont leur propre adaptateur, mais leur édition écrit dan
 
 URL du site pilote (sans secrets), versions WordPress/PHP, constructeur et versions, thème, ACF, cache, succès/échec de l'activation, résultat compte délégué, aperçu shortcode, restauration, éventuels messages PHP et capture du comportement inattendu.
 
+**Version du protocole** : le parcours documenté ci-dessus concerne le ZIP 0.1.0 initial. Les nouveaux modules du ZIP 0.2.0 ne doivent pas être testés sur un site de production sans un essai isolé WordPress/WooCommerce et une revue spécifique du contenu public.
+
 **Statut** : tests PHP automatisés et contrôles de contrat ≠ essai sur WordPress réel. Les phases A, B et C doivent être déclarées séparément.

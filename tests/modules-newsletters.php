@@ -16,6 +16,8 @@ function get_current_user_id() { return $GLOBALS['dse_current_user']; }
 function user_can($id, $cap) { return in_array($cap, $GLOBALS['dse_caps'][$id] ?? array(), true); }
 function current_user_can($cap) { return user_can(get_current_user_id(), $cap); }
 function check_admin_referer($nonce) { return true; }
+function wp_unslash($value) { return $value; }
+function get_user_by($field, $value) { return $field === 'id' && (int) $value === 7 ? (object) array('ID' => 7) : false; }
 function wp_die($message, $title = '', $args = array()) { throw new RuntimeException($message); }
 function register_post_type($name, $config) { $GLOBALS['dse_registered'] = array($name, $config); }
 require dirname(__DIR__) . '/includes/class-dse-modules.php';
@@ -58,7 +60,15 @@ $version = DSE_Newsletters::fingerprint($post);
 $post->post_content = 'Changed';
 ensure($version !== DSE_Newsletters::fingerprint($post), 'Stale text detected');
 denied(function () { DSE_Newsletters::approve(); }, 'No approval privilege cannot approve');
-denied(function () { DSE_Newsletters::save(); }, 'Create-only manager cannot edit without input?'); // Empty input must fail.
+$GLOBALS['dse_current_user'] = 8;
+$_POST = array('dse_nid' => '0', 'dse_nsubject' => 'Test', 'dse_nbody' => 'Contenu');
+denied(function () { DSE_Newsletters::save(); }, 'Second manager cannot create without permission');
+$GLOBALS['dse_current_user'] = 9;
+$_POST = array('dse_module' => 'newsletters', 'dse_module_enabled' => '1',
+    'dse_grants' => array('7' => array('send')));
+denied(function () { DSE_Modules::configure(); }, 'Forged send action rejected by config endpoint');
+$GLOBALS['dse_current_user'] = 7;
+$_POST = array();
 $GLOBALS['dse_options'][DSE_Modules::OPTION]['newsletters']['enabled'] = false;
 ensure(!DSE_Modules::allowed('newsletters', 'create', 9), 'Disabling blocks admin path too');
 echo "OK — per-user module ACL, closed newsletter sending boundary, private drafts\n";

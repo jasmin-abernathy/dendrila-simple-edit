@@ -104,6 +104,7 @@ final class DSE_Plugin
         DSE_Media::boot();
         DSE_Modules::boot();
         DSE_Newsletters::boot();
+        DSE_Woo::boot();
     }
 
     public static function can_access()
@@ -598,6 +599,7 @@ final class DSE_Plugin
         echo '</section>';
         DSE_ACF::render();
         DSE_Newsletters::render();
+        DSE_Woo::render();
         echo '</main>';
 
         echo '<aside class="dse-aside"><section class="dse-card"><h2>Où apparaissent ces informations ?</h2>';

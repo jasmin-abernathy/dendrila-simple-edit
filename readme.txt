@@ -3,7 +3,7 @@ Contributors: juliane16
 Tags: editor, content, access-control, role, simple-editing
 Requires at least: 6.5
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,7 +24,9 @@ Cette première version de travail permet :
 * l’insertion volontaire de ces données par les shortcodes prévus ;
 * l’historique limité, la restauration autorisée et le refus d’écrasement de changements concurrents.
 
-Aucune donnée n’est transmise à un service externe. Ce plugin ne remplace pas automatiquement des textes existants et n’édite pas encore les zones Gutenberg, Divi ou Elementor.
+Depuis la version 0.2.0 de développement, un administrateur peut activer séparément les modules Newsletters et WooCommerce, puis attribuer des droits précis à chaque compte. Newsletters permet uniquement de préparer, prévisualiser et valider des brouillons privés sans aucun envoi ni accès aux contacts. WooCommerce permet de créer des produits simples en brouillon et de modifier les champs autorisés (contenu, image, catégories, prix, stock) sans accès aux commandes ou paiements. L'édition des produits publiés nécessite une seconde autorisation. La publication de produits et les variantes ne sont pas encore disponibles.
+
+Aucune donnée n’est transmise à un service externe par Dendrila Simple Edit. Ce plugin ne remplace pas automatiquement des textes existants et n’édite pas encore les zones Gutenberg, Divi ou Elementor.
 
 == Installation ==
 
@@ -39,6 +41,9 @@ Non. Seuls les emplacements reliés par un shortcode sont mis à jour.
 Non, pas avec les seules permissions accordées par ce plugin. Un autre rôle ou plugin peut cependant lui attribuer des droits supplémentaires.
 
 == Changelog ==
+
+= 0.2.0 (développement) =
+* Modules optionnels par compte : brouillons de newsletters sans envoi et édition de produits WooCommerce simples à droits réduits.
 
 = 0.1.0 =
 * Premier socle : champs reliés, rôle dédié, historique et vérification des versions.

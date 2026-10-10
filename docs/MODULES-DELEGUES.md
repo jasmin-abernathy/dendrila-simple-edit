@@ -22,13 +22,13 @@ Date : 10 octobre 2026. Source de vérité : branche de développement du plugin
 | Newsletters | schedule | Programmer dans MailPoet / autre prestataire | **Non disponible** |
 | Newsletters | send | Envoyer une campagne | **Non disponible** |
 | Newsletters | contacts | Consulter ou modifier des abonnés/listes | **Non disponible** |
-| WooCommerce | create | Créer un produit simple brouillon | Lot 2 |
-| WooCommerce | content | Modifier nom, descriptions | Lot 2 |
-| WooCommerce | images | Sélectionner une image existante et approuvée | Lot 2 |
-| WooCommerce | categories | Assigner des catégories existantes | Lot 2 |
-| WooCommerce | prices | Modifier le prix régulier | Lot 2 |
-| WooCommerce | stock | Modifier la quantité gérée | Lot 2 |
-| WooCommerce | live | Débloquer l'édition d'un produit publié (en plus du droit par champ) | Lot 2 |
+| WooCommerce | create | Créer un produit simple brouillon | Implémenté lot 2 |
+| WooCommerce | content | Modifier nom, descriptions | Implémenté lot 2 |
+| WooCommerce | images | Sélectionner une image existante et approuvée | Implémenté lot 2 |
+| WooCommerce | categories | Assigner des catégories existantes | Implémenté lot 2 |
+| WooCommerce | prices | Modifier le prix régulier | Implémenté lot 2 |
+| WooCommerce | stock | Modifier la quantité gérée | Implémenté lot 2 |
+| WooCommerce | live | Débloquer l'édition d'un produit publié (en plus du droit par champ) | Implémenté lot 2 |
 | WooCommerce | publish | Publier un nouveau produit | **Non disponible** |
 | WooCommerce | variants | Modifier des variantes / prix par variante | **Non disponible** |
 | WooCommerce | orders, customers, payments | Données commerciales sensibles | **Non disponible** |
@@ -70,6 +70,25 @@ Privilégier wc_get_products, wc_get_product et les objets WC_Product, jamais un
 3. Ajouter révision et validation avant publication si un workflow éditorial de produits existants est demandé.
 4. Tester les variations, prix promotionnels, téléchargement, multidevise, gestion externe de stock et produits composites dans un lot séparé.
 5. Vérifier que ni les commandes, ni les comptes clients, ni la configuration de paiement ne sont accessibles au rôle.
+
+### Implémentation effective lot 2
+
+- Actif uniquement si WooCommerce est chargé **et** si le module est activé. Aucun accès aux commandes, clients ou réglages WooCommerce n’est exposé.
+- Les créations passent par WC_Product_Simple() + save() et restent toujours en statut draft. L'administrateur publie via l'interface WooCommerce habituelle.
+- Les modifications se limitent aux produits de type exact simple, en statut draft/pending/publish, chargés par wc_get_product. Les fiches déjà publiées exigent le droit live **en plus du droit du champ**. Le contenu modifié d'un produit publié est visible immédiatement ; un workflow d'approbation est à construire.
+- Les champs permis sont les noms, textes (texte simple), image choisie dans la liste Dendrila pré-approuvée, catégories déjà créées, prix régulier et quantité de stock. La liste de catégories est bornée dans l'interface. Une catégorie absente de l'écran peut toutefois être maintenue si elle n'est pas explicitement changée.
+- Stock uniquement si manage_stock est **déjà actif** : aucune activation automatique, aucune modification des règles de commandes en attente, de taxes, promotions, attributs ou variations. Une variation n'est jamais modifiée.
+- Prix régulier : uniquement si aucun prix promotionnel n'est défini ; l'objet WooCommerce met à jour le prix actif en même temps. Les promotions restent réservées à l'administration WooCommerce.
+- Stocks : à la modification de la quantité, la disponibilité est synchronisée (0 sans commandes en attente = rupture ; 0 avec commandes en attente autorisées = commande en attente ; positif = disponible). Le mode et les autorisations de commandes en attente ne sont jamais modifiés.
+- Catégories : si plus de 50 catégories existent ou si la liste échoue, le formulaire de catégorie est masqué pour éviter de perdre les catégories non affichées. L'administration WooCommerce reste utilisable.
+- Les lectures des champs utilisent le contexte WooCommerce edit pour ne pas reprendre de valeurs filtrées destinées à l'affichage.
+- Le formulaire porte une empreinte de la fiche ; si une modification est détectée au chargement, le POST est refusé. Cette vérification ne remplace pas un verrou atomique contre un éditeur WooCommerce concurrent.
+- Les champs HTML anciens non touchés restent préservés à l'identique lorsqu'un autre champ est enregistré ; l'éditeur du module n'autorise pas à ajouter du HTML.
+- Un champ dont la valeur est inchangée (y compris prix, stock, catégorie et image) n'est pas réécrit lors de l'enregistrement d'un autre champ. Cette idempotence évite de déclencher inutilement des hooks WooCommerce et protège les promotions et réglages tiers.
+
+### Risques restant à tester dans un WooCommerce réel
+
+Contrôle des hooks de recalcul de prix, état du stock après modification, catalogue et cache, compatibilité HPOS, extension de gestion de stocks, produits virtuels/téléchargeables, attributs complexes, multi-devises, produits composites et validation d'une modification publique.
 
 ## Références techniques
 
