@@ -6,7 +6,7 @@ Version candidate : **Dendrila Simple Edit 0.1.0**. Ce premier essai valide les 
 
 1. Choisir un site WordPress dont l'administrateur accepte ce test. Privilégier un site peu sensible ; ne pas commencer sur une boutique ou un site à trafic critique.
 2. Confirmer WordPress 6.5+ et PHP 7.4+ ; relever les versions du thème et, si présents, de Divi, Elementor et ACF.
-3. Créer une **sauvegarde complète des fichiers ET de la base de données**, indépendante du ZIP du plugin. Sur o2switch, vérifier le chemin de restauration dans JetBackup/cPanel ou l'outil de sauvegarde effectivement disponible ; ne pas supposer qu'un point de restauration existe.
+3. Créer une **sauvegarde complète des fichiers ET de la base de données**, indépendante du ZIP du plugin. Vérifier les outils de sauvegarde **réellement disponibles chez l’hébergeur du site** (OVHcloud, o2switch ou autre) et la procédure de restauration des fichiers et de la base ; ne pas supposer qu’un point de restauration existe.
 4. Relever l'état initial : fonctionnement de la page d'accueil et d'une page de contenu, erreurs PHP connues, présence éventuelle d'un cache/CDN. Prévoir l'accès au gestionnaire de fichiers ou à SFTP en cas d'écran blanc.
 5. Ne transmettre aucun identifiant ni mot de passe à un tiers ; utiliser les accès déjà détenus par le propriétaire du site.
 
