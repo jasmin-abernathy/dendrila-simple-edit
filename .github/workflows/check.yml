@@ -1,0 +1,34 @@
+name: PHP quick checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.php'
+      - '.github/workflows/check.yml'
+  pull_request:
+    paths:
+      - '**.php'
+      - '.github/workflows/check.yml'
+permissions:
+  contents: read
+concurrency:
+  group: dse-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Check PHP syntax
+        run: find . -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Run contract tests
+        run: php tests/smoke.php
