@@ -15,10 +15,11 @@ final class DSE_Plugin
     const ROLE = 'dendrila_site_manager';
     const STATE_OPTION = 'dse_state';
     const ENABLED_OPTION = 'dse_enabled_fields';
+    const CUSTOM_OPTION = 'dse_custom_fields';
 
     public static function definitions()
     {
-        return array(
+        $definitions = array(
             'phone' => array(
                 'label' => 'Téléphone',
                 'help' => 'Numéro de téléphone public, avec indicatif si nécessaire.',
@@ -44,6 +45,24 @@ final class DSE_Plugin
                 'max' => 3000,
             ),
         );
+        $custom = get_option(self::CUSTOM_OPTION, array());
+        if (is_array($custom)) {
+            foreach ($custom as $key => $item) {
+                if (!is_string($key) || preg_match('/^zone_[a-z0-9_]{1,30}$/', $key) !== 1 ||
+                    !is_array($item) || !isset($item['label'], $item['type']) ||
+                    !is_string($item['label']) || $item['label'] === '' ||
+                    !in_array($item['type'], array('text', 'textarea'), true)) {
+                    continue;
+                }
+                $definitions[$key] = array(
+                    'label' => $item['label'],
+                    'help' => 'Zone de contenu définie par l’administration.',
+                    'type' => $item['type'],
+                    'max' => $item['type'] === 'text' ? 160 : 3000,
+                );
+            }
+        }
+        return $definitions;
     }
 
     public static function empty_state()
@@ -62,6 +81,7 @@ final class DSE_Plugin
         ));
         add_option(self::STATE_OPTION, self::empty_state(), '', false);
         add_option(self::ENABLED_OPTION, array(), '', false);
+        add_option(self::CUSTOM_OPTION, array(), '', false);
     }
 
     public static function boot()
@@ -71,6 +91,7 @@ final class DSE_Plugin
         add_action('admin_post_dse_save', array(__CLASS__, 'save'));
         add_action('admin_post_dse_restore', array(__CLASS__, 'restore'));
         add_action('admin_post_dse_configure', array(__CLASS__, 'configure'));
+        add_action('admin_post_dse_add_field', array(__CLASS__, 'add_field'));
         add_shortcode('dendrila_simple_edit', array(__CLASS__, 'shortcode'));
     }
 
@@ -330,6 +351,49 @@ final class DSE_Plugin
         self::redirect('configured');
     }
 
+    public static function add_field()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die('Configuration réservée à l’administration.', 'Accès refusé', array('response' => 403));
+        }
+        check_admin_referer('dse_add_field');
+        $label_input = isset($_POST['dse_label']) ? wp_unslash($_POST['dse_label']) : null;
+        $type_input = isset($_POST['dse_field_type']) ? wp_unslash($_POST['dse_field_type']) : null;
+        if (!is_string($label_input) || !is_string($type_input) ||
+            !in_array($type_input, array('text', 'textarea'), true)) {
+            wp_die('Zone de contenu incorrecte.', 'Requête incorrecte', array('response' => 400));
+        }
+        $label = sanitize_text_field($label_input);
+        $length = function_exists('mb_strlen') ? mb_strlen($label, 'UTF-8') : strlen($label);
+        if ($label === '' || $length > 80) {
+            wp_die('Le libellé est obligatoire (80 caractères maximum).', 'Requête incorrecte', array('response' => 400));
+        }
+        $slug_base = substr(trim(str_replace('-', '_', sanitize_title($label)), '_'), 0, 26);
+        if ($slug_base === '' || preg_match('/^[a-z0-9_]+$/', $slug_base) !== 1) {
+            wp_die('Le nom ne peut pas servir à identifier une zone.', 'Requête incorrecte', array('response' => 400));
+        }
+        $slug_base = 'zone_' . $slug_base;
+        $custom = get_option(self::CUSTOM_OPTION, array());
+        if (!is_array($custom) || count($custom) >= 20) {
+            wp_die('Limite de 20 zones atteinte ou configuration incorrecte.', 'Requête incorrecte', array('response' => 400));
+        }
+        $slug = $slug_base;
+        $suffix = 2;
+        while (isset($custom[$slug])) {
+            $slug = $slug_base . '_' . $suffix++;
+        }
+        $custom[$slug] = array('label' => $label, 'type' => $type_input);
+        if (!update_option(self::CUSTOM_OPTION, $custom, false)) {
+            wp_die('La zone n’a pas pu être enregistrée.', 'Erreur', array('response' => 500));
+        }
+        $enabled = self::enabled_fields();
+        if (!in_array($slug, $enabled, true)) {
+            $enabled[] = $slug;
+            update_option(self::ENABLED_OPTION, $enabled, false);
+        }
+        self::redirect('field_added');
+    }
+
     public static function shortcode($atts)
     {
         $attributes = shortcode_atts(array('field' => ''), $atts, 'dendrila_simple_edit');
@@ -345,7 +409,7 @@ final class DSE_Plugin
 
     private static function redirect($notice)
     {
-        $allowed = array('saved', 'unchanged', 'conflict', 'unconfigured', 'missing_revision', 'error', 'configured');
+        $allowed = array('saved', 'unchanged', 'conflict', 'unconfigured', 'missing_revision', 'error', 'configured', 'field_added');
         if (!in_array($notice, $allowed, true)) {
             $notice = 'error';
         }
@@ -361,6 +425,7 @@ final class DSE_Plugin
             'saved' => array('updated', 'Modifications publiées. Les emplacements reliés sont à jour.'),
             'unchanged' => array('updated', 'Aucune modification à enregistrer.'),
             'configured' => array('updated', 'Champs autorisés mis à jour.'),
+            'field_added' => array('updated', 'Zone créée et autorisée. Son shortcode est disponible ci-dessous.'),
             'conflict' => array('error', 'Une autre modification a eu lieu. Rechargez la page avant de réessayer.'),
             'unconfigured' => array('error', 'Aucun champ n’a été autorisé par l’administration.'),
             'missing_revision' => array('error', 'Cette révision n’est plus disponible.'),
@@ -527,6 +592,21 @@ final class DSE_Plugin
             }
             echo '<p><button class="button button-secondary" type="submit">Enregistrer les autorisations</button></p>';
             echo '<p class="description">Insérez chaque code court dans vos pages ou modèles : WordPress reste propriétaire du contenu.</p>';
+            echo '</form>';
+            echo '<form class="dse-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            echo '<h2>Ajouter une zone de contenu</h2>';
+            echo '<p>Créez un texte relié, par exemple un titre d’accueil ou une présentation de service. Son identifiant technique est généré automatiquement.</p>';
+            echo '<input type="hidden" name="action" value="dse_add_field">';
+            wp_nonce_field('dse_add_field');
+            echo '<div class="dse-field"><label for="dse-label">Nom de la zone</label>';
+            echo '<input type="text" id="dse-label" name="dse_label" required maxlength="80" placeholder="Ex. Message de bienvenue"></div>';
+            echo '<div class="dse-field"><label for="dse-type">Format</label>';
+            echo '<select id="dse-type" name="dse_field_type">';
+            echo '<option value="text">Texte court (titre)</option>';
+            echo '<option value="textarea">Plusieurs lignes (paragraphe)</option>';
+            echo '</select></div>';
+            echo '<p><button class="button" type="submit">Créer et autoriser cette zone</button></p>';
+            echo '<p class="description">20 zones personnalisées maximum. Insérez le shortcode dans les pages ou modèles pour afficher la zone.</p>';
             echo '</form>';
         }
         echo '</aside></div></div>';

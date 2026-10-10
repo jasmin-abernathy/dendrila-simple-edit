@@ -88,4 +88,15 @@ expect(DSE_Plugin::state()['values']['hours'] === 'Lundi 9–18', 'Newly disable
 expect(DSE_Plugin::public_locations('phone')[0]->post_title === 'Accueil', 'Shortcode reference discovered');
 expect(strpos($wpdb->last_sql, "post_status = 'publish'") !== false, 'Private pages excluded from discovery');
 expect(DSE_Plugin::public_locations('hours') === array(), 'Disabled field discovery refused');
+$GLOBALS['dse_options']['dse_custom_fields'] = array(
+    'zone_bienvenue' => array('label' => 'Bienvenue', 'type' => 'textarea'),
+    'invalid-name!' => array('label' => 'Invalide', 'type' => 'text'),
+);
+$GLOBALS['dse_options']['dse_enabled_fields'] = array('phone', 'zone_bienvenue', 'invalid-name!');
+expect(isset(DSE_Plugin::definitions()['zone_bienvenue']), 'Custom zone is supported');
+expect(!isset(DSE_Plugin::definitions()['invalid-name!']), 'Invalid configured zone ignored');
+expect(DSE_Plugin::enabled_fields() === array('phone', 'zone_bienvenue'), 'Invalid zone cannot gain edit permission');
+expect($write->invoke(null, 3, array('zone_bienvenue' => '<b>Bonjour</b>')) === 'saved', 'Custom field edit');
+expect(DSE_Plugin::shortcode(array('field' => 'zone_bienvenue')) === 'Bonjour', 'Custom zone renders safely');
+
 echo "OK — permissions, allowlist, sanitization, concurrency, shortcode, restore\n";

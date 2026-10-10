@@ -4,7 +4,8 @@
 Dendrila CMS fournit les principes : schémas déclaratifs, permissions atomiques, refus par défaut, état versionné et projection limitée aux champs annoncés. Son cœur PHP 8.5 / PDO n’est **pas** importé dans un plugin WordPress compatible PHP 7.4.
 
 ## Stockage
-- dse_enabled_fields : liste bornée d’identifiants de champs définis dans le code. Configuration administrateur uniquement.
+- dse_enabled_fields : liste bornée d’identifiants de champs intégrés ou configurés. Configuration administrateur uniquement.
+- dse_custom_fields : maximum 20 zones textuelles déclaratives (nom, type, identifiant généré), sans code exécutable ni mappage arbitraire vers une option WP.
 - dse_state : une unique option WordPress (revision, values, history), autoload désactivé.
 - Un UPDATE SQL atomique compare la sérialisation ancienne en égalité binaire pour éviter qu'une concurrence entre deux POST n'écrase une valeur sans avertissement. Après succès le cache d’options WP est invalidé.
 - Le public lit la valeur depuis WordPress au moyen du shortcode dendrila_simple_edit inséré volontairement par l’administrateur.

@@ -16,3 +16,6 @@
 
 .dse-usage-label{display:block;margin-top:10px;font-size:.88rem;color:var(--dse-muted)}
 .dse-usage{margin:4px 0 12px 20px;list-style:disc}.dse-usage a{overflow-wrap:anywhere}
+
+.dse-field select{width:100%;max-width:100%;border:1px solid #8da996;border-radius:7px;padding:9px;min-height:42px;color:var(--dse-ink)}
+.dse-field select:focus-visible{outline:3px solid #215d3f;outline-offset:3px}
