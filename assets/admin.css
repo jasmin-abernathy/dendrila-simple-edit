@@ -25,3 +25,5 @@
 @media(max-width:480px){.dse-acf-discovered{align-items:stretch;flex-direction:column}.dse-acf-discovered .button{width:100%}}
 
 .dse-image-preview img{display:block;max-width:240px;height:auto;border:1px solid var(--dse-border);border-radius:8px;margin:12px 0}
+
+.dse-permissions{border:1px solid var(--dse-border);border-radius:8px;margin:14px 0;padding:12px}.dse-permissions legend{font-weight:650;padding:0 6px}.dse-subcard{border:1px solid var(--dse-border);border-radius:9px;margin:16px 0;padding:14px;background:var(--dse-soft)}.dse-subcard h3{margin-top:4px}.dse-preview{padding:12px;margin-top:8px;background:#fff;border:1px solid var(--dse-border);border-radius:8px;overflow-wrap:anywhere}.dse-preview p{white-space:normal}.dse-subcard summary{cursor:pointer;font-weight:600}.dse-subcard summary:focus-visible{outline:3px solid #215d3f;outline-offset:3px}

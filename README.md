@@ -2,7 +2,7 @@
 
 Plugin WordPress autonome pour la modification guidée de contenus, inspiré de la séparation des rôles et des champs déclaratifs de Dendrila CMS.
 
-**Version de travail : 0.1.0 — premier parcours de champs reliés.** Pas encore une prise en charge générale de l’édition des pages WordPress.
+**Version de travail : 0.2.0 — champs reliés et premiers modules délégués.** Pas encore une prise en charge générale de l’édition des pages WordPress.
 
 ## Installation (environnement de test)
 Copier le répertoire à partir de la racine de ce dépôt dans wp-content/plugins/dendrila-simple-edit/ puis activer l’extension. WordPress 6.5+ et PHP 7.4+ requis.
@@ -30,6 +30,14 @@ Le rôle délégué n’a accès qu’aux champs cochés. Les pages ne sont **pa
 - Comparaison atomique de version, historique des 15 versions précédentes et restauration strictement limitée aux champs encore autorisés.
 - Aucun compte créé, aucune connexion externe, aucun tracking.
 
+## Modules délégués (en développement)
+
+Une configuration administrateur distincte permet d'activer individuellement les modules Newsletters et WooCommerce et d'attribuer des actions précises à chaque Responsable du site. Aucune capacité native WooCommerce, MailPoet ou WordPress n'est ajoutée au rôle.
+
+Le premier parcours newsletters produit des brouillons éditoriaux privés, prévisualisables et soumis à validation, **sans accès aux abonnés ni expédition**. Le module WooCommerce utilise l'API CRUD pour créer des produits simples non publiés et modifier les champs explicitement accordés ; l'édition des produits déjà publiés demande une autorisation supplémentaire. Ni publication de produits, ni variation, ni commandes, ni données de paiement ne sont accessibles depuis ces modules. Ce ne sont pas des campagnes MailPoet. L'intégration officielle avec un fournisseur d'envoi reste à développer.
+
+La matrice des droits, les limitations et les phases WooCommerce figurent dans [la feuille de route des modules](docs/MODULES-DELEGUES.md).
+
 ## Limites et travaux suivants
 C’est le premier adaptateur **champs globaux reliés**. Les zones Gutenberg sélectionnables, l'aperçu réel, les médias, le workflow de validation et les adaptateurs Divi/Elementor viendront ensuite. Les shortcodes doivent être ajoutés par un administrateur. Les champs cachés à l'éditeur peuvent rester affichés publiquement lorsque le shortcode correspondant est déjà utilisé.
 
@@ -39,7 +47,7 @@ Voir [le plan](docs/PLAN.md) et [l'architecture](docs/ARCHITECTURE.md). Ne pas i
 
 Un essai de production limité est possible uniquement avec une sauvegarde des fichiers et de la base, un compte de test sans privilèges et une validation progressive **sans publication initiale**. Le ZIP installable est produit comme artefact par GitHub Actions, après réussite des contrôles. Il ne faut pas installer l'archive ZIP du dépôt lui-même : elle inclut des fichiers de développement et un dossier racine inadapté.
 
-Consulter le [protocole d'essai contrôlé et de retour arrière](docs/ESSAI-SITE-LIVE.md). Le [parcours du site pilote Les 2 Rives](docs/ESSAI-LES-2-RIVES.md) précise les vérifications OVHcloud et Elementor. Les essais réels Divi, Elementor, Gutenberg et ACF n'ont pas encore été réalisés sur un site pilote.
+Consulter le [protocole d'essai contrôlé et de retour arrière](docs/ESSAI-SITE-LIVE.md). Le [parcours du site pilote Les 2 Rives](docs/ESSAI-LES-2-RIVES.md) précise les vérifications OVHcloud et Elementor. Le lot 0.2.0 n'est pas un feu vert pour installer les modules sur un site actif sans essais WordPress et WooCommerce isolés. Les essais réels Divi, Elementor, Gutenberg et ACF n'ont pas encore été réalisés sur un site pilote.
 
 ## Qualité
 Exécuter php -l sur les fichiers PHP et php tests/smoke.php. Les tests livrés couvrent le contrat des champs et des autorisations avec des doubles de WordPress ; une installation réelle reste nécessaire pour vérifier les formulaires, rôles, caches et rendus.

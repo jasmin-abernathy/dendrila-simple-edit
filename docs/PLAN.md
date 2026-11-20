@@ -73,3 +73,15 @@ Permettre à un **Responsable du site** de modifier les données autorisées san
 - Les champs du plugin ne sont pas automatiquement connectés à un thème ; ils ne sont publiés que là où un shortcode est effectivement placé.
 - Le rôle n’empêche pas un autre plugin ou un autre rôle d'accorder des capacités plus étendues.
 - La suppression de l’extension n’efface pas les valeurs ; prévoir un assistant de retrait/réattribution avant nettoyage des rôles.
+
+## Lot 4 — modules délégués (0.2.0, PR dédiée)
+
+- [x] Matrice séparée par module et utilisateur, refus par défaut ; aucun nouveau droit natif.
+- [x] Newsletters : brouillons privés, prévisualisation, soumission et approbation, sans envoi ni accès aux contacts.
+- [x] WooCommerce : création de produits simples en brouillon, édition textuelle/image/catégories/prix/stock selon autorisations, verrou distinct sur les produits publiés.
+- [x] Tests isolés des frontières de permissions sur la matrice PHP 7.4/8.4 (à valider sur SHA final).
+- [ ] Intégration directe MailPoet via API stable de gestion de campagnes non disponible ; pas de programmation/envoi.
+- [ ] Produits variables, gestion de galerie et synchronisation de stocks avancée.
+- [ ] Essais sur un WordPress réel, avec et sans WooCommerce/MailPoet, et vérification des effets des caches et hooks Woo.
+
+Les nouvelles permissions ne sont pas héritées automatiquement. Voir docs/MODULES-DELEGUES.md.

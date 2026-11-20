@@ -14,12 +14,15 @@ $GLOBALS['posts'] = array(
         'post_type' => 'article', 'post_title' => 'Contenu visible'),
     23 => (object) array('post_status' => 'draft', 'post_password' => '',
         'post_type' => 'article', 'post_title' => 'Contenu privé'),
+    25 => (object) array('post_status' => 'publish', 'post_password' => '',
+        'post_type' => 'tribe_events', 'post_title' => 'Événement public'),
     24 => (object) array('post_status' => 'publish', 'post_password' => 'secret',
         'post_type' => 'article', 'post_title' => 'Protégé')
 );
 $GLOBALS['fields'] = array(
     'field_intro' => array('key' => 'field_intro', 'name' => 'intro', 'label' => 'Introduction',
         'type' => 'text', 'parent' => 'group_123', 'maxlength' => 100),
+    'field_empty' => array('key' => 'field_empty', 'name' => 'empty', 'type' => 'text', 'parent' => 'group_events'),
     'field_nested' => array('key' => 'field_nested', 'name' => 'nested', 'label' => 'Nested',
         'type' => 'text', 'parent' => 'field_repeater'),
     'field_repeater' => array('key' => 'field_repeater', 'name' => 'repeater', 'label' => 'Repeater',
@@ -29,9 +32,18 @@ $GLOBALS['acf_values'] = array('22:field_intro' => 'Bonjour');
 function get_option($key, $fallback = null) { return $GLOBALS['configured'][$key] ?? $fallback; }
 function current_user_can($key) { return in_array($key, $GLOBALS['allowed_caps'], true); }
 function get_post($post_id) { return $GLOBALS['posts'][$post_id] ?? null; }
-function get_post_type_object($type) { return $type === 'article' ? (object) array('public' => true) : false; }
+function get_post_type_object($type) { return in_array($type, array('article', 'tribe_events'), true) ? (object) array('public' => true) : false; }
 function get_post_type($post_id) { return 'acf-field-group'; }
 function acf_get_field($key) { return $GLOBALS['fields'][$key] ?? false; }
+function acf_get_field_groups($screen) {
+    return $screen === array('post_id' => 25, 'post_type' => 'tribe_events') ?
+        array(array('key' => 'group_events')) : array();
+}
+function acf_get_fields($group) {
+    return $group['key'] === 'group_events' ?
+        array($GLOBALS['fields']['field_empty'], $GLOBALS['fields']['field_nested'], $GLOBALS['fields']['field_repeater']) :
+        array();
+}
 function get_field($key, $post_id, $format = true) { return $GLOBALS['acf_values'][$post_id . ':' . $key] ?? false; }
 function update_field($key, $value, $post_id) {
     $GLOBALS['acf_values'][$post_id . ':' . $key] = $value;
@@ -74,6 +86,9 @@ function check_it($okay, $message) {
     if (!$okay) { fwrite(STDERR, "FAIL: " . $message . "\n"); exit(1); }
 }
 check_it(DSE_ACF::available(), 'ACF available');
+check_it(array_keys(DSE_ACF::discover(25)) === array('field_empty'), 'Public event discovers its empty text field and excludes nested or complex fields');
+check_it(DSE_ACF::discover(22) === array(), 'Fields outside matching ACF groups are not suggested');
+check_it(DSE_ACF::discover(24) === array(), 'Password-protected content has no field suggestions');
 check_it(is_array(DSE_ACF::resolve(22, 'field_intro')), 'Published mapped field resolves');
 check_it(DSE_ACF::resolve(23, 'field_intro') === false, 'Draft refused');
 check_it(DSE_ACF::resolve(24, 'field_intro') === false, 'Password protected post refused');
