@@ -30,7 +30,7 @@ L’interface propose un diagnostic non destructif. Ce n'est ni un scanner exhau
 
 ## Champs personnalisés ACF
 - Optionnel : ACF doit être actif. Dendrila Simple Edit n'impose pas ACF à tous les sites.
-- L'administrateur sélectionne l'un des derniers contenus publics et choisit parmi ses champs simples déjà renseignés ; il peut aussi fournir un ID d'article/page/CPT **public publié, non protégé par mot de passe** et une clé de champ existant commençant par field_.
+- L’administrateur sélectionne un contenu public récent, par exemple un événement de The Events Calendar. Dendrila propose les champs simples des groupes dont les règles d’emplacement ACF s’appliquent à ce contenu, même lorsque leur valeur est vide. La saisie manuelle d’un identifiant de contenu et d’une clé ACF reste disponible.
 - Le champ doit être directement rattaché à un groupe de champs ; les champs enfants de répéteurs et structures imbriquées sont refusés.
 - Types de champs admis : text, textarea, email, url. Les valeurs sont manipulées sans rendu HTML et revérifiées côté serveur.
 - Aucun champ n'est proposé automatiquement à l'ensemble des utilisateurs ; seules les associations autorisées sont disponibles dans l'espace.

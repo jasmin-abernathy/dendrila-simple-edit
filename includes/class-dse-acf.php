@@ -79,6 +79,33 @@ final class DSE_ACF
         return self::resolve($mapping['post_id'], $mapping['field_key']);
     }
 
+    public static function discover($post_id)
+    {
+        if (!self::available() || !function_exists('acf_get_field_groups') ||
+            !function_exists('acf_get_fields') || !is_int($post_id) || $post_id < 1) {
+            return array();
+        }
+        $post = get_post($post_id);
+        if (!$post || $post->post_status !== 'publish' || $post->post_password !== '') {
+            return array();
+        }
+        $fields = array();
+        $groups = acf_get_field_groups(array('post_id' => $post_id, 'post_type' => $post->post_type));
+        foreach ((array) $groups as $group) {
+            foreach ((array) acf_get_fields($group) as $field) {
+                $resolved = self::resolve($post_id, $field['key'] ?? null);
+                if (!$resolved || self::raw_value($resolved, $post_id) === false) {
+                    continue;
+                }
+                $fields[$resolved['field']['key']] = $resolved['field'];
+                if (count($fields) >= 80) {
+                    return $fields;
+                }
+            }
+        }
+        return $fields;
+    }
+
     private static function editable()
     {
         return DSE_Plugin::can_edit();
@@ -282,7 +309,7 @@ final class DSE_ACF
         }
         if (current_user_can('manage_options')) {
             echo '<hr><h3>Autoriser un champ ACF</h3>';
-            echo '<p>Choisissez d’abord le contenu. Les champs textuels déjà renseignés seront proposés automatiquement. Les clés peuvent aussi être ajoutées manuellement.</p>';
+            echo '<p>Choisissez d’abord le contenu. Les champs textuels prévus pour ce contenu seront proposés, même s’ils sont vides. Les clés peuvent aussi être ajoutées manuellement.</p>';
             $types = get_post_types(array('public' => true), 'names');
             $recent = get_posts(array(
                 'post_type' => array_values($types),
@@ -295,44 +322,38 @@ final class DSE_ACF
             echo '<form method="get" action="' . esc_url(admin_url('admin.php')) . '">';
             echo '<input type="hidden" name="page" value="dendrila-simple-edit">';
             echo '<div class="dse-field"><label for="dse-acf-discover">Contenu à examiner</label>';
+            $requested = isset($_GET['dse_acf_post']) ? wp_unslash($_GET['dse_acf_post']) : null;
+            $chosen = is_string($requested) && ctype_digit($requested) && (int) $requested > 0 ?
+                (string) (int) $requested : '';
             echo '<select id="dse-acf-discover" name="dse_acf_post">';
             echo '<option value="">Choisir un contenu public…</option>';
             if (is_array($recent)) {
                 foreach ($recent as $entry) {
                     if ($entry->post_password !== '') { continue; }
-                    echo '<option value="' . esc_attr((string) $entry->ID) . '">' .
+                    echo '<option value="' . esc_attr((string) $entry->ID) . '"' .
+                        selected((string) $entry->ID, $chosen, false) . '>' .
                         esc_html(get_the_title($entry->ID) . ' (#' . $entry->ID . ')') . '</option>';
                 }
             }
             echo '</select></div><p><button class="button" type="submit">Afficher ses champs ACF</button></p></form>';
-            $chosen = isset($_GET['dse_acf_post']) ? wp_unslash($_GET['dse_acf_post']) : null;
-            if (is_string($chosen) && ctype_digit($chosen) && (int) $chosen > 0 &&
-                function_exists('get_field_objects')) {
+            if ($chosen !== '') {
                 $post_id = (int) $chosen;
-                $objects = get_field_objects($post_id, false, false);
+                $fields = self::discover($post_id);
                 echo '<h4>Champs disponibles pour ce contenu</h4>';
-                $count = 0;
-                if (is_array($objects)) {
-                    foreach (array_slice($objects, 0, 80) as $field) {
-                        if (!is_array($field) || !isset($field['key']) ||
-                            !self::resolve($post_id, $field['key'])) {
-                            continue;
-                        }
-                        $count++;
-                        echo '<form class="dse-acf-discovered" method="post" action="' .
-                            esc_url(admin_url('admin-post.php')) . '">';
-                        echo '<span>' . esc_html($field['label'] ?? $field['name']) . '</span>';
-                        echo '<input type="hidden" name="action" value="dse_acf_add">';
-                        echo '<input type="hidden" name="dse_post_id" value="' .
-                            esc_attr((string) $post_id) . '">';
-                        echo '<input type="hidden" name="dse_acf_key" value="' .
-                            esc_attr($field['key']) . '">';
-                        wp_nonce_field('dse_acf_add');
-                        echo '<button class="button" type="submit">Autoriser ce champ</button></form>';
-                    }
+                foreach ($fields as $field) {
+                    echo '<form class="dse-acf-discovered" method="post" action="' .
+                        esc_url(admin_url('admin-post.php')) . '">';
+                    echo '<span>' . esc_html($field['label'] ?? $field['name']) . '</span>';
+                    echo '<input type="hidden" name="action" value="dse_acf_add">';
+                    echo '<input type="hidden" name="dse_post_id" value="' .
+                        esc_attr((string) $post_id) . '">';
+                    echo '<input type="hidden" name="dse_acf_key" value="' .
+                        esc_attr($field['key']) . '">';
+                    wp_nonce_field('dse_acf_add');
+                    echo '<button class="button" type="submit">Autoriser ce champ</button></form>';
                 }
-                if (!$count) {
-                    echo '<p>Aucun champ simple déjà renseigné et autorisable n’a été trouvé. Vous pouvez utiliser sa clé manuellement ci-dessous.</p>';
+                if (!$fields) {
+                    echo '<p>Aucun champ simple autorisable n’a été trouvé. Vous pouvez utiliser sa clé manuellement ci-dessous.</p>';
                 }
             }
             echo '<p>Saisissez l’identifiant d’un contenu public et la clé ACF (commençant par field_). Types admis : texte, zone de texte, e-mail, URL.</p>';
