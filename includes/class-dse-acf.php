@@ -62,6 +62,27 @@ final class DSE_ACF
         if (!$parent_is_group && !$parent_is_post_group) {
             return false;
         }
+        // A key copied into the advanced form must not bypass the ACF field group's
+        // location rules. Match both the applicable group and its direct field.
+        if (!function_exists('acf_get_field_groups') || !function_exists('acf_get_fields')) {
+            return false;
+        }
+        $groups = acf_get_field_groups(array('post_id' => $post_id, 'post_type' => $post->post_type));
+        $allowed_here = false;
+        foreach ((array) $groups as $group) {
+            if (!is_array($group)) { continue; }
+            $same_group = ($parent_is_group && ($group['key'] ?? null) === $parent) ||
+                ($parent_is_post_group && isset($group['ID']) && (int) $group['ID'] === (int) $parent);
+            if (!$same_group) { continue; }
+            foreach ((array) acf_get_fields($group) as $candidate) {
+                if (is_array($candidate) && ($candidate['key'] ?? null) === $field_key) {
+                    $allowed_here = true;
+                    break;
+                }
+            }
+            if ($allowed_here) { break; }
+        }
+        if (!$allowed_here) { return false; }
         return array('post' => $post, 'field' => $field);
     }
 
@@ -134,7 +155,7 @@ final class DSE_ACF
         foreach ($all as $mapping) {
             if (is_array($mapping) && ($mapping['post_id'] ?? null) === $post_id &&
                 ($mapping['field_key'] ?? null) === $key) {
-                self::redirect('acf_duplicate');
+                self::redirect('acf_duplicate', $post_id);
             }
         }
         $id = 'acf_' . bin2hex(random_bytes(8));
@@ -142,7 +163,7 @@ final class DSE_ACF
         if (!update_option(self::OPTION, $all, false)) {
             wp_die('Association non enregistrée.', 'Erreur', array('response' => 500));
         }
-        self::redirect('acf_added');
+        self::redirect('acf_added', $post_id);
     }
 
     public static function remove()
@@ -214,158 +235,195 @@ final class DSE_ACF
             preg_match('/^[a-f0-9]{64}$/', $expected) !== 1) {
             wp_die('Requête incorrecte.', 'Requête incorrecte', array('response' => 400));
         }
-        $resolved = self::mapped($id);
-        if (!$resolved) {
-            wp_die('Cette association n’est plus autorisée.', 'Accès refusé', array('response' => 403));
-        }
         $all = self::mappings();
-        $post_id = $all[$id]['post_id'];
+        $post_id = (int) ($all[$id]['post_id'] ?? 0);
+        $field_key = $all[$id]['field_key'] ?? '';
+        if ($id === '' && current_user_can('manage_options')) {
+            $post_id = absint($_POST['dse_post_id'] ?? 0);
+            $field_key = isset($_POST['dse_acf_key']) ? wp_unslash($_POST['dse_acf_key']) : '';
+        }
+        $resolved = $id === '' && current_user_can('edit_post', $post_id) ?
+            self::resolve($post_id, $field_key) : self::mapped($id);
+        if (!$resolved) {
+            wp_die('Ce texte ne peut pas être modifié.', 'Accès refusé', array('response' => 403));
+        }
         $current = self::raw_value($resolved, $post_id);
         if ($current === false || !hash_equals(self::version($current), $expected)) {
-            self::redirect('acf_conflict');
+            self::redirect('acf_conflict', $post_id);
         }
         $new = self::sanitize($resolved['field'], $input);
         if ($new === false) {
             wp_die('La valeur ne respecte pas le type ou la longueur autorisée.', 'Requête incorrecte', array('response' => 400));
         }
         if ($current === $new) {
-            self::redirect('acf_unchanged');
+            self::redirect('acf_unchanged', $post_id);
         }
         // Re-evaluate just before mutation. This guards stale forms, but does not
         // claim atomicity against a separate editor writing in the same instant.
-        if (!self::mapped($id) ||
+        if (!($id === '' ? self::resolve($post_id, $field_key) : self::mapped($id)) ||
             self::raw_value($resolved, $post_id) !== $current) {
-            self::redirect('acf_conflict');
+            self::redirect('acf_conflict', $post_id);
         }
-        $updated = update_field($resolved['field']['key'], $new, $post_id);
+        update_field($resolved['field']['key'], $new, $post_id);
         $observed = self::raw_value($resolved, $post_id);
         if ($observed !== $new) {
-            self::redirect('acf_error');
+            self::redirect('acf_error', $post_id);
         }
         clean_post_cache($post_id);
         do_action('dse_acf_field_updated', $post_id, $resolved['field']['key']);
-        self::redirect('acf_saved');
+        self::redirect('acf_saved', $post_id);
     }
 
-    private static function redirect($notice)
+    private static function redirect($notice, $post_id = 0)
     {
-        wp_safe_redirect(add_query_arg('dse_notice', $notice, admin_url('admin.php?page=dendrila-simple-edit')));
+        $tab = in_array($notice, array('acf_added', 'acf_removed', 'acf_duplicate'), true) ? 'reglages' : 'contenus';
+        $args = array('dse_notice' => $notice, 'dse_tab' => $tab);
+        if ($post_id) { $args['dse_acf_post'] = $post_id; }
+        wp_safe_redirect(add_query_arg($args, admin_url('admin.php?page=dendrila-simple-edit')) . '#dse-acf-content');
         exit;
     }
 
-    public static function render()
+    private static function render_remove($id)
     {
-        if (!DSE_Plugin::can_access()) { return; }
-        echo '<section class="dse-card"><h2>Champs personnalisés ACF</h2>';
-        if (!self::available()) {
-            echo '<p>Advanced Custom Fields n’est pas actif. Activez ACF pour relier un champ de texte existant.</p></section>';
-            return;
+        if (!current_user_can('manage_options') || !preg_match('/^acf_[a-f0-9]{16}$/', (string) $id)) { return; }
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="dse_acf_remove">';
+        echo '<input type="hidden" name="dse_mapping" value="' . esc_attr($id) . '">';
+        wp_nonce_field('dse_acf_remove');
+        echo '<button class="button button-secondary" type="submit">Retirer l’accès à ce champ</button></form>';
+    }
+
+    private static function edit_field($id, $post_id, $field, $value)
+    {
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="dse_acf_save">';
+        echo '<input type="hidden" name="dse_mapping" value="' . esc_attr($id) . '">';
+        echo '<input type="hidden" name="dse_acf_version" value="' . esc_attr(self::version($value)) . '">';
+        if ($id === '') {
+            echo '<input type="hidden" name="dse_post_id" value="' . esc_attr($post_id) . '">';
+            echo '<input type="hidden" name="dse_acf_key" value="' . esc_attr($field['key']) . '">';
         }
-        $all = self::mappings();
-        if (!$all) {
-            echo '<p>Aucun champ ACF autorisé pour le moment.</p>';
+        wp_nonce_field('dse_acf_save');
+        $element_id = 'dse-acf-' . md5($post_id . ':' . $field['key']);
+        echo '<label for="' . esc_attr($element_id) . '">' .
+            esc_html($field['label'] ?? $field['name']) . '</label>';
+        if (!empty($field['instructions']) && is_string($field['instructions'])) {
+            echo '<p class="description">' . esc_html($field['instructions']) . '</p>';
         }
-        foreach ($all as $id => $mapping) {
+        if ($field['type'] === 'textarea') {
+            echo '<textarea id="' . esc_attr($element_id) . '" name="dse_acf_value" rows="4">' .
+                esc_textarea($value) . '</textarea>';
+        } else {
+            $type = in_array($field['type'], array('email', 'url'), true) ? $field['type'] : 'text';
+            echo '<input id="' . esc_attr($element_id) . '" type="' . esc_attr($type) .
+                '" name="dse_acf_value" value="' . esc_attr($value) . '">';
+        }
+        echo '<p><button type="submit" class="button button-primary">Enregistrer ce texte</button></p></form>';
+    }
+
+    public static function render($permissions = false)
+    {
+        $admin = current_user_can('manage_options');
+        if (!DSE_Plugin::can_access() || ($permissions && !$admin)) { return; }
+        if (!self::available() && !$permissions) { return; }
+
+        $tab = $permissions ? 'reglages' : 'contenus';
+        echo '<section id="dse-acf-content" class="dse-card">';
+        echo '<h2>' . ($permissions ? 'Autoriser les informations complémentaires' : 'Informations complémentaires') . '</h2>';
+        if (!$permissions) {
+            echo '<p class="description">Vous pouvez modifier ici des informations enregistrées en plus du texte principal. Elles n’apparaissent sur le site que si la page ou le thème les affiche. Pour modifier directement une page ou un article, ouvrez la rubrique <a href="' . esc_url(admin_url('admin.php?page=dendrila-simple-edit&dse_tab=pages')) . '">Pages et articles</a>.</p>';
+        }
+        $selected_post = isset($_GET['dse_acf_post']) && is_string($_GET['dse_acf_post']) ?
+            absint(wp_unslash($_GET['dse_acf_post'])) : 0;
+        $mappings = self::mappings();
+        $mapped_fields = array();
+        $posts = array();
+        foreach ($mappings as $id => $mapping) {
             $resolved = self::mapped($id);
             if (!$resolved) {
-                echo '<p class="notice-inline">Une association ACF est devenue indisponible ou non prise en charge. Aucune écriture n’est possible.</p>';
+                if ($permissions) {
+                    echo '<p>Champ indisponible sur le contenu n°' . esc_html((string) ($mapping['post_id'] ?? 0)) . '.</p>';
+                    self::render_remove($id);
+                }
                 continue;
             }
-            $value = self::raw_value($resolved, $mapping['post_id']);
-            if ($value === false) {
-                echo '<p>Valeur complexe : écriture désactivée pour ce champ.</p>';
-                continue;
-            }
-            $field = $resolved['field'];
-            echo '<h3>' . esc_html($field['label'] ?? $field['name']) . '</h3>';
-            echo '<p>Contenu : <a href="' . esc_url(get_permalink($mapping['post_id'])) .
-                '" target="_blank" rel="noopener noreferrer">' .
-                esc_html(get_the_title($mapping['post_id'])) . '</a></p>';
-            if (current_user_can('manage_options')) {
-                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-                echo '<input type="hidden" name="action" value="dse_acf_remove">';
-                echo '<input type="hidden" name="dse_mapping" value="' . esc_attr($id) . '">';
-                wp_nonce_field('dse_acf_remove');
-                echo '<button class="button button-secondary" type="submit">Retirer cette autorisation</button></form>';
-            }
-            if (!self::editable()) { continue; }
-            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-            echo '<input type="hidden" name="action" value="dse_acf_save">';
-            echo '<input type="hidden" name="dse_mapping" value="' . esc_attr($id) . '">';
-            echo '<input type="hidden" name="dse_acf_version" value="' . esc_attr(self::version($value)) . '">';
-            wp_nonce_field('dse_acf_save');
-            $element_id = 'dse-acf-' . $id;
-            echo '<label class="screen-reader-text" for="' . esc_attr($element_id) . '">' .
-                esc_html($field['label'] ?? $field['name']) . '</label>';
-            if ($field['type'] === 'textarea') {
-                echo '<textarea id="' . esc_attr($element_id) . '" name="dse_acf_value" rows="4">' .
-                    esc_textarea($value) . '</textarea>';
-            } else {
-                $type = in_array($field['type'], array('email', 'url'), true) ? $field['type'] : 'text';
-                echo '<input id="' . esc_attr($element_id) . '" type="' . esc_attr($type) .
-                    '" name="dse_acf_value" value="' . esc_attr($value) . '">';
-            }
-            echo '<p><button type="submit" class="button button-primary">Enregistrer ce champ</button></p></form>';
+            $post = $resolved['post'];
+            $posts[$post->ID] = $post;
+            $mapped_fields[$post->ID][$resolved['field']['key']] = $id;
         }
-        if (current_user_can('manage_options')) {
-            echo '<hr><h3>Autoriser un champ ACF</h3>';
-            echo '<p>Choisissez d’abord le contenu. Les champs textuels prévus pour ce contenu seront proposés, même s’ils sont vides. Les clés peuvent aussi être ajoutées manuellement.</p>';
-            $types = get_post_types(array('public' => true), 'names');
-            $recent = get_posts(array(
-                'post_type' => array_values($types),
-                'post_status' => 'publish',
-                'posts_per_page' => 40,
-                'no_found_rows' => true,
-                'orderby' => 'modified',
-                'order' => 'DESC',
-            ));
-            echo '<form method="get" action="' . esc_url(admin_url('admin.php')) . '">';
-            echo '<input type="hidden" name="page" value="dendrila-simple-edit">';
-            echo '<div class="dse-field"><label for="dse-acf-discover">Contenu à examiner</label>';
-            $requested = isset($_GET['dse_acf_post']) ? wp_unslash($_GET['dse_acf_post']) : null;
-            $chosen = is_string($requested) && ctype_digit($requested) && (int) $requested > 0 ?
-                (string) (int) $requested : '';
-            echo '<select id="dse-acf-discover" name="dse_acf_post">';
-            echo '<option value="">Choisir un contenu public…</option>';
-            if (is_array($recent)) {
-                foreach ($recent as $entry) {
-                    if ($entry->post_password !== '') { continue; }
-                    echo '<option value="' . esc_attr((string) $entry->ID) . '"' .
-                        selected((string) $entry->ID, $chosen, false) . '>' .
-                        esc_html(get_the_title($entry->ID) . ' (#' . $entry->ID . ')') . '</option>';
-                }
+        if ($admin && self::available()) {
+            $recent = get_posts(array('post_type' => array_values(get_post_types(array('public' => true), 'names')),
+                'post_status' => 'publish', 'has_password' => false, 'posts_per_page' => 40, 'orderby' => 'modified'));
+            foreach ($recent as $post) {
+                // Keep the chooser focused on posts that actually expose editable ACF fields.
+                if (isset($posts[$post->ID]) || self::discover((int) $post->ID)) { $posts[$post->ID] = $post; }
             }
-            echo '</select></div><p><button class="button" type="submit">Afficher ses champs ACF</button></p></form>';
-            if ($chosen !== '') {
-                $post_id = (int) $chosen;
-                $fields = self::discover($post_id);
-                echo '<h4>Champs disponibles pour ce contenu</h4>';
-                foreach ($fields as $field) {
-                    echo '<form class="dse-acf-discovered" method="post" action="' .
-                        esc_url(admin_url('admin-post.php')) . '">';
-                    echo '<span>' . esc_html($field['label'] ?? $field['name']) . '</span>';
-                    echo '<input type="hidden" name="action" value="dse_acf_add">';
-                    echo '<input type="hidden" name="dse_post_id" value="' .
-                        esc_attr((string) $post_id) . '">';
-                    echo '<input type="hidden" name="dse_acf_key" value="' .
-                        esc_attr($field['key']) . '">';
-                    wp_nonce_field('dse_acf_add');
-                    echo '<button class="button" type="submit">Autoriser ce champ</button></form>';
-                }
-                if (!$fields) {
-                    echo '<p>Aucun champ simple autorisable n’a été trouvé. Vous pouvez utiliser sa clé manuellement ci-dessous.</p>';
-                }
-            }
-            echo '<p>Saisissez l’identifiant d’un contenu public et la clé ACF (commençant par field_). Types admis : texte, zone de texte, e-mail, URL.</p>';
-            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-            echo '<input type="hidden" name="action" value="dse_acf_add">';
-            wp_nonce_field('dse_acf_add');
-            echo '<div class="dse-field"><label for="dse-acf-post">Identifiant du contenu</label>';
-            echo '<input id="dse-acf-post" type="number" min="1" name="dse_post_id" required></div>';
-            echo '<div class="dse-field"><label for="dse-acf-key">Clé du champ ACF</label>';
-            echo '<input id="dse-acf-key" type="text" name="dse_acf_key" pattern="field_[A-Za-z0-9_]+" required placeholder="field_..."></div>';
-            echo '<p><button type="submit" class="button">Autoriser ce champ</button></p></form>';
         }
-        echo '<p class="description">Les répéteurs, champs relationnels, galeries, mises en page flexibles et champs privés ne sont pas modifiables ici. L’enregistrement ne modifie pas le modèle de page.</p></section>';
+        if (!$posts) {
+            echo '<p>Aucun contenu à afficher.</p></section>';
+            return;
+        }
+        echo '<form method="get" action="' . esc_url(admin_url('admin.php') . '#dse-acf-content') . '">';
+        echo '<input type="hidden" name="page" value="dendrila-simple-edit">';
+        echo '<input type="hidden" name="dse_tab" value="' . esc_attr($tab) . '">';
+        echo '<div class="dse-field"><label for="dse-acf-content-select">Choisir un contenu</label>';
+        echo '<select id="dse-acf-content-select" name="dse_acf_post" required><option value="">Choisir un contenu</option>';
+        foreach ($posts as $post) {
+            $type = get_post_type_object($post->post_type);
+            echo '<option value="' . esc_attr($post->ID) . '"' . selected($selected_post, $post->ID, false) . '>' .
+                esc_html(($type->labels->singular_name ?? $post->post_type) . ' · ' . get_the_title($post)) . '</option>';
+        }
+        echo '</select></div><p><button data-dse-acf-open class="button" type="submit">Voir les informations</button></p></form>';
+        if (isset($posts[$selected_post])) {
+            $post = $posts[$selected_post];
+            echo '<h3>' . esc_html(get_the_title($post)) . '</h3>';
+            echo '<p><a href="' . esc_url(get_permalink($post)) . '">Voir sur le site</a></p>';
+            $notice = isset($_GET['dse_notice']) && is_string($_GET['dse_notice']) ? sanitize_key(wp_unslash($_GET['dse_notice'])) : '';
+            if (!$permissions) {
+                $feedback = array(
+                    'acf_saved' => array('success', 'Enregistré dans WordPress : votre nouvelle valeur a bien été conservée.'),
+                    'acf_unchanged' => array('info', 'Aucun changement : cette valeur est déjà enregistrée.'),
+                    'acf_conflict' => array('error', 'Cette information a changé entre-temps. Rechargez la page avant de réessayer.'),
+                    'acf_error' => array('error', 'L’enregistrement n’a pas pu être confirmé. Réessayez.'),
+                );
+                if (isset($feedback[$notice])) {
+                    echo '<div class="notice notice-' . esc_attr($feedback[$notice][0]) . ' dse-acf-feedback" role="status"><p>' . esc_html($feedback[$notice][1]) . '</p></div>';
+                }
+            }
+            $fields = $admin ? self::discover($selected_post) : array();
+            foreach ($mapped_fields[$selected_post] ?? array() as $key => $id) {
+                $resolved = self::mapped($id);
+                if (!isset($fields[$key]) && $resolved) { $fields[$key] = $resolved['field']; }
+            }
+            if (!$fields) { echo '<p>Aucune information complémentaire modifiable sur ce contenu.</p>'; }
+            elseif (!$permissions) { echo '<p class="description">' . count($fields) . (count($fields) === 1 ? ' information modifiable' : ' informations modifiables') . ' pour ce contenu.</p>'; }
+            foreach ($fields as $key => $field) {
+                $id = $mapped_fields[$selected_post][$key] ?? '';
+                echo '<div class="dse-field">';
+                if ($permissions) {
+                    echo '<strong>' . esc_html($field['label'] ?? $field['name']) . '</strong>';
+                    if ($id !== '') {
+                        self::render_remove($id);
+                    } else {
+                        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+                        echo '<input type="hidden" name="action" value="dse_acf_add">';
+                        echo '<input type="hidden" name="dse_post_id" value="' . esc_attr($selected_post) . '">';
+                        echo '<input type="hidden" name="dse_acf_key" value="' . esc_attr($key) . '">';
+                        wp_nonce_field('dse_acf_add');
+                        echo '<button class="button" type="submit">Donner accès à ce champ</button></form>';
+                    }
+                } else {
+                    $value = self::raw_value(array('field' => $field), $selected_post);
+                    if ($value !== false && self::editable() && ($id !== '' || ($admin && current_user_can('edit_post', $selected_post)))) {
+                        self::edit_field($id, $selected_post, $field, $value);
+                    } else {
+                        echo '<strong>' . esc_html($field['label'] ?? $field['name']) . '</strong>';
+                        echo '<p>' . esc_html($value === false ? 'Champ indisponible' : $value) . '</p>';
+                    }
+                }
+                echo '</div>';
+            }
+        }
+        echo '</section>';
     }
 }

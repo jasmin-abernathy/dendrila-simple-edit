@@ -12,6 +12,17 @@ final class DSE_Modules
     public static function definitions()
     {
         return array(
+            'editorial' => array(
+                'label' => 'Création de contenus et menu principal',
+                'actions' => array(
+                    'create_pages' => 'Créer de nouvelles pages (brouillons)',
+                    'publish_pages' => 'Publier les nouvelles pages sans validation',
+                    'create_articles' => 'Créer de nouveaux articles (brouillons)',
+                    'publish_articles' => 'Publier les nouveaux articles sans validation',
+                    'reorder_menu' => 'Réorganiser le menu principal',
+                ),
+                'future' => 'Ces autorisations s’attribuent individuellement. Aucun accès à Gutenberg, au thème, aux extensions ou aux réglages WordPress.',
+            ),
             'newsletters' => array(
                 'label' => 'Newsletters',
                 'actions' => array(
@@ -19,8 +30,10 @@ final class DSE_Modules
                     'edit' => 'Modifier les brouillons',
                     'review' => 'Soumettre à validation',
                     'approve' => 'Valider un contenu',
+                    'send' => 'Préparer et envoyer ses newsletters sans validation préalable',
+                    'manage_lists' => 'Créer et gérer ses listes et leurs contacts',
                 ),
-                'future' => 'Programmation et envoi désactivés : aucun accès aux destinataires ou au moteur MailPoet.',
+                'future' => 'L’administrateur définit les droits une seule fois : l’utilisateur gère ensuite ses propres contenus, listes et campagnes sans autorisation supplémentaire. Les listes existantes peuvent être attribuées depuis leur gestion.',
             ),
             'products' => array(
                 'label' => 'Produits WooCommerce',
@@ -116,7 +129,7 @@ final class DSE_Modules
             'grants' => $grants,
         );
         update_option(self::OPTION, $settings, false);
-        wp_safe_redirect(add_query_arg('dse_notice', 'module_configured',
+        wp_safe_redirect(add_query_arg(array('dse_notice' => 'module_configured', 'dse_tab' => 'reglages'),
             admin_url('admin.php?page=dendrila-simple-edit')));
         exit;
     }
@@ -131,14 +144,14 @@ final class DSE_Modules
             $grants = is_array($configured) ? ($configured['grants'] ?? array()) : array();
             echo '<form class="dse-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             echo '<h2>' . esc_html($definition['label']) . '</h2>';
-            echo '<p>Activation et droits individuels. Aucun droit natif d’administration n’est accordé.</p>';
+            echo '<p>Choisissez qui pourra utiliser cet outil et ce que cette personne pourra y faire, sans lui donner accès à toute l’administration.</p>';
             echo '<input type="hidden" name="action" value="dse_module_configure">';
             echo '<input type="hidden" name="dse_module" value="' . esc_attr($module) . '">';
             wp_nonce_field('dse_module_configure');
             echo '<label class="dse-check"><input type="checkbox" name="dse_module_enabled" value="1" ' .
                 checked(self::enabled($module), true, false) . '> Activer ce module</label>';
             if (!$users) {
-                echo '<p>Aucun compte Responsable du site : créez-en un avant de déléguer.</p>';
+                echo '<p>Aucun utilisateur ne possède encore le rôle « Édition simple ». Créez un compte avec ce rôle pour pouvoir lui donner ces autorisations.</p>';
             }
             foreach ($users as $user) {
                 $assigned = is_array($grants) ? ($grants[(string) $user->ID] ?? array()) : array();
@@ -152,7 +165,7 @@ final class DSE_Modules
                 echo '</fieldset>';
             }
             echo '<p class="description">' . esc_html($definition['future']) . '</p>';
-            echo '<p><button type="submit" class="button button-secondary">Enregistrer les droits</button></p></form>';
+            echo '<p><button type="submit" class="button button-secondary">Enregistrer les autorisations</button></p></form>';
         }
     }
 }
