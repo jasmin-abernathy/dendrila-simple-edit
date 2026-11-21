@@ -20,7 +20,7 @@ final class DSE_Modules
                     'review' => 'Soumettre à validation',
                     'approve' => 'Valider un contenu',
                 ),
-                'future' => 'Programmation et envoi désactivés : aucun accès aux destinataires ou au moteur MailPoet.',
+                'future' => 'Les listes, les abonnés et les envois restent réservés à l’administrateur. FluentSMTP assure le transport.',
             ),
             'products' => array(
                 'label' => 'Produits WooCommerce',
@@ -116,7 +116,7 @@ final class DSE_Modules
             'grants' => $grants,
         );
         update_option(self::OPTION, $settings, false);
-        wp_safe_redirect(add_query_arg('dse_notice', 'module_configured',
+        wp_safe_redirect(add_query_arg(array('dse_notice' => 'module_configured', 'dse_tab' => 'reglages'),
             admin_url('admin.php?page=dendrila-simple-edit')));
         exit;
     }
@@ -131,14 +131,14 @@ final class DSE_Modules
             $grants = is_array($configured) ? ($configured['grants'] ?? array()) : array();
             echo '<form class="dse-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             echo '<h2>' . esc_html($definition['label']) . '</h2>';
-            echo '<p>Activation et droits individuels. Aucun droit natif d’administration n’est accordé.</p>';
+            echo '<p>Choisissez qui pourra utiliser cet outil et ce que cette personne pourra y faire, sans lui donner accès à toute l’administration.</p>';
             echo '<input type="hidden" name="action" value="dse_module_configure">';
             echo '<input type="hidden" name="dse_module" value="' . esc_attr($module) . '">';
             wp_nonce_field('dse_module_configure');
             echo '<label class="dse-check"><input type="checkbox" name="dse_module_enabled" value="1" ' .
                 checked(self::enabled($module), true, false) . '> Activer ce module</label>';
             if (!$users) {
-                echo '<p>Aucun compte Responsable du site : créez-en un avant de déléguer.</p>';
+                echo '<p>Aucun utilisateur ne possède encore le rôle « Responsable du site ». Créez un compte avec ce rôle pour pouvoir lui donner ces autorisations.</p>';
             }
             foreach ($users as $user) {
                 $assigned = is_array($grants) ? ($grants[(string) $user->ID] ?? array()) : array();
@@ -152,7 +152,7 @@ final class DSE_Modules
                 echo '</fieldset>';
             }
             echo '<p class="description">' . esc_html($definition['future']) . '</p>';
-            echo '<p><button type="submit" class="button button-secondary">Enregistrer les droits</button></p></form>';
+            echo '<p><button type="submit" class="button button-secondary">Enregistrer les autorisations</button></p></form>';
         }
     }
 }
