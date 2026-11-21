@@ -24,6 +24,7 @@ $dependencies = array(
     '/includes/class-dse-modules.php',
     '/includes/class-dse-block-editor.php',
     '/includes/class-dse-post-editor.php',
+    '/includes/class-dse-navigation.php',
     '/includes/class-dse-event-editor.php',
     '/includes/class-dse-mailing.php',
     '/includes/class-dse-newsletters.php',

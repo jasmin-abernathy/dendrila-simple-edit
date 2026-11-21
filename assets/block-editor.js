@@ -79,6 +79,7 @@
             values = values || {};
             var box = node('article', '', 'dse-newsletter-block');
             box.dataset.block = type;
+            box.dataset.align = ['left', 'center', 'right'].indexOf(values.align) !== -1 ? values.align : 'left';
             var bar = node('div', '', 'dse-block-bar');
             var grip = node('span', '⠿', 'dse-block-grip');
             grip.draggable = true;
@@ -126,7 +127,7 @@
                 value = inputField(fields, 'Contenu', values.text, type === 'text');
                 if (type === 'button' || type === 'link') {other = inputField(fields, 'Adresse du lien', values.url, false, 'url');}
             }
-            box.dataset.color = values.color && (names[values.color] !== undefined || colorValue(values.color)) ? values.color : 'default';
+            box.dataset.color = values.color && (names[values.color] !== undefined || colorValue(values.color)) ? (values.color === 'default' ? 'green' : values.color) : 'green';
             var colorWrap = node('fieldset', '', 'dse-block-color');
             var legend = node('legend', type === 'image' ? 'Couleur du cadre' : 'Couleur du texte ou du bouton');
             var palette = node('div', '', 'dse-color-palette');
@@ -134,7 +135,7 @@
             var pickerLabel = node('label', 'Personnalisée :', 'dse-color-custom-label');
             var picker = node('input');
             picker.type = 'color';
-            picker.value = /^#[a-f0-9]{6}$/i.test(box.dataset.color) ? box.dataset.color : '#3b82f6';
+            picker.value = colorValue(box.dataset.color) || '#24543b';
             picker.setAttribute('aria-label', 'Choisir une couleur personnalisée');
             pickerLabel.appendChild(picker);
             var colorStatus = node('span', '', 'dse-color-label');
@@ -148,6 +149,7 @@
                     b.setAttribute('aria-pressed', b.dataset.value === box.dataset.color ? 'true' : 'false');
                 });
                 pickerLabel.classList.toggle('is-selected', /^#/.test(box.dataset.color));
+                if (!/^#/.test(box.dataset.color)) { picker.value = chosen || '#24543b'; }
                 updatePreview();
             }
             colors.forEach(function (c) {
@@ -162,6 +164,26 @@
             picker.addEventListener('input', function () {box.dataset.color = picker.value; updateColor();});
             colorWrap.append(pickerLabel, colorStatus);
             fields.appendChild(colorWrap);
+            var alignment = node('fieldset', '', 'dse-block-alignment');
+            alignment.appendChild(node('legend', 'Alignement de cet élément'));
+            var alignGroup = node('div', '', 'dse-alignment-options');
+            alignGroup.setAttribute('role', 'group');
+            alignGroup.setAttribute('aria-label', 'Alignement : ' + types[type].label);
+            ['left', 'center', 'right'].forEach(function (option, index) {
+                var labels = ['À gauche', 'Centré', 'À droite'];
+                var choice = control(labels[index], function () {
+                    box.dataset.align = option;
+                    Array.from(alignGroup.children).forEach(function (child) {
+                        child.setAttribute('aria-pressed', child.dataset.align === option ? 'true' : 'false');
+                    });
+                    updatePreview();
+                }, 'dse-align-choice');
+                choice.dataset.align = option;
+                choice.setAttribute('aria-pressed', option === box.dataset.align ? 'true' : 'false');
+                alignGroup.appendChild(choice);
+            });
+            alignment.appendChild(alignGroup);
+            fields.appendChild(alignment);
             var preview = node('div', '', 'dse-block-preview');
             preview.setAttribute('aria-label', 'Aperçu de cet élément');
             fields.appendChild(preview);
@@ -174,6 +196,7 @@
                 if (type === 'heading' || type === 'title') {display.classList.add('dse-preview-heading');}
                 if (type === 'image') {display.classList.add('dse-preview-image');}
                 preview.style.setProperty('--dse-preview-color', colorValue(box.dataset.color) || '#24543b');
+                preview.style.textAlign = box.dataset.align;
                 if (previewPanel.isConnected) { refreshPreview(); }
             }
             value.addEventListener('input', updatePreview);
@@ -351,14 +374,16 @@
                     body = inner.textContent || '';
                 }
                 addBlock(kind, {text: kind === 'image' ? inner.getAttribute('alt') : body,
-                    url: inner.getAttribute(kind === 'image' ? 'src' : 'href'), color: inner.getAttribute('data-dse-color') || 'default'});
+                    url: inner.getAttribute(kind === 'image' ? 'src' : 'href'), color: inner.getAttribute('data-dse-color') || 'green',
+                    align: child.getAttribute('data-dse-align') || inner.getAttribute('data-dse-align') || 'left'});
             } else if (child.nodeType === 1 && /^(P|H1|H2|IMG)$/.test(child.tagName)) {
                 flushLegacy();
                 var kind2 = child.tagName === 'H1' ? 'title' : child.tagName === 'H2' ? 'heading' : child.tagName === 'IMG' ? 'image' : 'text';
                 if (kind2 === 'title' && !allowTitle) {kind2 = 'heading';}
                 child.querySelectorAll('br').forEach(function (br) {br.replaceWith(document.createTextNode('\n'));});
                 addBlock(kind2, {text: child.tagName === 'IMG' ? child.getAttribute('alt') : child.textContent,
-                    url: child.tagName === 'IMG' ? child.getAttribute('src') : '', color: child.getAttribute('data-dse-color') || 'default'});
+                    url: child.tagName === 'IMG' ? child.getAttribute('src') : '', color: child.getAttribute('data-dse-color') || 'green',
+                    align: child.getAttribute('data-dse-align') || 'left'});
             } else {legacy.push(child.nodeType === 1 ? child.outerHTML : child.textContent);}
         });
         flushLegacy();
@@ -368,6 +393,7 @@
                 if (!fields.length) {return null;}
                 var content = fields[0].value || '', other = fields[1] ? fields[1].value : '';
                 var wrap = node('div');wrap.dataset.dseBlock = type;
+                wrap.dataset.dseAlign = item.dataset.align || 'left';
                 var tag = {title: 'h1', heading: 'h2', text: 'p', image: 'img', button: 'a', link: 'a'}[type];
                 var inner = node(tag, type === 'image' ? '' : content);
                 if (type === 'text') {
@@ -379,6 +405,7 @@
                     if (type === 'button') {inner.className = 'dse-newsletter-cta';}
                 }
                 if (item.dataset.color !== 'default') {inner.dataset.dseColor = item.dataset.color;}
+                inner.dataset.dseAlign = item.dataset.align || 'left';
                 wrap.appendChild(inner);
                 return wrap;
             }).filter(Boolean);
@@ -388,6 +415,12 @@
             var fragment = document.createDocumentFragment();
             compose().forEach(function (wrap) {
                 var content = wrap.firstElementChild;
+                var align = ['left','center','right'].indexOf(wrap.dataset.dseAlign) !== -1 ? wrap.dataset.dseAlign : 'left';
+                wrap.style.textAlign = align;
+                if (content.tagName === 'IMG') {
+                    content.style.marginLeft = align === 'right' || align === 'center' ? 'auto' : '0';
+                    content.style.marginRight = align === 'left' || align === 'center' ? 'auto' : '0';
+                }
                 var color = colorValue(content.dataset.dseColor);
                 if (content.classList.contains('dse-newsletter-cta')) {
                     var background = color || '#24543b';
@@ -422,6 +455,10 @@
         var label = root.querySelector('label[for="' + source.id + '"]');
         if (label) {label.hidden = true;}
         root.append(node('h4', 'Ajouter un élément', 'dse-builder-heading'), addBar, canvas, status, previewPanel);
+        // Move the assistant beneath the six insertion tiles; native <details> keeps it
+        // collapsed by default, with keyboard and screen-reader support.
+        var articleImport = root.querySelector('[data-dse-article-import]');
+        if (articleImport) { root.insertBefore(articleImport, canvas); }
         initArticleImport();
         repaint();
     }

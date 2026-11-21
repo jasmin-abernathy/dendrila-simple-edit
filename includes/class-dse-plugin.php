@@ -124,6 +124,38 @@ final class DSE_Plugin
             !current_user_can('manage_options');
     }
 
+    /**
+     * WooCommerce normally sends users without edit_posts to "My Account".
+     * Delegated editors deliberately lack that capability, but must still reach
+     * their own restricted Simple Edit administration page.
+     */
+    public static function allow_delegated_admin_access($blocked)
+    {
+        if (self::is_simple_editor() && self::can_access()) { return false; }
+        return $blocked;
+    }
+
+    private static function is_delegated_login($user)
+    {
+        return $user instanceof WP_User &&
+            in_array(self::ROLE, (array) $user->roles, true) &&
+            user_can($user, 'dse_access') && !user_can($user, 'manage_options');
+    }
+
+    /** Always land on Simple Edit after a normal WordPress login. */
+    public static function redirect_wp_login($redirect, $requested_redirect, $user)
+    {
+        return self::is_delegated_login($user) ?
+            admin_url('admin.php?page=dendrila-simple-edit') : $redirect;
+    }
+
+    /** WooCommerce's My Account login uses a separate redirect hook. */
+    public static function redirect_woocommerce_login($redirect, $user)
+    {
+        return self::is_delegated_login($user) ?
+            admin_url('admin.php?page=dendrila-simple-edit') : $redirect;
+    }
+
     /** Keep the admin interface restricted without altering core role permissions. */
     public static function limit_admin_menu()
     {
@@ -160,8 +192,15 @@ final class DSE_Plugin
     public static function boot()
     {
         add_action('init', array(__CLASS__, 'upgrade_editor_role'), 5);
+        add_filter('woocommerce_prevent_admin_access',
+            array(__CLASS__, 'allow_delegated_admin_access'), 999);
+        add_filter('login_redirect', array(__CLASS__, 'redirect_wp_login'), 999, 3);
+        add_filter('woocommerce_login_redirect',
+            array(__CLASS__, 'redirect_woocommerce_login'), 999, 2);
         add_action('admin_menu', array(__CLASS__, 'register_menu'));
         add_action('admin_menu', array(__CLASS__, 'limit_admin_menu'), 999);
+        // The final menu hook catches menu items added by other extensions later.
+        add_action('adminmenu', array(__CLASS__, 'limit_admin_menu'), 999);
         add_action('admin_init', array(__CLASS__, 'restrict_admin_pages'), 99);
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_assets'));
         add_action('admin_post_dse_save', array(__CLASS__, 'save'));
@@ -174,6 +213,7 @@ final class DSE_Plugin
         DSE_Modules::boot();
         DSE_Newsletters::boot();
         DSE_Post_Editor::boot();
+        DSE_Navigation::boot();
         DSE_Event_Editor::boot();
         DSE_Mailing::boot();
         DSE_Woo::boot();
@@ -649,10 +689,11 @@ final class DSE_Plugin
                 $raw = 'reglages';
             } else { $raw = isset($_GET['dse_notice']) ? 'pages' : 'accueil'; }
         }
-        if (!in_array($raw, array('accueil', 'contenus', 'pages', 'articles', 'evenements', 'newsletters', 'boutique', 'historique', 'reglages', 'aide'), true)) {
+        if (!in_array($raw, array('accueil', 'contenus', 'pages', 'articles', 'evenements', 'menu', 'newsletters', 'boutique', 'historique', 'reglages', 'aide'), true)) {
             return 'pages';
         }
         if ($raw === 'contenus' && !current_user_can('manage_options')) { return 'pages'; }
+        if ($raw === 'menu' && !DSE_Navigation::allowed()) { return 'pages'; }
         if ($raw === 'reglages' && !current_user_can('manage_options')) { return 'pages'; }
         if ($raw === 'newsletters' && !self::module_visible('newsletters')) {
             return 'pages';
@@ -687,6 +728,9 @@ final class DSE_Plugin
             'articles' => array('label' => 'Articles', 'icon' => 'admin-post',
                 'title' => 'Modifier un article',
                 'intro' => 'Choisissez un article autorisé et modifiez son titre et son contenu.'),
+            'menu' => array('label' => 'Menu principal', 'icon' => 'menu',
+                'title' => 'Réorganiser le menu principal',
+                'intro' => 'Changez l’ordre des liens, sans toucher à leur destination.'),
             'evenements' => array('label' => 'Événements', 'icon' => 'calendar-alt',
                 'title' => 'Modifier un événement',
                 'intro' => 'Modifiez le titre, la description, les dates, les horaires et le lieu des événements autorisés.'),
@@ -712,6 +756,7 @@ final class DSE_Plugin
                 'intro' => 'Réglages avancés des anciens textes partagés et champs ACF.'),
         );
         if (!$is_admin) { unset($tabs['reglages'], $tabs['contenus']); }
+        if (!DSE_Navigation::allowed()) { unset($tabs['menu']); }
         if (!self::module_visible('newsletters')) { unset($tabs['newsletters']); }
         if (!self::module_visible('products')) { unset($tabs['boutique']); }
 
@@ -737,6 +782,7 @@ final class DSE_Plugin
                 array('pages', 'Modifier une page', 'Changer le titre et le contenu d’une page.'),
                 array('articles', 'Modifier un article', 'Changer le titre et le contenu d’un article.'),
                 array('evenements', 'Modifier un événement', 'Mettre à jour le titre, les horaires, le lieu et la description.'),
+                array('menu', 'Réorganiser le menu', 'Changer la position des liens du menu principal.'),
                 array('newsletters', 'Préparer une newsletter', 'Rédiger un message ou reprendre un brouillon.'),
                 array('boutique', 'Modifier un produit', 'Mettre à jour les produits de la boutique.'),
                 array('historique', 'Historique', 'Retrouver une version précédente des textes du site.'),
@@ -757,6 +803,8 @@ final class DSE_Plugin
             DSE_Post_Editor::render('post');
         } elseif ($tab === 'evenements') {
             DSE_Event_Editor::render();
+        } elseif ($tab === 'menu') {
+            DSE_Navigation::render();
         } elseif ($tab === 'contenus' && $is_admin) {
             DSE_ACF::render();
         if (!$enabled) {

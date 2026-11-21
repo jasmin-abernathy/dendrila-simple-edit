@@ -291,8 +291,204 @@
         if (button) { button.hidden = true; }
     }
 
+    function initNavigationSorter() {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-dse-nav-sort]'), function (list) {
+            var status = list.parentNode.querySelector('[data-dse-nav-status]');
+            var drag = null;
+            var frame = null;
+            function rows() {
+                return Array.prototype.slice.call(list.querySelectorAll(':scope > .dse-nav-sort-item'));
+            }
+            function announce(message) {
+                if (status) { status.textContent = message; }
+            }
+            function announcePosition(row) {
+                var all = rows();
+                var title = row.querySelector('.dse-nav-sort-label');
+                announce((title ? title.textContent.trim() : 'Élément') + ' : position ' +
+                    (all.indexOf(row) + 1) + ' sur ' + all.length +
+                    '. Pensez à enregistrer.');
+            }
+            function reorderAt(x, y) {
+                if (!drag) { return; }
+                var hit = document.elementFromPoint(x, y);
+                var target = hit && hit.closest('.dse-nav-sort-item');
+                if (!target || target === drag.row || target.parentNode !== list) { return; }
+                var rect = target.getBoundingClientRect();
+                if (y < rect.top + rect.height / 2) {
+                    list.insertBefore(drag.row, target);
+                } else {
+                    list.insertBefore(drag.row, target.nextElementSibling);
+                }
+            }
+            function autoScroll() {
+                if (!drag) { frame = null; return; }
+                var margin = 72;
+                var speed = 0;
+                if (drag.y < margin) {
+                    speed = -Math.max(2, (margin - drag.y) / 5);
+                } else if (drag.y > window.innerHeight - margin) {
+                    speed = Math.max(2, (drag.y - (window.innerHeight - margin)) / 5);
+                }
+                if (speed) {
+                    window.scrollBy(0, speed);
+                    reorderAt(drag.x, drag.y);
+                }
+                frame = window.requestAnimationFrame(autoScroll);
+            }
+            function finish(cancelled) {
+                if (!drag) { return; }
+                var selected = drag;
+                drag = null;
+                if (frame !== null) {
+                    window.cancelAnimationFrame(frame);
+                    frame = null;
+                }
+                if (cancelled) {
+                    selected.original.forEach(function (row) { list.appendChild(row); });
+                    announce('Déplacement annulé.');
+                } else {
+                    announcePosition(selected.row);
+                }
+                selected.row.classList.remove('is-dragging');
+                list.classList.remove('is-dragging');
+                if (selected.handle.hasPointerCapture &&
+                    selected.handle.hasPointerCapture(selected.pointerId)) {
+                    selected.handle.releasePointerCapture(selected.pointerId);
+                }
+            }
+            list.addEventListener('pointerdown', function (event) {
+                var handle = event.target.closest('[data-dse-nav-handle]');
+                if (!handle || !list.contains(handle) || drag ||
+                    (event.pointerType === 'mouse' && event.button !== 0)) { return; }
+                var row = handle.closest('.dse-nav-sort-item');
+                if (!row) { return; }
+                event.preventDefault();
+                handle.focus({preventScroll: true});
+                drag = {row: row, handle: handle, pointerId: event.pointerId,
+                    x: event.clientX, y: event.clientY, original: rows()};
+                row.classList.add('is-dragging');
+                list.classList.add('is-dragging');
+                try { handle.setPointerCapture(event.pointerId); }
+                catch (error) { finish(true); return; }
+                frame = window.requestAnimationFrame(autoScroll);
+            });
+            list.addEventListener('pointermove', function (event) {
+                if (!drag || event.pointerId !== drag.pointerId) { return; }
+                drag.x = event.clientX;
+                drag.y = event.clientY;
+                reorderAt(drag.x, drag.y);
+            });
+            list.addEventListener('pointerup', function (event) {
+                if (drag && event.pointerId === drag.pointerId) {
+                    reorderAt(event.clientX, event.clientY);
+                    finish(false);
+                }
+            });
+            list.addEventListener('pointercancel', function (event) {
+                if (drag && event.pointerId === drag.pointerId) { finish(true); }
+            });
+            list.addEventListener('lostpointercapture', function (event) {
+                if (drag && event.pointerId === drag.pointerId) { finish(true); }
+            });
+            list.addEventListener('keydown', function (event) {
+                var handle = event.target.closest('[data-dse-nav-handle]');
+                if (!handle || !list.contains(handle) || drag ||
+                    ['ArrowUp', 'ArrowDown', 'Home', 'End'].indexOf(event.key) === -1) { return; }
+                var row = handle.closest('.dse-nav-sort-item');
+                if (!row) { return; }
+                event.preventDefault();
+                if (event.key === 'ArrowUp' && row.previousElementSibling) {
+                    list.insertBefore(row, row.previousElementSibling);
+                } else if (event.key === 'ArrowDown' && row.nextElementSibling) {
+                    list.insertBefore(row, row.nextElementSibling.nextElementSibling);
+                } else if (event.key === 'Home') {
+                    list.insertBefore(row, list.firstElementChild);
+                } else if (event.key === 'End') {
+                    list.appendChild(row);
+                } else { return; }
+                handle.focus({preventScroll: true});
+                announcePosition(row);
+            });
+        });
+    }
+
+    function initListCreator() {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-dse-list-open]'), function (link) {
+            link.addEventListener('click', function (event) {
+                var details = document.getElementById('dse-add-list');
+                if (!details) { return; }
+                event.preventDefault();
+                details.open = true;
+                details.scrollIntoView({behavior: 'smooth', block: 'start'});
+                var field = details.querySelector('[data-dse-new-list-name]');
+                if (field) { field.focus({preventScroll: true}); }
+            });
+        });
+    }
+
+    /**
+     * Show a second set of form actions at the top of every creation/edit form.
+     * Both sets belong to the SAME HTML form: browser validation, nonce checks,
+     * editor serialization and permission checks are therefore unchanged.
+     *
+     * Never clone one-click destructive actions (remove, restore, unsubscribe).
+     * Forms without editable controls also stay unchanged.
+     */
+    function initTopFormActions() {
+        var excluded = [
+            'dse_restore', 'dse_acf_remove', 'dse_acf_add', 'dse_newsletter_approve',
+            'dse_newsletter_reject', 'dse_ml_remove', 'dse_ml_reinvite',
+            'dse_ml_start', 'dse_ml_pause'
+        ];
+        var forms = document.querySelectorAll('.dse-wrap form[method="post"]');
+        Array.prototype.forEach.call(forms, function (form) {
+            if (form.querySelector('.dse-form-actions-top')) { return; }
+            var actionField = form.querySelector('input[name="action"]');
+            if (!actionField || actionField.value.indexOf('dse_') !== 0 ||
+                excluded.indexOf(actionField.value) !== -1) { return; }
+            var editable = form.querySelector('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), select, textarea');
+            if (!editable) { return; }
+            var submits = Array.prototype.filter.call(
+                form.querySelectorAll('button[type="submit"], input[type="submit"]'),
+                function (button) {
+                    return button.closest('form') === form &&
+                        !button.closest('.dse-form-actions-top');
+                }
+            );
+            if (!submits.length) { return; }
+            var bar = document.createElement('div');
+            bar.className = 'dse-form-actions-top';
+            bar.setAttribute('role', 'group');
+            bar.setAttribute('aria-label', 'Actions du formulaire (également disponibles en bas)');
+            submits.forEach(function (original) {
+                var copy = original.cloneNode(true);
+                copy.removeAttribute('id');
+                copy.removeAttribute('form');
+                copy.classList.add('dse-form-top-submit');
+                bar.appendChild(copy);
+            });
+            // Keep the heading and short description above the action bar.
+            var before = null;
+            Array.prototype.some.call(form.children, function (child) {
+                var tag = child.tagName;
+                if (tag === 'H2' || tag === 'H3' || tag === 'H4' ||
+                    (tag === 'INPUT' && child.type === 'hidden') ||
+                    (tag === 'P' && !child.querySelector('input, select, textarea, button'))) {
+                    return false;
+                }
+                before = child;
+                return true;
+            });
+            form.insertBefore(bar, before);
+        });
+    }
+
     function init() {
         revealSelectedTab();
+        initListCreator();
+        initTopFormActions();
+        initNavigationSorter();
         initAcfSelector();
         initMediaPicker();
         initPersonalUploads();

@@ -63,10 +63,29 @@ final class DSE_Newsletters
         return is_string($raw) && ctype_digit($raw) ? (int) $raw : 0;
     }
 
-    private static function redirect($notice)
+    /** A delegated sender can act on their own drafts, not anyone else's. */
+    public static function can_send($post = null)
     {
-        wp_safe_redirect(add_query_arg(array('dse_nnotice' => $notice, 'dse_tab' => 'newsletters',
-            'dse_nl_section' => 'rediger'), admin_url('admin.php?page=dendrila-simple-edit')));
+        $allowed = DSE_Modules::allowed('newsletters', 'send');
+        if (!$allowed) { return false; }
+        if ($post === null || current_user_can('manage_options')) { return true; }
+        return $post->post_type === self::TYPE &&
+            (int) $post->post_author === get_current_user_id();
+    }
+
+    private static function visible_to_user($post)
+    {
+        if (!$post || $post->post_type !== self::TYPE) { return false; }
+        return current_user_can('manage_options') ||
+            (int) $post->post_author === get_current_user_id();
+    }
+
+    private static function redirect($notice, $post_id = 0)
+    {
+        $args = array('dse_nnotice' => $notice, 'dse_tab' => 'newsletters',
+            'dse_nl_section' => 'rediger');
+        if ($post_id > 0) { $args['dse_current_draft'] = (int) $post_id; }
+        wp_safe_redirect(add_query_arg($args, admin_url('admin.php?page=dendrila-simple-edit')));
         exit;
     }
 
@@ -75,7 +94,8 @@ final class DSE_Newsletters
         check_admin_referer('dse_newsletter_save');
         $id = self::post_id();
         $action = $id ? 'edit' : 'create';
-        if (!DSE_Modules::allowed('newsletters', $action)) {
+        if (!DSE_Modules::allowed('newsletters', $action) &&
+            !DSE_Modules::allowed('newsletters', 'send')) {
             wp_die('Création ou modification non autorisée.', 'Accès refusé', array('response' => 403));
         }
         $title = isset($_POST['dse_nsubject']) ? wp_unslash($_POST['dse_nsubject']) : null;
@@ -92,7 +112,10 @@ final class DSE_Newsletters
         if ($id) {
             $post = self::get_draft($id);
             $expected = isset($_POST['dse_nversion']) ? wp_unslash($_POST['dse_nversion']) : '';
-            if (!$post || !is_string($expected) || !hash_equals(self::fingerprint($post), $expected)) {
+            if (!$post || !self::visible_to_user($post)) {
+                wp_die('Vous ne pouvez pas modifier ce brouillon.', 'Accès refusé', array('response' => 403));
+            }
+            if (!is_string($expected) || !hash_equals(self::fingerprint($post), $expected)) {
                 self::redirect('conflict');
             }
             $result = wp_update_post(array(
@@ -114,7 +137,7 @@ final class DSE_Newsletters
             ), true);
             if (is_wp_error($result) || !$result) { self::redirect('error'); }
         }
-        self::redirect('saved');
+        self::redirect('saved', (int) $result);
     }
 
     public static function request_review()
@@ -125,13 +148,16 @@ final class DSE_Newsletters
         }
         $post = self::get_draft(self::post_id());
         $expected = isset($_POST['dse_nversion']) ? wp_unslash($_POST['dse_nversion']) : '';
-        if (!$post || !is_string($expected) || !hash_equals(self::fingerprint($post), $expected)) {
+        if (!$post || !self::visible_to_user($post)) {
+            wp_die('Vous ne pouvez pas soumettre ce brouillon.', 'Accès refusé', array('response' => 403));
+        }
+        if (!is_string($expected) || !hash_equals(self::fingerprint($post), $expected)) {
             self::redirect('conflict');
         }
         $result = wp_update_post(array('ID' => $post->ID, 'post_status' => 'pending'), true);
         if (is_wp_error($result) || !$result) { self::redirect('error'); }
         delete_post_meta($post->ID, self::APPROVED);
-        self::redirect('review');
+        self::redirect('review', (int) $post->ID);
     }
 
     public static function approve()
@@ -142,34 +168,48 @@ final class DSE_Newsletters
         }
         $post = self::get_draft(self::post_id());
         $expected = isset($_POST['dse_nversion']) ? wp_unslash($_POST['dse_nversion']) : '';
-        if (!$post || $post->post_status !== 'pending' || !is_string($expected) ||
-            !hash_equals(self::fingerprint($post), $expected)) {
+        if (!$post || !self::visible_to_user($post)) {
+            wp_die('Validation de ce brouillon non autorisée.', 'Accès refusé', array('response' => 403));
+        }
+        if (!is_string($expected) || !hash_equals(self::fingerprint($post), $expected)) {
             self::redirect('conflict');
         }
+        // One-click validation of an existing draft, with no review submission detour.
+        if ($post->post_status === 'draft') {
+            $result = wp_update_post(array('ID' => $post->ID, 'post_status' => 'pending'), true);
+            if (is_wp_error($result) || !$result) { self::redirect('error'); }
+            $post = get_post($post->ID);
+        }
         update_post_meta($post->ID, self::APPROVED, self::fingerprint($post));
-        self::redirect('approved');
+        self::redirect('approved', (int) $post->ID);
     }
 
     public static function render()
     {
         if (!DSE_Modules::enabled('newsletters')) { return; }
-        $may_create = DSE_Modules::allowed('newsletters', 'create');
-        $may_edit = DSE_Modules::allowed('newsletters', 'edit');
+        $may_send = self::can_send();
+        $may_create = $may_send || DSE_Modules::allowed('newsletters', 'create');
+        $may_edit = $may_send || DSE_Modules::allowed('newsletters', 'edit');
         $may_review = DSE_Modules::allowed('newsletters', 'review');
         $may_approve = DSE_Modules::allowed('newsletters', 'approve');
-        if (!$may_create && !$may_edit && !$may_review && !$may_approve) { return; }
+        $may_manage_lists = DSE_Modules::allowed('newsletters', 'manage_lists');
+        if (!$may_create && !$may_edit && !$may_review && !$may_approve && !$may_send &&
+            !$may_manage_lists) { return; }
         $admin = current_user_can('manage_options');
         $section = isset($_GET['dse_nl_section']) && is_string($_GET['dse_nl_section']) ?
             sanitize_key(wp_unslash($_GET['dse_nl_section'])) : 'rediger';
-        $sections = array(
-            'rediger' => 'Rédiger les newsletters',
-            'listes' => 'Listes et contacts',
-            'envois' => 'Préparer un envoi',
-            'suivi' => 'Suivre les envois',
-            'connexion' => 'Configuration des envois'
-        );
-        if (!isset($sections[$section]) || !$admin) { $section = 'rediger'; }
-        if ($admin) {
+        $sections = array('rediger' => 'Rédiger les newsletters');
+        if ($admin || $may_manage_lists) { $sections['listes'] = 'Listes et contacts'; }
+        if ($admin || $may_send) {
+            $sections['envois'] = 'Préparer un envoi';
+            $sections['suivi'] = 'Suivre les envois';
+        }
+        if ($admin) { $sections['connexion'] = 'Configuration des envois'; }
+        if (!$admin && $may_manage_lists && !$may_create && !$may_edit &&
+            !$may_review && !$may_approve && !$may_send &&
+            $section === 'rediger') { $section = 'listes'; }
+        if (!isset($sections[$section])) { $section = 'rediger'; }
+        if (count($sections) > 1) {
             echo '<nav class="dse-newsletter-subnav" aria-label="Rubriques des newsletters">';
             foreach ($sections as $key => $label) {
                 echo '<a class="dse-newsletter-subtab" href="' .
@@ -183,43 +223,80 @@ final class DSE_Newsletters
             DSE_Mailing::render_admin($section);
             return;
         }
-        echo '<section class="dse-card"><h2>Rédiger une newsletter</h2>';
-        echo '<p>Créez votre message avec les éléments visuels, puis faites-le valider. Seule l’administration peut choisir les abonnés et lancer un envoi.</p>';
+
+        echo '<section class="dse-card dse-newsletter-list"><h2>Mes newsletters</h2>';
+        echo '<p class="description">' . ($may_send ?
+            'Préparez votre message, puis ouvrez « Préparer un envoi » pour choisir les destinataires. Aucune validation préalable n’est nécessaire avec votre autorisation d’envoi.' :
+            'Les brouillons sont présentés du plus récent au plus ancien. Vous pouvez les soumettre à validation ou les valider directement si vous avez ce droit.') .
+            '</p>';
         $notices = array('saved' => 'Brouillon enregistré.', 'review' => 'Contenu soumis à validation.',
-            'approved' => 'Contenu validé. Aucun e-mail envoyé.', 'conflict' => 'Le texte a changé. Rechargez cette page.',
+            'approved' => 'Contenu validé. Aucun e-mail envoyé.', 'conflict' => 'Ce brouillon a changé. Rechargez la page.',
             'error' => 'Enregistrement non confirmé.');
-        $notice = isset($_GET['dse_nnotice']) ? wp_unslash($_GET['dse_nnotice']) : '';
-        if (is_string($notice) && isset($notices[$notice])) {
-            echo '<p role="status">' . esc_html($notices[$notice]) . '</p>';
+        $notice = isset($_GET['dse_nnotice']) && is_string($_GET['dse_nnotice']) ?
+            sanitize_key(wp_unslash($_GET['dse_nnotice'])) : '';
+        if (isset($notices[$notice])) {
+            echo '<p class="notice notice-info dse-newsletter-notice" role="status">' .
+                esc_html($notices[$notice]) . '</p>';
         }
-        if ($may_create) {
-            self::form(null);
+        $query = array('post_type' => self::TYPE, 'post_status' => array('draft', 'pending'),
+            'posts_per_page' => 60, 'orderby' => array('modified' => 'DESC', 'ID' => 'DESC'));
+        if (!$admin) { $query['author'] = get_current_user_id(); }
+        $posts = get_posts($query);
+        $current = isset($_GET['dse_current_draft']) ? absint($_GET['dse_current_draft']) : 0;
+        // A newly saved draft is always shown at the top, even if several saves
+        // happened during the same second or the post was first created earlier.
+        if ($current > 0) {
+            foreach ($posts as $index => $candidate) {
+                if ((int) $candidate->ID === $current) {
+                    array_splice($posts, $index, 1);
+                    array_unshift($posts, $candidate);
+                    break;
+                }
+            }
         }
-        $posts = get_posts(array('post_type' => self::TYPE, 'post_status' => array('draft', 'pending'),
-            'posts_per_page' => 30, 'orderby' => 'modified', 'order' => 'DESC'));
+        if (!$posts) { echo '<p>Aucun brouillon enregistré pour le moment.</p>'; }
         foreach ($posts as $post) {
-            if (!$post || !self::get_draft((int) $post->ID)) { continue; }
+            if (!$post || !self::get_draft((int) $post->ID) ||
+                !self::visible_to_user($post)) { continue; }
             $hash = self::fingerprint($post);
             $approved = $post->post_status === 'pending' &&
                 hash_equals($hash, (string) get_post_meta($post->ID, self::APPROVED, true));
-            echo '<article class="dse-subcard"><h3>' . esc_html($post->post_title) . '</h3>';
-            echo '<p>Statut : ' . ($approved ? 'Validée, non envoyée' :
-                ($post->post_status === 'pending' ? 'En attente de validation' : 'Brouillon')) . '</p>';
+            $status = $approved ? 'Validée, non envoyée' :
+                ($post->post_status === 'pending' ? 'En attente de validation' : 'Brouillon');
+            echo '<article class="dse-subcard dse-newsletter-item"' .
+                ($current === (int) $post->ID ? ' data-dse-current-draft="1"' : '') . '>';
+            echo '<div class="dse-newsletter-item-bar">';
+            echo '<details class="dse-newsletter-item-details"><summary><span class="dse-newsletter-item-title">' .
+                esc_html($post->post_title) . '</span><small class="dse-newsletter-item-status">' .
+                esc_html($status) . '</small></summary>';
+            echo '<div class="dse-newsletter-item-content">';
             echo '<details><summary>Prévisualiser le contenu</summary><div class="dse-preview"><strong>' .
                 esc_html($post->post_title) . '</strong><p>' .
                 DSE_Block_Editor::email_body($post->post_content) . '</div></details>';
             if ($may_edit) { self::form($post); }
-            if ($may_review && $post->post_status === 'draft') {
+            echo '</div></details>';
+            echo '<div class="dse-newsletter-quick-actions">';
+            if ($may_send && self::can_send($post)) {
+                echo '<a class="button button-primary" href="' .
+                    esc_url(add_query_arg(array('page' => 'dendrila-simple-edit', 'dse_tab' => 'newsletters',
+                        'dse_nl_section' => 'envois', 'dse_send_nid' => (int)$post->ID),
+                        admin_url('admin.php'))) . '">Préparer un envoi</a>';
+            } elseif ($may_approve && !$approved) {
+                self::action_form('dse_newsletter_approve', 'dse_newsletter_approve',
+                    'Valider', $post, $hash);
+            } elseif ($may_review && $post->post_status === 'draft') {
                 self::action_form('dse_newsletter_review', 'dse_newsletter_review',
                     'Soumettre à validation', $post, $hash);
             }
-            if ($may_approve && $post->post_status === 'pending' && !$approved) {
-                self::action_form('dse_newsletter_approve', 'dse_newsletter_approve',
-                    'Valider ce contenu', $post, $hash);
-            }
-            echo '</article>';
+            echo '</div></div></article>';
         }
         echo '</section>';
+        if ($may_create) {
+            echo '<details class="dse-card dse-newsletter-new">';
+            echo '<summary>Créer une nouvelle newsletter</summary>';
+            self::form(null);
+            echo '</details>';
+        }
     }
 
     /**
@@ -262,8 +339,9 @@ final class DSE_Newsletters
             'post_type' => 'post', 'post_status' => 'publish', 'has_password' => false,
             'posts_per_page' => 120, 'orderby' => 'date', 'order' => 'DESC'
         ));
-        echo '<section class="dse-article-import" data-dse-article-import hidden>';
-        echo '<h4>Insérer un article du site</h4>';
+        echo '<details class="dse-article-import" data-dse-article-import hidden>';
+        echo '<summary>Insérer un article du site</summary>';
+        echo '<div class="dse-article-import-body">';
         echo '<p class="description">Récupérez son titre et son premier paragraphe. Après insertion, ces textes sont indépendants : vous pouvez les modifier sans changer l’article d’origine.</p>';
         echo '<div class="dse-article-import-controls">';
         echo '<div class="dse-field"><label for="dse-import-article-' . esc_attr($suffix) . '">Article à présenter</label>';
@@ -294,7 +372,7 @@ final class DSE_Newsletters
         echo '<span data-dse-article-preview-action></span></div>';
         echo '<p><button type="button" class="button button-secondary" data-dse-article-insert disabled>Ajouter cet article à la newsletter</button></p>';
         echo '<p class="dse-article-import-feedback" data-dse-article-feedback role="status"></p>';
-        echo '</section>';
+        echo '</div></details>';
     }
 
     private static function form($post)

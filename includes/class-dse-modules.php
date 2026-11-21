@@ -12,6 +12,17 @@ final class DSE_Modules
     public static function definitions()
     {
         return array(
+            'editorial' => array(
+                'label' => 'Création de contenus et menu principal',
+                'actions' => array(
+                    'create_pages' => 'Créer de nouvelles pages (brouillons)',
+                    'publish_pages' => 'Publier les nouvelles pages sans validation',
+                    'create_articles' => 'Créer de nouveaux articles (brouillons)',
+                    'publish_articles' => 'Publier les nouveaux articles sans validation',
+                    'reorder_menu' => 'Réorganiser le menu principal',
+                ),
+                'future' => 'Ces autorisations s’attribuent individuellement. Aucun accès à Gutenberg, au thème, aux extensions ou aux réglages WordPress.',
+            ),
             'newsletters' => array(
                 'label' => 'Newsletters',
                 'actions' => array(
@@ -19,8 +30,10 @@ final class DSE_Modules
                     'edit' => 'Modifier les brouillons',
                     'review' => 'Soumettre à validation',
                     'approve' => 'Valider un contenu',
+                    'send' => 'Préparer et envoyer ses newsletters sans validation préalable',
+                    'manage_lists' => 'Créer et gérer ses listes et leurs contacts',
                 ),
-                'future' => 'Les listes, les abonnés et les envois restent réservés à l’administrateur. FluentSMTP assure le transport.',
+                'future' => 'L’administrateur définit les droits une seule fois : l’utilisateur gère ensuite ses propres contenus, listes et campagnes sans autorisation supplémentaire. Les listes existantes peuvent être attribuées depuis leur gestion.',
             ),
             'products' => array(
                 'label' => 'Produits WooCommerce',
@@ -138,7 +151,7 @@ final class DSE_Modules
             echo '<label class="dse-check"><input type="checkbox" name="dse_module_enabled" value="1" ' .
                 checked(self::enabled($module), true, false) . '> Activer ce module</label>';
             if (!$users) {
-                echo '<p>Aucun utilisateur ne possède encore le rôle « Responsable du site ». Créez un compte avec ce rôle pour pouvoir lui donner ces autorisations.</p>';
+                echo '<p>Aucun utilisateur ne possède encore le rôle « Édition simple ». Créez un compte avec ce rôle pour pouvoir lui donner ces autorisations.</p>';
             }
             foreach ($users as $user) {
                 $assigned = is_array($grants) ? ($grants[(string) $user->ID] ?? array()) : array();

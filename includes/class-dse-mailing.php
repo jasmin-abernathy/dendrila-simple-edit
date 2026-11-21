@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
 
 final class DSE_Mailing
 {
-    const DB_VERSION = '2';
+    const DB_VERSION = '4';
     const DB_OPTION = 'dse_mailing_schema_version';
     const CRON_HOOK = 'dse_mailing_dispatch';
     const BATCH_SIZE = 5;
@@ -32,12 +32,15 @@ final class DSE_Mailing
         dbDelta("CREATE TABLE $lists (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             name varchar(160) NOT NULL,
+            owner_user_id bigint(20) unsigned NOT NULL DEFAULT 0,
             created_at datetime NOT NULL,
-            PRIMARY KEY  (id)
+            PRIMARY KEY  (id),
+            KEY owner_user_id (owner_user_id)
         ) $charset;");
         dbDelta("CREATE TABLE $contacts (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             email varchar(254) NOT NULL,
+            display_name varchar(160) NOT NULL DEFAULT '',
             status varchar(16) NOT NULL DEFAULT 'pending',
             consent_source varchar(255) NOT NULL DEFAULT '',
             consent_at datetime DEFAULT NULL,
@@ -57,6 +60,20 @@ final class DSE_Mailing
             PRIMARY KEY  (id),
             UNIQUE KEY unique_member (list_id,contact_id),
             KEY contact_id (contact_id)
+        ) $charset;");
+        $reinvites = self::table('reinvites');
+        dbDelta("CREATE TABLE $reinvites (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            contact_id bigint(20) unsigned NOT NULL,
+            list_id bigint(20) unsigned NOT NULL,
+            token_hash char(64) NOT NULL,
+            permission_source varchar(255) NOT NULL,
+            created_at datetime NOT NULL,
+            expires_at datetime NOT NULL,
+            confirmed_at datetime DEFAULT NULL,
+            PRIMARY KEY  (id),
+            KEY contact_id (contact_id),
+            KEY expires_at (expires_at)
         ) $charset;");
         dbDelta("CREATE TABLE $campaigns (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -92,13 +109,16 @@ final class DSE_Mailing
     public static function boot()
     {
         add_action('admin_init', array(__CLASS__, 'maybe_install'));
-        foreach (array('list', 'import', 'prepare', 'start', 'pause', 'test', 'remove') as $task) {
+        foreach (array('list', 'import', 'prepare', 'start', 'pause', 'test', 'remove',
+            'edit_contact', 'reinvite', 'assign_list') as $task) {
             add_action('admin_post_dse_ml_' . $task, array(__CLASS__, $task));
         }
         add_action('admin_post_dse_ml_subscribe', array(__CLASS__, 'subscribe'));
         add_action('admin_post_nopriv_dse_ml_subscribe', array(__CLASS__, 'subscribe'));
         add_action('admin_post_dse_ml_confirm', array(__CLASS__, 'confirm'));
         add_action('admin_post_nopriv_dse_ml_confirm', array(__CLASS__, 'confirm'));
+        add_action('admin_post_dse_ml_reconfirm', array(__CLASS__, 'reconfirm'));
+        add_action('admin_post_nopriv_dse_ml_reconfirm', array(__CLASS__, 'reconfirm'));
         add_action('admin_post_dse_ml_unsubscribe', array(__CLASS__, 'unsubscribe'));
         add_action('admin_post_nopriv_dse_ml_unsubscribe', array(__CLASS__, 'unsubscribe'));
         add_action(self::CRON_HOOK, array(__CLASS__, 'dispatch'), 10, 1);
@@ -150,7 +170,11 @@ final class DSE_Mailing
     {
         $section = 'envois';
         if (in_array($notice, array('list_created', 'bad_list', 'contacts_added', 'consent_required',
-            'too_many', 'contact_removed'), true)) { $section = 'listes'; }
+            'too_many', 'list_assigned', 'contact_removed', 'contact_updated', 'edit_email_confirmation',
+            'test_failed', 'smtp_missing',
+            'duplicate_email', 'blocked_unsubscribed', 'invite_sent', 'invite_failed',
+            'invite_no_permission', 'invite_rate_limited', 'invite_not_allowed',
+            'invalid_contact'), true)) { $section = 'listes'; }
         elseif (in_array($notice, array('started', 'paused', 'not_ready', 'cron_failed'), true)) { $section = 'suivi'; }
         elseif (in_array($notice, array('test_accepted', 'test_failed', 'smtp_missing'), true)) { $section = 'connexion'; }
         wp_safe_redirect(add_query_arg(array('page' => 'dendrila-simple-edit',
@@ -162,17 +186,74 @@ final class DSE_Mailing
     public static function lists()
     {
         global $wpdb;
-        return $wpdb->get_results('SELECT id,name FROM ' . self::table('lists') . ' ORDER BY name ASC');
+        $table = self::table('lists');
+        if (current_user_can('manage_options')) {
+            return $wpdb->get_results("SELECT id,name,owner_user_id FROM $table ORDER BY name ASC");
+        }
+        // Assigned lists can be used by send-only accounts without exposing others.
+        if (!DSE_Newsletters::can_send() &&
+            !DSE_Modules::allowed('newsletters', 'manage_lists')) { return array(); }
+        return $wpdb->get_results($wpdb->prepare(
+            "SELECT id,name,owner_user_id FROM $table WHERE owner_user_id=%d ORDER BY name ASC",
+            get_current_user_id()));
+    }
+
+    private static function owns_list($id)
+    {
+        if ($id < 1) { return false; }
+        if (current_user_can('manage_options')) { return self::list_exists($id); }
+        global $wpdb;
+        return (bool)$wpdb->get_var($wpdb->prepare(
+            'SELECT id FROM '.self::table('lists').' WHERE id=%d AND owner_user_id=%d',
+            $id,get_current_user_id()));
+    }
+
+    private static function can_manage_lists()
+    {
+        return current_user_can('manage_options') ||
+            DSE_Modules::allowed('newsletters', 'manage_lists');
+    }
+
+    private static function require_lists($action, $list_id = 0)
+    {
+        if (!self::can_manage_lists() || ($list_id > 0 && !self::owns_list($list_id))) {
+            wp_die('Gestion de cette liste non autorisée.', 'Accès refusé', array('response'=>403));
+        }
+        check_admin_referer('dse_ml_' . $action);
+        if (get_option(self::DB_OPTION) !== self::DB_VERSION) {
+            wp_die('Configuration incomplète : demandez la mise à jour du module à l’administrateur.',
+                'Configuration nécessaire',array('response'=>503));
+        }
     }
 
     public static function list()
     {
-        self::require_admin('list');
+        self::require_lists('list');
         $name = sanitize_text_field(self::input('name'));
         if ($name === '' || strlen($name) > 160) { self::redirect('bad_list'); }
         global $wpdb;
-        $wpdb->insert(self::table('lists'), array('name' => $name, 'created_at' => current_time('mysql', true)), array('%s', '%s'));
+        $wpdb->insert(self::table('lists'), array('name' => $name,
+            'owner_user_id' => current_user_can('manage_options') ? 0 : get_current_user_id(),
+            'created_at' => current_time('mysql', true)), array('%s', '%d', '%s'));
         self::redirect($wpdb->insert_id ? 'list_created' : 'error');
+    }
+
+    /** Assign an existing list to one delegated editor without changing members. */
+    public static function assign_list()
+    {
+        self::require_admin('assign_list');
+        $list_id = self::id('list_id');
+        $owner = self::input('owner_user_id');
+        if ($owner !== '0' && (!ctype_digit($owner) || (int)$owner < 1 ||
+            !user_can((int)$owner,'dse_access') || user_can((int)$owner,'manage_options'))) {
+            wp_die('Le nouveau responsable doit posséder le rôle Édition simple.',
+                'Utilisateur invalide',array('response'=>400));
+        }
+        if (!self::list_exists($list_id)) { self::redirect('invalid_contact'); }
+        global $wpdb;
+        $updated = $wpdb->update(self::table('lists'),
+            array('owner_user_id'=>(int)$owner),array('id'=>$list_id),array('%d'),array('%d'));
+        self::redirect($updated !== false ? 'list_assigned' : 'error');
     }
 
     private static function list_exists($id)
@@ -199,16 +280,23 @@ final class DSE_Mailing
             $cid = (int) $wpdb->insert_id;
         } else {
             $cid = (int) $contact->id;
-            // Previously unsubscribed people are never silently reactivated by import.
-            if ($self_subscribed && $contact->status === 'unsubscribed') {
-                $wpdb->update($table, array('status' => 'pending', 'consent_source' => '', 'consent_at' => null), array('id' => $cid));
-            }
+            // Keep the global unsubscribe active until a new opt-in is confirmed.
+            // In particular imports may never change this suppression status.
             if ($verified && $contact->status === 'pending') {
                 $wpdb->update($table, array('status' => 'confirmed',
                     'consent_source' => $origin, 'consent_at' => $now), array('id' => $cid));
             }
         }
         if ($cid < 1) { return false; }
+        // Rotate confirmation challenge on an explicit web signup, invalidating old links.
+        // The contact stays globally suppressed until the new link is clicked.
+        if ($self_subscribed) {
+            $challenge = bin2hex(random_bytes(24));
+            $wpdb->update($table, array('confirm_hash' => hash('sha256', $challenge)),
+                array('id' => $cid));
+            set_transient('dse_ml_confirmation_' . $cid . '_' . $list_id,
+                hash('sha256', $challenge), 2 * DAY_IN_SECONDS);
+        }
         $members = self::table('members');
         $membership = $wpdb->get_row($wpdb->prepare(
             "SELECT id,status FROM $members WHERE list_id=%d AND contact_id=%d", $list_id, $cid));
@@ -216,8 +304,8 @@ final class DSE_Mailing
             $wpdb->insert($members, array('list_id' => $list_id, 'contact_id' => $cid,
                 'status' => $verified && $contact && $contact->status === 'unsubscribed' ? 'unsubscribed' :
                     ($verified ? 'confirmed' : 'pending'),
-                'consent_source' => $verified ? $origin : '',
-                'consent_at' => $verified ? $now : null));
+                'consent_source' => $verified && (!$contact || $contact->status !== 'unsubscribed') ? $origin : '',
+                'consent_at' => $verified && (!$contact || $contact->status !== 'unsubscribed') ? $now : null));
         } elseif ($self_subscribed && $membership->status === 'unsubscribed') {
             $wpdb->update($members, array('status' => 'pending', 'consent_source' => '',
                 'consent_at' => null), array('id' => (int) $membership->id));
@@ -232,8 +320,8 @@ final class DSE_Mailing
 
     public static function import()
     {
-        self::require_admin('import');
         $list_id = self::id('list_id');
+        self::require_lists('import', $list_id);
         $origin = sanitize_text_field(self::input('origin'));
         $raw = self::input('emails');
         if (!self::list_exists($list_id) || !isset($_POST['consent_confirmed']) ||
@@ -241,10 +329,212 @@ final class DSE_Mailing
         $lines = preg_split('/[\r\n;,]+/', $raw);
         if (count($lines) > 200) { self::redirect('too_many'); }
         $unique = array_unique(array_filter(array_map('trim', $lines)));
+        $skipped = 0;
+        $imported = 0;
+        global $wpdb;
         foreach ($unique as $email) {
-            self::upsert_contact($email, $list_id, true, $origin);
+            $sanitized = strtolower(sanitize_email($email));
+            if (!is_email($sanitized)) { continue; }
+            $existing = $wpdb->get_row($wpdb->prepare(
+                'SELECT id,status FROM '.self::table('contacts').' WHERE email=%s', $sanitized));
+            $membership_status = $existing ? $wpdb->get_var($wpdb->prepare(
+                'SELECT status FROM '.self::table('members').
+                ' WHERE contact_id=%d AND list_id=%d', (int)$existing->id,$list_id)) : null;
+            if ($existing && ($existing->status === 'unsubscribed' ||
+                $membership_status === 'unsubscribed')) {
+                $skipped++;
+                continue;
+            }
+            if (self::upsert_contact($sanitized, $list_id, true, $origin)) { $imported++; }
         }
-        self::redirect('contacts_added');
+        self::redirect($skipped ? 'blocked_unsubscribed' : 'contacts_added');
+    }
+
+    /** Change a contact's name, or start verification for a replacement email. */
+    public static function edit_contact()
+    {
+        $list_id = self::id('list_id');
+        self::require_lists('edit_contact', $list_id);
+        global $wpdb;
+        $id = self::id('contact_id');
+        $table = self::table('contacts');
+        $members = self::table('members');
+        $contact = $id ? $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE id=%d", $id)) : false;
+        $membership = $contact ? $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $members WHERE contact_id=%d AND list_id=%d", $id, $list_id)) : false;
+        if (!$contact || !$membership || !self::list_exists($list_id)) {
+            self::redirect('invalid_contact');
+        }
+        $display_name = sanitize_text_field(self::input('display_name'));
+        if (strlen($display_name) > 160) { self::redirect('invalid_contact'); }
+        $email = strtolower(sanitize_email(self::input('email')));
+        if (!is_email($email)) { self::redirect('invalid_contact'); }
+        if ($email !== strtolower($contact->email)) {
+            // Editing an e-mail must never transfer the existing opt-in to someone
+            // else. It creates a separate pending contact and requires confirmation.
+            if ($contact->status === 'unsubscribed' ||
+                $membership->status === 'unsubscribed') {
+                self::redirect('blocked_unsubscribed');
+            }
+            $origin = sanitize_text_field(self::input('email_permission_source'));
+            if (self::input('email_permission') !== '1' ||
+                strlen($origin) < 10 || strlen($origin) > 255) {
+                self::redirect('consent_required');
+            }
+            if (!self::transport_ready()) { self::redirect('smtp_missing'); }
+            if ($wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $table WHERE email=%s", $email))) {
+                self::redirect('duplicate_email');
+            }
+            $new_id = self::upsert_contact($email, $list_id, false, '', true);
+            if (!$new_id) { self::redirect('error'); }
+            $wpdb->update($table, array('display_name'=>$display_name), array('id'=>$new_id));
+            $new_contact = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $table WHERE id=%d", $new_id));
+            $url = self::recipient_url($new_contact, 'confirm', $list_id);
+            $accepted = wp_mail($email, 'Confirmez votre adresse pour la newsletter',
+                "Vous avez demandé à confirmer votre nouvelle adresse pour la newsletter.\n" .
+                "Cliquez sur ce lien pour accepter de recevoir les messages :\n" . $url .
+                "\nSi vous n'avez rien demandé, ignorez ce message.");
+            if (!$accepted) { self::redirect('test_failed'); }
+            $wpdb->update($members, array('status'=>'unsubscribed'),
+                array('contact_id'=>$id, 'list_id'=>$list_id));
+            $other = (int)$wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $members WHERE contact_id=%d AND status='confirmed'", $id));
+            if (!$other) {
+                $wpdb->update($table, array('status'=>'unsubscribed'), array('id'=>$id));
+            }
+            self::redirect('edit_email_confirmation');
+        }
+        $result = $wpdb->update($table, array('display_name'=>$display_name), array('id'=>$id));
+        self::redirect($result !== false ? 'contact_updated' : 'error');
+    }
+
+    /**
+     * A re-invitation is *not* a marketing subscription. An administrator must
+     * attest prior, specific permission to send that one invitation and record
+     * its provenance; the recipient then opts in again, using a short-lived link.
+     */
+    public static function reinvite()
+    {
+        $lid = self::id('list_id');
+        self::require_lists('reinvite', $lid);
+        global $wpdb;
+        $cid = self::id('contact_id');
+        $contacts = self::table('contacts');
+        $members = self::table('members');
+        $invites = self::table('reinvites');
+        $contact = $cid ? $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $contacts WHERE id=%d", $cid)) : false;
+        $member = $contact ? $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $members WHERE contact_id=%d AND list_id=%d", $cid,$lid)) : false;
+        if (!$contact || !$member || !self::list_exists($lid)) {
+            self::redirect('invalid_contact');
+        }
+        if ($contact->status !== 'unsubscribed' &&
+            $member->status !== 'unsubscribed') {
+            self::redirect('invite_not_allowed');
+        }
+        $origin = sanitize_text_field(self::input('permission_source'));
+        if (self::input('permission_confirmed') !== '1' ||
+            strlen($origin) < 12 || strlen($origin) > 255) {
+            self::redirect('invite_no_permission');
+        }
+        if (!self::transport_ready()) { self::redirect('smtp_missing'); }
+        $recent = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $invites WHERE contact_id=%d
+             AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)",
+             $cid));
+        if ($recent) { self::redirect('invite_rate_limited'); }
+        $raw_token = bin2hex(random_bytes(32));
+        $created = current_time('mysql', true);
+        $expires = gmdate('Y-m-d H:i:s', time() + 7 * DAY_IN_SECONDS);
+        if (!$wpdb->insert($invites, array('contact_id'=>$cid,'list_id'=>$lid,
+            'token_hash'=>hash('sha256',$raw_token),
+            'permission_source'=>$origin, 'created_at'=>$created,
+            'expires_at'=>$expires))) { self::redirect('error'); }
+        $id = (int)$wpdb->insert_id;
+        $url = add_query_arg(array('action'=>'dse_ml_reconfirm','rid'=>$id,
+            'token'=>$raw_token), admin_url('admin-post.php'));
+        $list_name = (string) $wpdb->get_var($wpdb->prepare(
+            'SELECT name FROM ' . self::table('lists') . ' WHERE id=%d', $lid));
+        $accepted = wp_mail($contact->email, 'Invitation à renouveler votre abonnement',
+            "Vous avez accepté de recevoir une invitation pour vous réabonner à la liste « " .
+            $list_name . " ».\n\nSi vous souhaitez recevoir de nouveau ces newsletters, " .
+            "ouvrez ce lien et confirmez explicitement :\n" . $url .
+            "\n\nSi vous ne souhaitez pas vous réabonner, ignorez ce message. " .
+            "Aucune inscription ne sera effectuée sans votre confirmation.");
+        if (!$accepted) {
+            $wpdb->delete($invites,array('id'=>$id));
+            self::redirect('invite_failed');
+        }
+        self::redirect('invite_sent');
+    }
+
+    /** Explicit, one-time, seven-day subscriber confirmation. No automatic opt-in. */
+    public static function reconfirm()
+    {
+        global $wpdb;
+        $rid = isset($_REQUEST['rid']) && ctype_digit((string)$_REQUEST['rid']) ?
+            (int)$_REQUEST['rid'] : 0;
+        $token = isset($_REQUEST['token']) && is_string($_REQUEST['token']) ?
+            wp_unslash($_REQUEST['token']) : '';
+        $table = self::table('reinvites');
+        $invite = $rid ? $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE id=%d", $rid)) : false;
+        if (!$invite || !preg_match('/^[a-f0-9]{64}$/',$token) ||
+            !hash_equals($invite->token_hash,hash('sha256',$token)) ||
+            $invite->confirmed_at !== null ||
+            strtotime($invite->expires_at . ' UTC') <= time()) {
+            wp_die('Ce lien a expiré ou a déjà été utilisé.', 'Lien invalide',
+                array('response'=>400));
+        }
+        $contact = $wpdb->get_row($wpdb->prepare(
+            'SELECT * FROM '.self::table('contacts').' WHERE id=%d', (int)$invite->contact_id));
+        $member = $wpdb->get_row($wpdb->prepare(
+            'SELECT * FROM '.self::table('members').' WHERE contact_id=%d AND list_id=%d',
+            (int)$invite->contact_id, (int)$invite->list_id));
+        if (!$contact || !$member) {
+            wp_die('Cet abonnement n’est plus disponible.', 'Abonnement',
+                array('response'=>400));
+        }
+        if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+            header('Cache-Control: no-store, private');
+            echo '<!doctype html><html lang="fr"><meta charset="utf-8"><title>Réabonnement</title>';
+            echo '<body style="max-width:540px;margin:3em auto;padding:1em;font:17px/1.5 system-ui,sans-serif">';
+            echo '<h1>Confirmer mon réabonnement</h1>';
+            echo '<p>Souhaitez-vous recevoir à nouveau les newsletters de cette liste ?</p>';
+            echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
+            echo '<input type="hidden" name="action" value="dse_ml_reconfirm">';
+            echo '<input type="hidden" name="rid" value="'.(int)$rid.'">';
+            echo '<input type="hidden" name="token" value="'.esc_attr($token).'">';
+            echo '<p><label><input type="checkbox" name="confirm_optin" value="yes" required> Oui, ';
+            echo 'je souhaite de nouveau recevoir ces newsletters. Je pourrai me désinscrire à tout moment.</label></p>';
+            echo '<button type="submit">Confirmer mon abonnement</button></form></body></html>';
+            exit;
+        }
+        if (!isset($_POST['confirm_optin']) || $_POST['confirm_optin'] !== 'yes') {
+            wp_die('Vous devez accepter explicitement le réabonnement.',
+                'Confirmation nécessaire',array('response'=>400));
+        }
+        $now = current_time('mysql',true);
+        $updated = $wpdb->query($wpdb->prepare(
+            "UPDATE $table SET confirmed_at=%s WHERE id=%d AND confirmed_at IS NULL
+             AND expires_at > UTC_TIMESTAMP()", $now,$rid));
+        if ($updated !== 1) {
+            wp_die('Ce lien a déjà été utilisé.', 'Confirmation',array('response'=>400));
+        }
+        $members = self::table('members');
+        $wpdb->update($members,array('status'=>'confirmed',
+            'consent_source'=>'Réabonnement volontaire confirmé via lien',
+            'consent_at'=>$now),
+            array('list_id'=>(int)$invite->list_id,'contact_id'=>(int)$invite->contact_id));
+        $wpdb->update(self::table('contacts'),array('status'=>'confirmed',
+            'consent_source'=>'Réabonnement volontaire confirmé via lien',
+            'consent_at'=>$now),array('id'=>(int)$invite->contact_id));
+        wp_die('Votre réabonnement a été confirmé. Merci !',
+            'Réabonnement',array('response'=>200));
     }
 
     private static function newsletter_approved($post_id)
@@ -255,13 +545,56 @@ final class DSE_Mailing
         return $hash !== '' && hash_equals(DSE_Newsletters::fingerprint($post), $hash) ? $post : false;
     }
 
+    /** Sending is independent of editorial approval, but always limited by author ownership. */
+    private static function can_prepare_newsletter($post)
+    {
+        if (!$post || $post->post_type !== DSE_Newsletters::TYPE ||
+            !in_array($post->post_status, array('draft', 'pending'), true)) { return false; }
+        if (DSE_Newsletters::can_send($post)) {
+            // Admins may send their own unapproved drafts. Delegated senders can
+            // only send drafts they authored themselves.
+            if (!current_user_can('manage_options') ||
+                (int)$post->post_author === get_current_user_id()) { return true; }
+        }
+        return current_user_can('manage_options') &&
+            (bool)self::newsletter_approved((int)$post->ID);
+    }
+
+    /** Prepared and running campaigns belong to the newsletter author. */
+    private static function can_manage_campaign($campaign)
+    {
+        if (!$campaign) { return false; }
+        if (current_user_can('manage_options')) { return true; }
+        return DSE_Newsletters::can_send() &&
+            DSE_Newsletters::can_send(get_post((int)$campaign->newsletter_id));
+    }
+
+    private static function require_send($action)
+    {
+        if (!DSE_Newsletters::can_send()) {
+            wp_die('Envoi de newsletters non autorisé.', 'Accès refusé', array('response' => 403));
+        }
+        check_admin_referer('dse_ml_' . $action);
+        if (get_option(self::DB_OPTION) !== self::DB_VERSION) {
+            wp_die('La configuration des envois doit être terminée par un administrateur.',
+                'Envoi indisponible', array('response' => 503));
+        }
+    }
+
     public static function prepare()
     {
-        self::require_admin('prepare');
+        self::require_send('prepare');
         global $wpdb;
-        $post = self::newsletter_approved(self::id('newsletter_id'));
+        $post = get_post(self::id('newsletter_id'));
         $list_id = self::id('list_id');
-        if (!$post || !self::list_exists($list_id)) { self::redirect('approval_required'); }
+        if (!self::can_prepare_newsletter($post)) {
+            wp_die('Vous ne pouvez pas préparer cette newsletter.', 'Accès refusé', array('response' => 403));
+        }
+        if (!self::owns_list($list_id)) {
+            wp_die('Vous ne pouvez pas utiliser cette liste de diffusion.',
+                'Accès refusé',array('response'=>403));
+        }
+        if (!self::list_exists($list_id)) { self::redirect('empty_list'); }
         $contacts = $wpdb->get_col($wpdb->prepare('SELECT c.id FROM ' . self::table('contacts') . ' c ' .
             'INNER JOIN ' . self::table('members') . ' m ON m.contact_id=c.id ' .
             'WHERE m.list_id=%d AND c.status=%s AND m.status=%s ORDER BY c.id ASC', $list_id, 'confirmed', 'confirmed'));
@@ -282,14 +615,17 @@ final class DSE_Mailing
 
     public static function start()
     {
-        self::require_admin('start');
+        self::require_send('start');
         if (!self::transport_ready()) { self::redirect('smtp_missing'); }
         if (self::input('confirm_send') !== '1') { self::redirect('confirmation_required'); }
         global $wpdb;
         $id = self::id('campaign_id');
         $table = self::table('campaigns');
         $campaign = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id=%d", $id));
-        if (!$campaign || !in_array($campaign->status, array('prepared', 'paused'), true)) {
+        if (!$campaign || !self::can_manage_campaign($campaign)) {
+            wp_die('Vous ne pouvez pas lancer cette campagne.', 'Accès refusé', array('response' => 403));
+        }
+        if (!in_array($campaign->status, array('prepared', 'paused'), true)) {
             self::redirect('not_ready');
         }
         $when = self::input('send_at');
@@ -313,17 +649,28 @@ final class DSE_Mailing
 
     public static function pause()
     {
-        self::require_admin('pause');
+        self::require_send('pause');
         global $wpdb;
-        $wpdb->query($wpdb->prepare('UPDATE ' . self::table('campaigns') .
-            " SET status='paused' WHERE id=%d AND status IN ('sending','scheduled')", self::id('campaign_id')));
+        $id = self::id('campaign_id');
+        $table = self::table('campaigns');
+        $campaign = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id=%d", $id));
+        if (!self::can_manage_campaign($campaign)) {
+            wp_die('Vous ne pouvez pas suspendre cette campagne.', 'Accès refusé', array('response' => 403));
+        }
+        $wpdb->query($wpdb->prepare('UPDATE ' . $table .
+            " SET status='paused' WHERE id=%d AND status IN ('sending','scheduled')", $id));
         self::redirect('paused');
     }
 
     private static function token($contact, $purpose, $list_id = 0)
     {
+        $extra = '';
+        if ($purpose === 'confirm') {
+            $extra = '|' . (string) get_transient('dse_ml_confirmation_' .
+                (int) $contact->id . '_' . (int) $list_id);
+        }
         return hash_hmac('sha256', $purpose . '|' . (int) $contact->id . '|' .
-            (int) $list_id . '|' . strtolower($contact->email), wp_salt('auth'));
+            (int) $list_id . '|' . strtolower($contact->email) . $extra, wp_salt('auth'));
     }
 
     private static function recipient_url($contact, $action, $list_id = 0)
@@ -341,7 +688,9 @@ final class DSE_Mailing
         $lid = isset($_REQUEST['lid']) && ctype_digit((string) $_REQUEST['lid']) ? (int) $_REQUEST['lid'] : 0;
         if (!$cid || !preg_match('/^[a-f0-9]{64}$/', $token) || ($action === 'confirm' && !$lid)) { return false; }
         $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . self::table('contacts') . ' WHERE id=%d', $cid));
-        if (!$contact || !hash_equals(self::token($contact, $action, $lid), $token)) { return false; }
+        if (!$contact || ($action === 'confirm' &&
+            !get_transient('dse_ml_confirmation_' . (int) $cid . '_' . (int) $lid)) ||
+            !hash_equals(self::token($contact, $action, $lid), $token)) { return false; }
         $contact->requested_list = $lid;
         return $contact;
     }
@@ -386,6 +735,8 @@ final class DSE_Mailing
         $wpdb->update(self::table('contacts'), array('status' => 'confirmed',
             'consent_source' => 'Formulaire avec double confirmation', 'consent_at' => $now),
             array('id' => (int) $contact->id));
+        delete_transient('dse_ml_confirmation_' . (int) $contact->id . '_' .
+            (int) $contact->requested_list);
         wp_die('Votre abonnement est confirmé. Merci !', 'Inscription', array('response' => 200));
     }
 
@@ -447,10 +798,10 @@ final class DSE_Mailing
 
     public static function remove()
     {
-        self::require_admin('remove');
+        $lid = self::id('list_id');
+        self::require_lists('remove', $lid);
         global $wpdb;
         $cid = self::id('contact_id');
-        $lid = self::id('list_id');
         if (!$cid || !$lid) { self::redirect('error'); }
         // Remove membership for this list only; don't silently affect other lists.
         $wpdb->update(self::table('members'), array('status' => 'unsubscribed'),
@@ -472,6 +823,14 @@ final class DSE_Mailing
         $html = is_string($html) ? $html : '';
         $footer = is_string($footer) ? $footer : '';
         if ($footer === '') { return $html; }
+        // Use the dedicated footer row of the centered email table.
+        $marker = '<!--DSE_UNSUBSCRIBE_ROW-->';
+        if (strpos($html, $marker) !== false) {
+            $row = '<tr><td align="center" valign="top" style="padding:18px 3px 2px;' .
+                'border-top:1px solid #e4ece5;text-align:center;font-size:13px;' .
+                'line-height:1.5;color:#526457;">' . $footer . '</td></tr>';
+            return str_replace($marker, $row, $html);
+        }
         $end = stripos($html, '</body>');
         if ($end === false) { $end = stripos($html, '</html>'); }
         if ($end === false) { return $html . $footer; }
@@ -516,9 +875,13 @@ final class DSE_Mailing
                 }
                 $contact = (object) array('id' => $row->contact_id, 'email' => $row->email);
                 $url = self::recipient_url($contact, 'unsubscribe');
-                $footer = '<footer style="margin:30px auto 0;padding:18px 0;text-align:center;color:#555;font-size:13px">' .
-                    '<a href="' . esc_url($url) . '">Ne plus recevoir les newsletters de ce site</a></footer>';
-                $html = self::insert_required_footer($campaign->html_body, $footer);
+                $footer = '<a href="' . esc_url($url) . '"' .
+                    ' style="color:#45634d;font:400 13px/1.5 Arial,Helvetica,sans-serif;text-decoration:underline;">' .
+                    'Ne plus recevoir les newsletters de ce site</a>';
+                // Convert older prepared campaigns from their immutable content snapshot.
+                // Never fetch the current source article or newsletter at send time.
+                $prepared_html = DSE_Block_Editor::modernize_email_document($campaign->html_body);
+                $html = self::insert_required_footer($prepared_html, $footer);
                 $headers = array('Content-Type: text/html; charset=UTF-8',
                     'List-Unsubscribe: <' . esc_url_raw($url) . '>',
                     'List-Unsubscribe-Post: List-Unsubscribe=One-Click');
@@ -551,13 +914,20 @@ final class DSE_Mailing
 
     public static function render_admin($section = 'envois')
     {
-        if (!current_user_can('manage_options')) { return; }
+        $admin = current_user_can('manage_options');
+        $sender = DSE_Newsletters::can_send();
+        $manager = self::can_manage_lists();
+        if (!$admin && !(($sender && in_array($section,array('envois','suivi'),true)) ||
+            ($manager && $section === 'listes'))) { return; }
         if (!in_array($section, array('listes', 'envois', 'suivi', 'connexion'), true)) { return; }
-        if (get_option(self::DB_OPTION) !== self::DB_VERSION) { self::install(); }
+        if (get_option(self::DB_OPTION) !== self::DB_VERSION) {
+            if ($admin) { self::install(); } else { return; }
+        }
         global $wpdb;
         $lists = self::lists();
         $notices = array(
-            'list_created' => 'Liste créée.', 'bad_list' => 'Nom de liste incorrect.',
+            'list_created' => 'Liste créée.', 'list_assigned' => 'Liste attribuée à l’utilisateur sélectionné.',
+            'bad_list' => 'Nom de liste incorrect.',
             'contacts_added' => 'Contacts ajoutés avec leur preuve de consentement.',
             'consent_required' => 'Indiquez la provenance du consentement et confirmez-le.',
             'too_many' => '200 contacts au maximum par import.',
@@ -571,7 +941,19 @@ final class DSE_Mailing
             'invalid_date' => 'Choisissez une date future valide.',
             'test_accepted' => 'Test accepté par WordPress/FluentSMTP. Vérifiez sa réception.',
             'test_failed' => 'Test refusé : consultez le journal FluentSMTP.',
-            'contact_removed' => 'Contact retiré de la liste sélectionnée.',
+            'contact_removed' => 'Contact désinscrit de la liste sélectionnée.',
+            'contact_updated' => 'Informations du contact enregistrées.',
+            'edit_email_confirmation' => 'Nouvelle adresse enregistrée en attente de sa confirmation. L’ancienne adresse a été désinscrite de cette liste.',
+            'duplicate_email' => 'Cette adresse existe déjà. Vérifiez le contact avant de modifier son inscription.',
+            'blocked_unsubscribed' => 'Import protégé : les personnes précédemment désabonnées ont été ignorées. Aucun réabonnement automatique.',
+            'invalid_contact' => 'Contact introuvable ou modification impossible.',
+            'invite_sent' => 'Invitation envoyée pour nouvelle confirmation, sans réabonnement automatique.',
+            'invite_failed' => 'L’invitation n’a pas été acceptée par le transport SMTP. Aucun réabonnement.',
+            'invite_no_permission' => 'Une permission explicite et sa provenance sont nécessaires avant toute invitation.',
+            'invite_rate_limited' => 'Une invitation a déjà été envoyée récemment à cette personne (limite : 30 jours).',
+            'invite_not_allowed' => 'Cette personne n’est pas désabonnée de la liste.',
+            'smtp_missing' => 'Le transport SMTP doit être configuré avant d’envoyer une invitation.',
+            'test_failed' => 'Le transport n’a pas accepté le message. Vérifiez FluentSMTP.',
             'not_ready' => 'Cette campagne n’est pas prête.',
             'cron_failed' => 'La programmation a échoué. Aucun envoi démarré.',
             'error' => 'Opération non enregistrée.',
@@ -588,55 +970,140 @@ final class DSE_Mailing
         echo '</section>';
         }
         if ($section === 'listes') {
-        echo '<section class="dse-card"><h2>Créer une liste</h2>';
-        self::form('list', 'Créer la liste', array('<label>Nom de la liste <input name="name" type="text" required maxlength="160"></label>'));
-        echo '</section>';
-        echo '<section class="dse-card"><h2>Listes et contacts</h2>';
-        foreach ($lists as $list) {
-            $count = $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM ' . self::table('members') .
-                ' m JOIN ' . self::table('contacts') . ' c ON c.id=m.contact_id WHERE m.list_id=%d AND c.status=%s AND m.status=%s',
-                $list->id, 'confirmed', 'confirmed'));
-            echo '<details class="dse-subcard"><summary><strong>' . esc_html($list->name) . '</strong> · ' .
-                (int) $count . ' abonnés confirmés</summary>';
-            echo '<p>Formulaire à placer sur une page : <code>[dse_newsletter_inscription liste="' .
-                (int) $list->id . '"]</code></p>';
-            $members = $wpdb->get_results($wpdb->prepare('SELECT c.id,c.email,m.status FROM ' .
-                self::table('members') . ' m JOIN ' . self::table('contacts') .
-                ' c ON c.id=m.contact_id WHERE m.list_id=%d ORDER BY c.email ASC LIMIT 30', (int) $list->id));
-            foreach ((array) $members as $member) {
-                echo '<div class="dse-mailing-contact"><span>' . esc_html($member->email) .
-                    ' — ' . esc_html($member->status) . '</span>';
-                if ($member->status !== 'unsubscribed') {
-                    self::form('remove', 'Retirer de cette liste', array(
-                        '<input type="hidden" name="contact_id" value="' . (int) $member->id . '">',
-                        '<input type="hidden" name="list_id" value="' . (int) $list->id . '">'
+            echo '<section class="dse-card"><div class="dse-list-heading">';
+            echo '<h2>Mes listes</h2><a href="#dse-add-list" class="button dse-list-add-shortcut" ';
+            echo 'aria-label="Ajouter une liste" title="Ajouter une liste" data-dse-list-open>+</a></div>';
+            if (!$lists) { echo '<p>Aucune liste pour le moment. Utilisez « Ajouter une liste » ci-dessous.</p>'; }
+            foreach ($lists as $list) {
+                $count = (int) $wpdb->get_var($wpdb->prepare(
+                    'SELECT COUNT(*) FROM ' . self::table('members') .
+                    ' m JOIN ' . self::table('contacts') .
+                    ' c ON c.id=m.contact_id WHERE m.list_id=%d AND c.status=%s AND m.status=%s',
+                    $list->id, 'confirmed', 'confirmed'));
+                echo '<details class="dse-subcard dse-list-card"><summary><strong>' .
+                    esc_html($list->name) . '</strong> · ' . $count .
+                    ($count === 1 ? ' abonné confirmé' : ' abonnés confirmés') . '</summary>';
+                if ($admin) {
+                    echo '<details class="dse-list-assignment"><summary>Attribuer cette liste à un éditeur</summary>';
+                    $users = get_users(array('role'=>DSE_Plugin::ROLE,'number'=>100));
+                    $options = '<option value="0"' . selected((int)$list->owner_user_id,0,false) .
+                        '>Administration (non attribuée)</option>';
+                    foreach ($users as $user) {
+                        $options .= '<option value="' . (int)$user->ID . '"' .
+                            selected((int)$list->owner_user_id,(int)$user->ID,false) . '>' .
+                            esc_html($user->display_name) . '</option>';
+                    }
+                    self::form('assign_list', 'Enregistrer l’attribution', array(
+                        '<input type="hidden" name="list_id" value="' . (int)$list->id . '">',
+                        '<label>Utilisateur responsable <select name="owner_user_id">' .
+                            $options . '</select></label>'
                     ));
+                    echo '</details>';
                 }
-                echo '</div>';
+                echo '<p>Formulaire d’inscription à placer sur une page :</p><p><code>[dse_newsletter_inscription liste="' .
+                    (int)$list->id . '"]</code></p>';
+                $members = $wpdb->get_results($wpdb->prepare(
+                    'SELECT c.id,c.email,c.display_name,c.status AS contact_status,m.status AS membership_status FROM ' .
+                    self::table('members') . ' m JOIN ' . self::table('contacts') .
+                    ' c ON c.id=m.contact_id WHERE m.list_id=%d ORDER BY c.email ASC LIMIT 40',
+                    (int)$list->id));
+                if (!$members) { echo '<p>Aucun contact dans cette liste.</p>'; }
+                foreach ((array)$members as $member) {
+                    $unsubscribed = $member->contact_status === 'unsubscribed' ||
+                        $member->membership_status === 'unsubscribed';
+                    $label = $unsubscribed ? 'Désabonné·e' :
+                        ($member->membership_status === 'confirmed' ? 'Abonné·e' : 'Confirmation en attente');
+                    echo '<div class="dse-mailing-contact dse-mailing-contact-card">';
+                    echo '<div><strong>' . esc_html($member->display_name ?: $member->email) . '</strong>';
+                    if ($member->display_name) {
+                        echo '<div class="dse-contact-email">' . esc_html($member->email) . '</div>';
+                    }
+                    echo '<span class="dse-contact-status' . ($unsubscribed ? ' is-unsubscribed' : '') .
+                        '">' . esc_html($label) . '</span></div>';
+                    echo '<details class="dse-contact-edit"><summary>Modifier</summary>';
+                    self::form('edit_contact', 'Enregistrer le contact', array(
+                        '<input type="hidden" name="contact_id" value="' . (int)$member->id . '">',
+                        '<input type="hidden" name="list_id" value="' . (int)$list->id . '">',
+                        '<label>Nom (facultatif) <input type="text" name="display_name" maxlength="160" value="' .
+                            esc_attr($member->display_name) . '"></label>',
+                        '<label>Adresse e-mail <input type="email" name="email" maxlength="254" required value="' .
+                            esc_attr($member->email) . '"' .
+                            ($unsubscribed ? ' readonly' : '') . '></label>',
+                        '<p class="description">Changer l’adresse ne transfère pas l’ancien consentement : '
+                            . 'la nouvelle adresse devra confirmer son inscription.</p>',
+                        $unsubscribed ? '' :
+                            '<details class="dse-contact-change-address"><summary>Pour changer d’adresse e-mail</summary>' .
+                            '<label>Origine de la demande <input type="text" name="email_permission_source" maxlength="255" ' .
+                            'placeholder="Ex. demande reçue directement de la personne"></label>' .
+                            '<label class="dse-check"><input type="checkbox" name="email_permission" value="1"> ' .
+                            'Cette personne a demandé explicitement la vérification de sa nouvelle adresse.</label>' .
+                            '</details>'
+                    ));
+                    echo '</details>';
+                    if ($unsubscribed) {
+                        echo '<details class="dse-contact-invite"><summary>Proposer un réabonnement</summary>';
+                        echo '<p class="description">Une personne désabonnée ne peut pas être réajoutée par import. ' .
+                            'Cette invitation n’est possible que si elle vous a spécifiquement donné son accord pour recevoir ' .
+                            'un e-mail de réabonnement. Elle devra ensuite confirmer son choix.</p>';
+                        self::form('reinvite', 'Envoyer une invitation de réabonnement', array(
+                            '<input type="hidden" name="contact_id" value="' . (int)$member->id . '">',
+                            '<input type="hidden" name="list_id" value="' . (int)$list->id . '">',
+                            '<label>Comment cette personne a-t-elle accepté de recevoir cette invitation ? ' .
+                                '<input name="permission_source" type="text" minlength="12" maxlength="255" required ' .
+                                'placeholder="Ex. demande explicite reçue le 21/11/2026"></label>',
+                            '<label class="dse-check"><input type="checkbox" name="permission_confirmed" value="1" required> ' .
+                                'Je confirme disposer de son accord explicite pour lui envoyer cette seule invitation.</label>'
+                        ));
+                        echo '</details>';
+                    } else {
+                        self::form('remove', 'Désinscrire de cette liste', array(
+                            '<input type="hidden" name="contact_id" value="' . (int)$member->id . '">',
+                            '<input type="hidden" name="list_id" value="' . (int)$list->id . '">'
+                        ));
+                    }
+                    echo '</div>';
+                }
+                echo '<p class="description">Affichage des 40 premiers contacts, sans envoi automatique.</p>';
+                echo '<details class="dse-list-import"><summary>Ajouter des contacts à cette liste</summary>';
+                self::form('import', 'Ajouter ces contacts', array(
+                    '<input type="hidden" name="list_id" value="' . (int)$list->id . '">',
+                    '<label>Adresses e-mail (une par ligne, maximum 200) ' .
+                        '<textarea name="emails" rows="5" required></textarea></label>',
+                    '<label>Origine du consentement <input name="origin" type="text" minlength="8" maxlength="255" required ' .
+                        'placeholder="Ex. inscription validée le 10/11/2026"></label>',
+                    '<label class="dse-check"><input type="checkbox" name="consent_confirmed" value="1" required> ' .
+                        'Je confirme disposer d’un accord valable pour chaque personne.</label>'
+                ));
+                echo '</details></details>';
             }
-            echo '<p class="description">Affichage limité aux 30 premiers contacts. Aucun envoi n’a lieu ici.</p></details>';
-        }
-        if ($lists) {
-            echo '<details><summary>Importer des contacts ayant déjà donné leur accord</summary>';
-            $options = self::options($lists);
-            self::form('import', 'Ajouter des contacts', array(
-                '<label>Liste <select name="list_id" required>' . $options . '</select></label>',
-                '<label>Adresses e-mail (une par ligne, maximum 200) <textarea name="emails" rows="5" required></textarea></label>',
-                '<label>Origine du consentement <input name="origin" type="text" minlength="8" maxlength="255" required placeholder="Ex. formulaire du site, le 10/11/2026"></label>',
-                '<label class="dse-check"><input type="checkbox" name="consent_confirmed" value="1" required> Je confirme disposer d’un accord valable pour chacun de ces contacts.</label>'
+            echo '</section>';
+            echo '<details class="dse-card dse-create-list" id="dse-add-list">';
+            echo '<summary>Ajouter une liste</summary>';
+            echo '<p class="description">Donnez un nom à la liste. Vous pourrez ensuite y ajouter des contacts.</p>';
+            self::form('list', 'Créer la nouvelle liste', array(
+                '<label>Nom de la nouvelle liste <input name="name" type="text" required maxlength="160" ' .
+                    'data-dse-new-list-name></label>'
             ));
             echo '</details>';
         }
-        echo '</section>';
-        }
         if ($section === 'envois') {
-        $approved = array_filter(get_posts(array('post_type' => DSE_Newsletters::TYPE,
-            'post_status' => 'pending', 'posts_per_page' => 50)), array(__CLASS__, 'is_approved'));
+        $query = array('post_type' => DSE_Newsletters::TYPE,
+            'post_status' => array('draft','pending'), 'posts_per_page' => 80,
+            'orderby' => 'modified', 'order' => 'DESC');
+        if (!$admin) { $query['author'] = get_current_user_id(); }
+        $approved = array_filter(get_posts($query), array(__CLASS__, 'can_prepare_newsletter'));
         echo '<section class="dse-card"><h2>Préparer une campagne</h2>';
-        if (!$approved || !$lists) { echo '<p>Il faut au moins une newsletter validée et une liste.</p>'; }
+        if (!$approved || !$lists) {
+            echo '<p>Il faut au moins une newsletter que vous êtes autorisé à envoyer et une liste existante.</p>';
+        }
         else {
-            $choices = '<option value="">Choisir une newsletter validée</option>';
-            foreach ($approved as $post) { $choices .= '<option value="' . (int) $post->ID . '">' . esc_html($post->post_title) . '</option>'; }
+            $selected = isset($_GET['dse_send_nid']) ? absint($_GET['dse_send_nid']) : 0;
+            $choices = '<option value="">Choisir une newsletter</option>';
+            foreach ($approved as $post) {
+                $choices .= '<option value="' . (int) $post->ID . '"' .
+                    selected($selected, (int)$post->ID, false) . '>' .
+                    esc_html($post->post_title) . '</option>';
+            }
             self::form('prepare', 'Préparer sans envoyer', array(
                 '<label>Newsletter <select name="newsletter_id" required>' . $choices . '</select></label>',
                 '<label>Destinataires <select name="list_id" required>' . self::options($lists) . '</select></label>'
@@ -645,7 +1112,10 @@ final class DSE_Mailing
         echo '</section>';
         }
         if ($section === 'suivi') {
-        $campaigns = $wpdb->get_results('SELECT * FROM ' . self::table('campaigns') . ' ORDER BY id DESC LIMIT 15');
+        $campaigns = $wpdb->get_results('SELECT * FROM ' . self::table('campaigns') . ' ORDER BY id DESC LIMIT 100');
+        if (!$admin) { $campaigns = array_values(array_filter((array)$campaigns,
+            array(__CLASS__, 'can_manage_campaign'))); }
+        $campaigns = array_slice((array)$campaigns, 0, 15);
         echo '<section class="dse-card"><h2>Campagnes préparées et envoyées</h2>';
         foreach ((array) $campaigns as $c) {
             $counts = $wpdb->get_results($wpdb->prepare('SELECT status,COUNT(*) as total FROM ' .
