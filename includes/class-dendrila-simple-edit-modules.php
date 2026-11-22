@@ -177,7 +177,7 @@ final class Dendrila_Simple_Edit_Modules
         $enabled = isset($_POST['dendrila_simple_edit_module_enabled']) &&
             sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_module_enabled'])) === '1';
         if ($module === 'newsletters' && $enabled && !Dendrila_Simple_Edit_Mailing::transport_ready()) {
-            wp_die(__('Pour activer le module Newsletters, installez et activez FluentSMTP, puis configurez au moins une connexion d’envoi dans ses réglages.', 'dendrila-simple-edit'), __('FluentSMTP nécessaire', 'dendrila-simple-edit'), array('response'=>400));
+            wp_die(esc_html__('Pour activer le module Newsletters, installez et activez FluentSMTP, puis configurez au moins une connexion d’envoi dans ses réglages.', 'dendrila-simple-edit'), esc_html__('FluentSMTP nécessaire', 'dendrila-simple-edit'), array('response'=>400));
         }
         $settings = self::settings();
         $settings[$module] = array(
