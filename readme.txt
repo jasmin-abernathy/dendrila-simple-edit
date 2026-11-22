@@ -20,6 +20,7 @@ Features:
 * Guided editing by content type (pages, posts and events), with permissions per WordPress role, safe content blocks, image selection and optional approval before publication. Administrators keep their native access.
 * Role-based permissions with a five-step wizard shown on first installation only (never automatically on update or reactivation), inline mailing-list creation and an optional manual configuration review without erasing contacts or lists.
 * Compact administration settings: enable or disable modules (including newsletters) independently, manage content types and media under Content, and configure per-role permissions in collapsible groups.
+* Organize the primary navigation by drag-and-drop on touch and desktop, with keyboard/button alternatives, one-level submenus and an open/closed default for each mobile submenu. Converting an automatic Page List to manually managed navigation requires explicit confirmation; newly published pages will then need adding through WordPress.
 * Optional integration with Advanced Custom Fields (supported text fields), The Events Calendar (events) and WooCommerce (products).
 * WooCommerce simple, external, grouped and variable products with delegated creation, publishing, categories, variations and stock controls where authorized.
 * A built-in newsletter composer with multiple table-based email layouts, customizable palettes saved per author, preview, mailing lists, sending queue and unsubscribe management.
@@ -62,6 +63,9 @@ Yes. Each module is optional. Checkout opt-in is disabled by default and require
 
 = Is a Divi layout editable? =
 Not automatically. Unsupported layouts remain protected; administrators can choose safe shortcode placements, while native Divi content may need Divi's original editor.
+
+= Does creating a submenu change page URLs? =
+No. Simple Edit changes only the navigation structure, not the parent or permalink of any page. A WordPress automatic Page List is converted to an explicit menu only after a confirmation; newly created pages are then added manually in the WordPress site editor.
 
 = How do I support development? =
 The plugin's administration includes an optional link to https://app.lepotager.org/soutenir/. No donation is required to use the extension.

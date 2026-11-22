@@ -43,6 +43,11 @@ jobs:
           php tests/relais-regressions.php
           php tests/first-install.php
           php tests/admin-settings.php
+          php tests/navigation-subgroups.php
+          php tests/navigation-subgroups.php missing-confirmation
+          php tests/navigation-subgroups.php convert
+          node tests/navigation-drag.js
+          node tests/navigation-mobile.js
   package:
     name: Installation ZIP
     needs: php
