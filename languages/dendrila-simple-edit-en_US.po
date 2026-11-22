@@ -1,7 +1,7 @@
 # English (United States) translations for Dendrila Simple Edit.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the Dendrila Simple
-# Edit project.
+# Copyright (C) 2026 Le Potager du Web
+# This file is distributed under the same license as the Dendrila Simple Edit
+# project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 #, fuzzy
@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Dendrila Simple Edit 0.0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-22 11:36+0000\n"
+"POT-Creation-Date: 2026-11-22 15:33+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en_US\n"
@@ -20,20 +20,138 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+msgid " de la sélection"
+msgstr " from selection"
+
+msgid " image sélectionnée"
+msgstr " image selected"
+
+msgid " images sélectionnées"
+msgstr " images selected"
+
+msgid " sur 5 — "
+msgstr " of 5 — "
+
+msgid ". Pensez à enregistrer."
+msgstr ". Remember to save."
+
+msgid "1. Choisissez la mise en page"
+msgstr "1. Choose the layout"
+
+msgid "2. Personnalisez les couleurs du modèle"
+msgstr "2. Customize the model colors"
+
 msgid "Accueil"
 msgstr "Home"
+
+msgid "Actions du formulaire (également disponibles en bas)"
+msgstr "Form actions (also available at the bottom)"
+
+msgid "Activer uniquement les outils nécessaires"
+msgstr "Enable only the tools you need"
+
+msgid "Adresse de l’image"
+msgstr "Image URL"
+
+msgid "Adresse du lien"
+msgstr "Link URL"
 
 msgid "Aide"
 msgstr "Help"
 
+msgid "Ajouter cet article à la newsletter"
+msgstr "Add this article to the newsletter"
+
+msgid "Ajouter des images"
+msgstr "Add images"
+
+msgid "Ajouter un élément"
+msgstr "Add an element"
+
+msgid "Alignement de cet élément"
+msgstr "Element alignment"
+
+msgid "Aperçu de cet élément"
+msgstr "Element preview"
+
+msgid "Aperçu du cadre de l’image"
+msgstr "Image border preview"
+
+msgid "Aperçu du contenu"
+msgstr "Content preview"
+
+msgid "Après validation, l’espace d’édition est accessible aux rôles autorisés."
+msgstr "Once confirmed, the editing area is available to authorized roles."
+
+msgid "Ardoise"
+msgstr "Slate"
+
+msgid ""
+"Article ajouté. Vous pouvez maintenant modifier chaque élément dans la "
+"newsletter, sans changer l’article original."
+msgstr ""
+"Article added. You can now edit each newsletter element without changing the"
+" original article."
+
+msgid "Article inséré dans la newsletter."
+msgstr "Article added to the newsletter."
+
+msgid "Article à présenter"
+msgstr "Article to feature"
+
 msgid "Articles"
-msgstr "Articles"
+msgstr "Posts"
+
+msgid "Attribuer cette liste à un éditeur"
+msgstr "Assign this list to an editor"
+
+msgid "Aucun article publié avec un paragraphe n’est disponible pour le moment."
+msgstr "There are no published articles with a paragraph yet."
+
+msgid "Aucun brouillon enregistré pour le moment."
+msgstr "No saved drafts yet."
+
+msgid "Automatique"
+msgstr "Automatic"
 
 msgid "Autorisations"
 msgstr "Permissions"
 
+msgid "Bleu"
+msgstr "Blue"
+
 msgid "Boutique"
 msgstr "Shop"
+
+msgid "Bouton"
+msgstr "Button"
+
+msgid "Boutons"
+msgstr "Buttons"
+
+msgid "Brique"
+msgstr "Brick"
+
+msgid "Brouillon"
+msgstr "Draft"
+
+msgid "Brouillon enregistré."
+msgstr "Draft saved."
+
+msgid "Brouillons de newsletters"
+msgstr "Newsletter drafts"
+
+msgid "Campagnes préparées et envoyées"
+msgstr "Prepared and sent campaigns"
+
+msgid "Catalogue — fiches en grille de deux colonnes"
+msgstr "Catalog — cards in a two-column grid"
+
+msgid "Centré"
+msgstr "Centered"
+
+msgid "Changer la mise en page et les couleurs de ce brouillon"
+msgstr "Change this draft’s layout and colors"
 
 msgid "Changez l’ordre des liens, sans toucher à leur destination."
 msgstr "Change the link order without changing where they lead."
@@ -41,43 +159,411 @@ msgstr "Change the link order without changing where they lead."
 msgid "Choisir ce que chacun peut modifier"
 msgstr "Choose who can edit what"
 
+msgid "Choisir dans la médiathèque"
+msgstr "Choose from the media library"
+
+msgid "Choisir les images autorisées"
+msgstr "Choose allowed images"
+
+msgid "Choisir les pages et articles modifiables"
+msgstr "Choose editable pages and posts"
+
+msgid "Choisir ou importer une image"
+msgstr "Choose or upload an image"
+
+msgid "Choisir un article publié"
+msgstr "Choose a published article"
+
+msgid "Choisir une couleur personnalisée"
+msgstr "Choose a custom color"
+
+msgid "Choisir une image"
+msgstr "Choose an image"
+
+msgid "Choisir une image autorisée"
+msgstr "Choose an allowed image"
+
 msgid ""
-"Choisissez la page à modifier et personnalisez son titre, ses textes et "
-"ses images."
+"Choisissez la page à modifier et personnalisez son titre, ses textes et ses "
+"images."
 msgstr "Choose the page to edit, and update its title, text and images."
 
 msgid ""
-"Choisissez les outils et les images accessibles aux comptes ayant le rôle"
-" « Édition simple »."
+"Choisissez les outils et les images accessibles aux comptes ayant le rôle « "
+"Édition simple »."
 msgstr "Select tools and images available to users with the Simple Edit role."
 
 msgid "Choisissez un article autorisé et modifiez son titre et son contenu."
 msgstr "Choose an authorized post, and update its title and content."
 
+msgid "Choisissez un élément ci-dessus pour commencer."
+msgstr "Choose an element above to get started."
+
+msgid "Classique — en-tête, contenu, bouton"
+msgstr "Classic — header, content and button"
+
+msgid ""
+"Cochez uniquement les contenus que les utilisateurs « Édition simple » "
+"pourront modifier. Les pages construites avec Gutenberg, Divi, Elementor ou "
+"d’autres constructeurs restent protégées."
+msgstr ""
+"Select only content that Simple Edit users may change. Pages built with "
+"Gutenberg, Divi, Elementor or other builders remain protected."
+
 msgid "Comprendre comment ça marche"
 msgstr "How it works"
 
-msgid ""
-"Consultez les changements précédents et les pages qui utilisent vos "
-"textes."
+msgid "Configuration de Dendrila Simple Edit"
+msgstr "Dendrila Simple Edit setup"
+
+msgid "Configuration des envois"
+msgstr "Sending configuration"
+
+msgid "Configuration en cours"
+msgstr "Setup in progress"
+
+msgid "Configurer FluentSMTP"
+msgstr "Configure FluentSMTP"
+
+msgid "Connexion FluentSMTP nécessaire"
+msgstr "FluentSMTP connection required"
+
+msgid "Connexion détectée, vous pouvez activer le module."
+msgstr "Connection detected. You can enable this module."
+
+msgid "Connexion pour envoyer les e-mails"
+msgstr "Email sending connection"
+
+msgid "Consultez les changements précédents et les pages qui utilisent vos textes."
 msgstr "Review earlier changes and the pages using your text."
+
+msgid "Contenu"
+msgstr "Content"
+
+msgid "Contenu de la newsletter"
+msgstr "Newsletter content"
+
+msgid "Contenu soumis à validation."
+msgstr "Content submitted for approval."
+
+msgid "Contenu validé. Aucun e-mail envoyé."
+msgstr "Content approved. No email sent."
+
+msgid "Contenus accessibles"
+msgstr "Accessible content"
 
 msgid "Contenus en attente de validation"
 msgstr "Content awaiting approval"
 
+msgid "Continuer vers la rédaction"
+msgstr "Continue to editing"
+
+msgid "Copie impossible : sélectionnez le code"
+msgstr "Could not copy: select the code"
+
+msgid "Copié !"
+msgstr "Copied!"
+
+msgid "Couleur automatique"
+msgstr "Automatic color"
+
+msgid "Couleur du cadre"
+msgstr "Border color"
+
+msgid "Couleur du texte ou du bouton"
+msgstr "Text or button color"
+
+msgid "Couleur d’accent"
+msgstr "Accent color"
+
+msgid "Courriels et inscription lors d’une commande"
+msgstr "Emails and checkout signup"
+
+msgid "Création de contenus et menu principal"
+msgstr "Content creation and main menu"
+
+msgid "Créer de nouveaux articles (brouillons)"
+msgstr "Create new posts (drafts)"
+
+msgid "Créer de nouvelles pages (brouillons)"
+msgstr "Create new pages (drafts)"
+
+msgid "Créer des catégories et sous-catégories de produits"
+msgstr "Create product categories and subcategories"
+
+msgid "Créer des produits variables, groupés ou externes"
+msgstr "Create variable, grouped or external products"
+
+msgid "Créer et gérer ses listes et leurs contacts"
+msgstr "Create and manage lists and their contacts"
+
+msgid "Créer un brouillon"
+msgstr "Create a draft"
+
+msgid "Créer un produit (brouillon)"
+msgstr "Create a product (draft)"
+
+msgid "Créer une nouvelle newsletter"
+msgstr "Create a newsletter"
+
+msgid ""
+"Demandez explicitement l’inscription pendant le paiement, sans cocher la "
+"case par défaut. Les clients reçoivent une demande de confirmation. Une "
+"désinscription antérieure reste protégée."
+msgstr ""
+"Ask for explicit consent at checkout, with the checkbox unchecked by "
+"default. Customers receive a confirmation request. Previous unsubscribes "
+"remain protected."
+
+msgid "Dendrila Simple Edit doit être configuré avant utilisation."
+msgstr "Dendrila Simple Edit must be configured before use."
+
+msgid "Dendrila Simple Edit est incomplet. Réinstallez le ZIP complet du plugin."
+msgstr "Dendrila Simple Edit is incomplete. Reinstall the complete plugin ZIP."
+
+msgid "Descendre : "
+msgstr "Move down: "
+
+msgid "Description de l’image"
+msgstr "Image description"
+
+msgid "Donnez un nom à la liste. Vous pourrez ensuite y ajouter des contacts."
+msgstr "Give the list a name. You can add contacts afterwards."
+
+msgid "Définir les autorisations des rôles"
+msgstr "Set role permissions"
+
+msgid "Déplacement annulé."
+msgstr "Move canceled."
+
+msgid "Déplier"
+msgstr "Expand"
+
+msgid "Déplier le bloc"
+msgstr "Expand block"
+
+msgid "Elle pourra confirmer son réabonnement par e-mail."
+msgstr "They can confirm resubscription by email."
+
+msgid "En attente de validation"
+msgstr "Awaiting approval"
+
+msgid "Enregistrement non confirmé."
+msgstr "Save not confirmed."
+
+msgid "Enregistrer la synchronisation"
+msgstr "Save sync settings"
+
+msgid "Enregistrer le brouillon"
+msgstr "Save draft"
+
+msgid "Envoyez une invitation uniquement si cette personne vous l’a demandé."
+msgstr "Send an invitation only if this person has asked for one."
+
+msgid ""
+"FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa "
+"connexion avant de lancer une newsletter."
+msgstr ""
+"FluentSMTP handles outgoing messages from WordPress. Check its connection "
+"before sending a newsletter."
+
+msgid ""
+"FluentSMTP doit être actif et posséder une connexion e-mail configurée avant"
+" de terminer la configuration du module Newsletters."
+msgstr ""
+"FluentSMTP must be active with a configured email connection before "
+"completing the Newsletters setup."
+
+msgid ""
+"FluentSMTP doit être installé et actif. Une connexion doit être configurée "
+"avant le premier envoi."
+msgstr ""
+"FluentSMTP must be installed and active. Configure an outgoing connection "
+"before sending your first newsletter."
+
+msgid ""
+"FluentSMTP est absent ou inactif. L’activation du module Newsletters est "
+"bloquée jusqu’à son activation."
+msgstr ""
+"FluentSMTP is missing or inactive. The newsletter module cannot be enabled "
+"until it is activated."
+
+msgid "FluentSMTP est obligatoire pour le mailing."
+msgstr "FluentSMTP is required for mailing."
+
+msgid "FluentSMTP nécessaire"
+msgstr "FluentSMTP required"
+
+msgid "FluentSMTP requis"
+msgstr "FluentSMTP required"
+
+msgid "Fond du contenu"
+msgstr "Content background"
+
+msgid "Fond extérieur"
+msgstr "Outer background"
+
+msgid "Grand titre"
+msgstr "Large heading"
+
+msgid "Gérer les variations des produits"
+msgstr "Manage product variations"
+
 msgid "Historique"
 msgstr "History"
 
+msgid "Image"
+msgstr "Image"
+
+msgid "Image "
+msgstr "Image "
+
+msgid "Image choisie"
+msgstr "Image chosen"
+
+msgid "Image sélectionnée"
+msgstr "Image selected"
+
+msgid "Installer FluentSMTP"
+msgstr "Install FluentSMTP"
+
+msgid ""
+"Installez/activez FluentSMTP et configurez une connexion avant d’activer ce "
+"module."
+msgstr ""
+"Install and activate FluentSMTP, then configure a connection before enabling"
+" this module."
+
+msgid "Insérer un article du site"
+msgstr "Insert an article from the site"
+
+msgid "Intertitre"
+msgstr "Subheading"
+
+msgid "Je souhaite recevoir la newsletter du site (confirmation par e-mail)."
+msgstr "I would like to receive the site newsletter (email confirmation required)."
+
+msgid ""
+"Le module Newsletters exige FluentSMTP installé, activé et configuré avec "
+"une connexion d’envoi. L’inscription marketing pendant la commande est "
+"facultative et décochée par défaut."
+msgstr ""
+"The Newsletter module requires FluentSMTP to be installed, active, and "
+"configured with an outgoing connection. Checkout marketing signup is "
+"optional and unchecked by default."
+
+msgid ""
+"Le module Newsletters nécessite FluentSMTP installé et activé. Activez "
+"FluentSMTP dans Extensions, puis reprenez cette étape."
+msgstr ""
+"The Newsletters module requires FluentSMTP to be installed and active. "
+"Activate FluentSMTP in Plugins, then return to this step."
+
+msgid "Le titre qui ouvre le message"
+msgstr "The heading at the start of the message"
+
+msgid ""
+"Les administrateurs conservent leurs droits natifs. Tout autre rôle est "
+"refusé par défaut."
+msgstr ""
+"Administrators keep their native permissions. All other roles are denied by "
+"default."
+
+msgid ""
+"Les couleurs des éléments individuels peuvent ensuite être personnalisées "
+"séparément."
+msgstr "You can customize the colors of individual elements later."
+
+msgid ""
+"Les désinscriptions historiques doivent être migrées avant le premier envoi."
+" Le module refuse les campagnes si cette protection échoue."
+msgstr ""
+"Historical unsubscribe records must be migrated before the first send. "
+"Campaigns are blocked if this protection fails."
+
+msgid ""
+"Les fonctions désactivées resteront inaccessibles. Elles pourront être "
+"activées plus tard."
+msgstr "Disabled tools remain unavailable. You can enable them later."
+
+msgid ""
+"Les images importées sont disponibles. Rechargez la page pour voir les "
+"nouvelles miniatures."
+msgstr "The uploaded images are available. Reload to see the new thumbnails."
+
+msgid ""
+"Les mises en page complexes restent protégées. Ne cochez que les contenus "
+"dont l’édition est volontairement déléguée."
+msgstr ""
+"Complex layouts remain protected. Select only content that you explicitly "
+"want to delegate."
+
+msgid "Les modifications ultérieures se font depuis les réglages du plugin."
+msgstr "You can change these options later in the plugin settings."
+
+msgid "Lien"
+msgstr "Link"
+
+msgid "Listes et contacts"
+msgstr "Lists and contacts"
+
+msgid ""
+"Lors de chaque envoi, Simple Edit ajoute automatiquement un lien de "
+"désinscription individuel en bas du message. Vous n’avez rien à insérer et "
+"ce lien ne peut pas être retiré depuis l’éditeur."
+msgstr ""
+"Each email automatically includes an individual unsubscribe link at the "
+"bottom. You do not need to add it, and it cannot be removed in the editor."
+
+msgid "L’insertion n’a pas pu être terminée. Vérifiez le contenu."
+msgstr "Could not insert the article. Check its content."
+
+msgid "Magazine — une grande ouverture et des rubriques"
+msgstr "Magazine — featured opening and sections"
+
+msgid "Mailing et WooCommerce"
+msgstr "Mailing and WooCommerce"
+
 msgid "Menu principal"
 msgstr "Main menu"
+
+msgid "Mes newsletters"
+msgstr "My newsletters"
 
 msgid ""
 "Mettez à jour uniquement les informations de produits qui vous ont été "
 "confiées."
 msgstr "Update only the product information assigned to you."
 
+msgid "Modifier des produits déjà publiés"
+msgstr "Edit already published products"
+
+msgid "Modifier le brouillon"
+msgstr "Edit draft"
+
+msgid "Modifier le prix régulier"
+msgstr "Edit regular price"
+
+msgid "Modifier le stock"
+msgstr "Edit stock"
+
+msgid "Modifier les articles existants autorisés"
+msgstr "Edit allowed existing posts"
+
+msgid "Modifier les brouillons"
+msgstr "Edit drafts"
+
+msgid "Modifier les catégories existantes"
+msgstr "Edit existing categories"
+
+msgid "Modifier les pages existantes autorisées"
+msgstr "Edit allowed existing pages"
+
 msgid "Modifier les produits"
 msgstr "Edit products"
+
+msgid "Modifier les textes"
+msgstr "Edit texts"
 
 msgid "Modifier mon site"
 msgstr "Edit my site"
@@ -92,30 +578,118 @@ msgid "Modifier une page"
 msgstr "Edit a page"
 
 msgid ""
-"Modifiez le titre, la description, les dates, les horaires et le lieu des"
-" événements autorisés."
-msgstr ""
-"Update the title, description, dates, time and location of permitted "
-"events."
+"Modifiez le titre, la description, les dates, les horaires et le lieu des "
+"événements autorisés."
+msgstr "Update the title, description, dates, time and location of permitted events."
+
+msgid "Modules"
+msgstr "Modules"
+
+msgid "Modèle de newsletter"
+msgstr "Newsletter layout"
+
+msgid "Monter : "
+msgstr "Move up: "
 
 msgid "Newsletters"
 msgstr "Newsletters"
 
+msgid "Newsletters :"
+msgstr "Newsletters:"
+
+msgid "Nouvelle newsletter"
+msgstr "New newsletter"
+
+msgid "Objet de la newsletter"
+msgstr "Newsletter subject"
+
+msgid "Offrez un café au développeur"
+msgstr "Offer the developer a coffee"
+
+msgid "Ordre mis à jour."
+msgstr "Order updated."
+
+msgid "Ouvrir les réglages FluentSMTP"
+msgstr "Open FluentSMTP settings"
+
+msgid "Ouvrir l’assistant"
+msgstr "Open setup assistant"
+
 msgid "Pages"
 msgstr "Pages"
 
+msgid "Permissions par rôle"
+msgstr "Permissions by role"
+
+msgid "Personnalisée :"
+msgstr "Custom:"
+
+msgid "Photo ou illustration"
+msgstr "Photo or illustration"
+
+msgid ""
+"Pour activer le module Newsletters, installez et activez FluentSMTP, puis "
+"configurez au moins une connexion d’envoi dans ses réglages."
+msgstr ""
+"To enable Newsletters, install and activate FluentSMTP and configure at "
+"least one email connection."
+
+msgid "Pour séparer deux parties"
+msgstr "To separate two sections"
+
+msgid "Produits WooCommerce"
+msgstr "WooCommerce products"
+
+msgid "Proposer un réabonnement"
+msgstr "Offer resubscription"
+
+msgid "Proposer une inscription facultative lors de la commande"
+msgstr "Offer optional newsletter signup at checkout"
+
+msgid "Prune"
+msgstr "Plum"
+
+msgid "Préparer et envoyer ses newsletters sans validation préalable"
+msgstr "Prepare and send newsletters without prior approval"
+
 msgid "Préparer un envoi"
-msgstr "Prepare a send"
+msgstr "Prepare a campaign"
+
+msgid "Préparer une campagne"
+msgstr "Prepare a campaign"
 
 msgid "Préparer une newsletter"
 msgstr "Prepare a newsletter"
 
 msgid ""
-"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez "
-"vos destinataires et lancez votre campagne."
+"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez vos "
+"destinataires et lancez votre campagne."
 msgstr ""
-"Write your messages. If you have sending permission, select recipients "
-"and start a campaign."
+"Write your messages. If you have sending permission, select recipients and "
+"start a campaign."
+
+msgid "Prévisualiser le contenu"
+msgstr "Preview content"
+
+msgid "Prête à préparer pour un envoi"
+msgstr "Ready for sending setup"
+
+msgid "Publier les nouveaux articles sans validation"
+msgstr "Publish new posts without approval"
+
+msgid "Publier les nouvelles pages sans validation"
+msgstr "Publish new pages without approval"
+
+msgid "Publier les produits sans validation"
+msgstr "Publish products without approval"
+
+msgid "Publier sur le site immédiatement"
+msgstr "Publish immediately"
+
+msgid ""
+"Quatre structures différentes. Votre dernier modèle choisi est "
+"présélectionné."
+msgstr "Four different structures. Your most recently chosen layout is preselected."
 
 msgid "Que voulez-vous faire ?"
 msgstr "What would you like to do?"
@@ -123,20 +697,185 @@ msgstr "What would you like to do?"
 msgid "Quelques repères pour modifier le site sans risque."
 msgstr "Guidance for editing the site safely."
 
+msgid "Rechercher FluentSMTP dans les extensions"
+msgstr "Find FluentSMTP in Plugins"
+
+msgid "Replier"
+msgstr "Collapse"
+
+msgid "Replier : "
+msgstr "Collapse: "
+
+msgid "Retirer"
+msgstr "Remove"
+
+msgid "Retirer "
+msgstr "Remove "
+
 msgid "Retrouver une ancienne version"
 msgstr "Restore an earlier version"
+
+msgid ""
+"Récupérez son titre et son premier paragraphe. Après insertion, ces textes "
+"sont indépendants : vous pouvez les modifier sans changer l’article "
+"d’origine."
+msgstr ""
+"Import the title and first paragraph. You can edit them independently "
+"without changing the original article."
+
+msgid "Rédiger les newsletters"
+msgstr "Write newsletters"
 
 msgid "Réorganiser le menu principal"
 msgstr "Reorder the main menu"
 
+msgid "Souhaitez-vous recevoir à nouveau les newsletters de cette liste ?"
+msgstr "Would you like to receive newsletters from this list again?"
+
+msgid "Soumettre pour publication après validation"
+msgstr "Submit for approval before publishing"
+
 msgid "Soumettre à validation"
 msgstr "Submit for approval"
+
+msgid "Soutenir le développement"
+msgstr "Support development"
+
+msgid "Suivre les envois"
+msgstr "Track sent campaigns"
+
+msgid "Synchronisation WooCommerce"
+msgstr "WooCommerce sync"
+
+msgid "Texte"
+msgstr "Text"
+
+msgid "Titre de section"
+msgstr "Section heading"
+
+msgid "Titre principal"
+msgstr "Main heading"
+
+msgid "Tout désélectionner"
+msgstr "Deselect all"
+
+msgid "Tout sélectionner"
+msgstr "Select all"
+
+msgid ""
+"Un administrateur doit terminer la configuration de Dendrila Simple Edit "
+"avant son utilisation."
+msgstr ""
+"An administrator must finish setting up Dendrila Simple Edit before it can "
+"be used."
+
+msgid ""
+"Un clic sur « Lancer » n’envoie rien immédiatement : les messages seront "
+"traités par petits lots planifiés."
+msgstr "Clicking “Start” schedules messages to be processed in small batches."
+
+msgid "Un lien bien visible"
+msgstr "A prominent link"
+
+msgid "Un lien dans le texte"
+msgstr "A link in the text"
+
+msgid "Un ou plusieurs paragraphes"
+msgstr "One or more paragraphs"
+
+msgid ""
+"Uniquement les commandes payées et consenties. Les courriels transactionnels"
+" restent gérés par WooCommerce."
+msgstr ""
+"Only paid orders with consent. WooCommerce continues to handle transactional"
+" emails."
+
+msgid "Utiliser aussi ce modèle par défaut pour mes prochaines newsletters"
+msgstr "Also use this layout as my default for future newsletters"
+
+msgid "Utiliser ces images"
+msgstr "Use these images"
+
+msgid "Utiliser cette image"
+msgstr "Use this image"
 
 msgid "Validations"
 msgstr "Approvals"
 
+msgid "Valider"
+msgstr "Approve"
+
+msgid "Valider les produits proposés"
+msgstr "Approve submitted products"
+
+msgid "Valider un contenu"
+msgstr "Approve content"
+
+msgid "Validée, non envoyée"
+msgstr "Approved, not sent"
+
+msgid "Vert"
+msgstr "Green"
+
+msgid "Vous pouvez choisir 60 images maximum. Réduisez votre sélection."
+msgstr "You can choose up to 60 images. Reduce your selection."
+
+msgid "Vérification"
+msgstr "Verification"
+
+msgid "Vérification finale"
+msgstr "Final checks"
+
+msgid "Vérifiez la liste : numéros valides, 60 images maximum."
+msgstr "Check the list: valid IDs, up to 60 images."
+
 msgid "Vérifiez les propositions avant qu’elles ne soient mises en ligne."
 msgstr "Review changes before they go live."
+
+msgid "connexion détectée"
+msgstr "connection detected"
+
+msgid "connexion manquante"
+msgstr "connection missing"
+
+msgid "inactif ou non configuré — veuillez corriger avant validation"
+msgstr "inactive or not configured — fix before finishing"
+
+msgid "nouvel onglet"
+msgstr "new tab"
+
+msgid "prêt"
+msgstr "ready"
+
+msgid "À droite"
+msgstr "Right"
+
+msgid "À gauche"
+msgstr "Left"
+
+msgid "À modifier"
+msgstr "To edit"
+
+msgid "Éditorial — lettre aérée et typographie soignée"
+msgstr "Editorial — spacious letter with elegant typography"
+
+msgid "Élément"
+msgstr "Element"
+
+msgid "Élément descendu."
+msgstr "Element moved down."
+
+msgid "Élément remonté."
+msgstr "Element moved up."
+
+msgid "Élément retiré."
+msgstr "Element removed."
+
+msgid "Étape "
+msgstr "Step "
+
+msgid "État FluentSMTP :"
+msgstr "FluentSMTP status:"
 
 msgid "Événements"
 msgstr "Events"

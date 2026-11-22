@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#22593b"><title>Publier Dendrila Simple Edit — Guide WordPress.org</title>
+<style>
+:root{color-scheme:light;--green:#22593b;--deep:#163b29;--ink:#1e3025;--muted:#556b5d;--bg:#f3f7f2;--stroke:#cbdccc;--sage:#e7f3e8;--paper:#fff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink)}
+header{background:linear-gradient(130deg,#123b29,#377247);color:#fff;padding:36px max(16px,calc((100vw - 980px)/2)) 32px}h1{font-size:clamp(27px,5vw,38px);line-height:1.17;margin:0 0 9px;max-width:770px}header p{margin:0;max-width:800px;color:#e2f3e7}h2{font-size:22px;line-height:1.3;margin:0 0 11px;color:var(--deep)}h3{font-size:17px;color:var(--deep);margin:16px 0 5px}
+main{max-width:980px;margin:auto;padding:20px 15px 65px}section{background:var(--paper);border:1px solid var(--stroke);border-radius:16px;padding:22px;margin-bottom:17px;box-shadow:0 2px 14px #244c2810}p{margin:8px 0 13px}a{color:#166238;text-underline-offset:3px}a:hover{color:#0e4125}a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #1a9051;outline-offset:3px}
+.hero{background:#e4f2e7;border:2px solid #add0b4;border-radius:13px;padding:15px 16px;margin:14px 0}.hero strong{display:block;font-size:18px;color:#174a2a}.cta{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--green);border-radius:9px;padding:14px;color:#fff!important;font-weight:800;text-decoration:none;min-height:50px;margin:10px 0}.cta:hover{background:#164a2d}.note{border-left:4px solid #418f59;padding:11px 14px;background:#edf7ed;border-radius:8px;margin:14px 0}.warning{border-left:4px solid #aa8335;background:#fff8e8;padding:11px 14px;border-radius:8px;margin:14px 0}
+.links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:13px 0}.links a{background:#eff8f0;border:1px solid #bdd5c1;border-radius:9px;padding:11px;text-decoration:none;font-weight:700;overflow-wrap:anywhere}.links a:hover{background:#dfefdf}
+.step{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;padding:14px 0;border-bottom:1px solid #e0ebe0}.step:last-of-type{border-bottom:0}.step input{width:23px;height:23px;accent-color:var(--green);cursor:pointer;margin:4px 0}.step label{display:block;font-weight:750;color:var(--deep);cursor:pointer}.step p{font-size:14px;color:var(--muted);margin:5px 0}.step.done label{text-decoration:line-through;color:#607f67}
+.copyfield{margin:12px 0}.copyfield label{font-weight:700;font-size:14px;display:block;margin-bottom:5px}.copyrow{display:flex;gap:7px}.copyrow input,.copyrow textarea{min-width:0;flex:1;background:#fafffa;border:1px solid #a4c3ac;border-radius:9px;padding:10px 12px;color:#24422c;font:14px/1.45 ui-monospace,Consolas,monospace}.copyrow textarea{min-height:190px;resize:vertical}.btn{background:var(--green);color:#fff;border:0;border-radius:9px;padding:10px 14px;font:700 14px system-ui,sans-serif;min-height:44px;cursor:pointer}.btn:hover{background:#173e29}.btn.secondary{border:1px solid #94b8a0;background:#fff;color:var(--deep)}.btn.secondary:hover{background:#ebf6eb}
+small{color:var(--muted)}.progress-track{height:12px;background:#d8e9dc;border-radius:30px;overflow:hidden}.progress-fill{height:100%;background:#428851;width:0;transition:width .18s}.progress-actions{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:9px;font-size:14px;font-weight:700}.toc{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0}.toc a{padding:7px 9px;font-weight:700;font-size:13px;border:1px solid var(--stroke);border-radius:7px;text-decoration:none;background:#f1f8f1}
+details{border:1px solid #cbdccc;background:#f8fbf8;padding:11px 13px;border-radius:9px;margin:12px 0}summary{cursor:pointer;font-weight:750;color:var(--deep)}code{background:#e5efe7;padding:2px 5px;border-radius:4px;overflow-wrap:anywhere}footer{text-align:center;color:#5d6a60;font-size:13px;padding:10px 0}#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#18432e;color:#fff;padding:9px 15px;border-radius:8px;display:none;z-index:10;max-width:90vw}#toast.show{display:block}
+@media(max-width:620px){header{padding:27px 16px}main{padding:13px 9px 45px}section{padding:16px}.links{grid-template-columns:1fr}.copyrow{flex-direction:column}.copyrow button{width:100%}.step{grid-template-columns:27px minmax(0,1fr)}h2{font-size:20px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style></head>
+<body>
+<header><div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;opacity:.9;font-weight:800;margin-bottom:9px">Le Potager du Web · WordPress.org</div><h1>Mettre Dendrila Simple Edit dans le répertoire WordPress</h1><p>Le vrai parcours, sans « mode développeur » à trouver et sans extension supplémentaire à installer. Avance à ton rythme avec des liens directs et des cases à cocher.</p></header>
+<main>
+<section id="depart"><h2>🚀 Commence ici : accéder à l’espace développeur</h2>
+<p><strong>Il n’existe pas de mode développeur à activer</strong> dans ton administration WordPress. Il suffit de posséder un compte sur <strong>WordPress.org</strong> et d’ouvrir la page de dépôt officielle.</p>
+<div class="hero"><strong>Le lien direct que tu cherchais</strong><a class="cta" href="https://wordpress.org/plugins/developers/add/" target="_blank" rel="noopener noreferrer">Ouvrir « Ajouter mon plugin » sur WordPress.org <span aria-hidden="true">↗</span></a><small>Si la page demande de se connecter, c’est normal. Reviens-y une fois connecté.</small></div>
+<div class="links"><a href="https://login.wordpress.org/" target="_blank" rel="noopener noreferrer">1. Me connecter à WordPress.org ↗</a><a href="https://login.wordpress.org/register" target="_blank" rel="noopener noreferrer">Créer mon compte WordPress.org ↗</a><a href="https://wordpress.org/plugins/developers/" target="_blank" rel="noopener noreferrer">Page d’accueil des développeurs de plugins ↗</a><a href="https://wordpress.org/plugins/developers/add/" target="_blank" rel="noopener noreferrer">2. Déposer mon extension ↗</a></div>
+<div class="note">⚠️ Ton compte d’administration de <strong>wordpress.lepotager.org</strong> n’est pas forcément un compte WordPress.org. WordPress.org et WordPress.com sont également deux services distincts.</div>
+<nav class="toc" aria-label="Accès rapide"><a href="#compte">Compte</a><a href="#fichier">Fichier</a><a href="#controles">Contrôles sans installation</a><a href="#depot">Dépôt</a><a href="#apres">Après l’acceptation</a></nav></section>
+<section id="progression"><h2>Ta progression</h2><div class="progress-track" role="progressbar" aria-label="Progression des étapes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="progress"></div></div><div class="progress-actions"><span id="progresslabel">0 étape cochée</span><button class="btn secondary" id="reset" type="button">Décocher toutes les étapes</button></div><small>La progression est conservée sur ton appareil quand le navigateur le permet. Rien n’est envoyé à un serveur.</small></section>
+<section id="compte"><h2>1. Mon compte WordPress.org</h2>
+<div class="step"><input type="checkbox" id="s01"><div><label for="s01">J’ai un compte WordPress.org et je suis connecté</label><p>Utilise le bouton « Me connecter » ci-dessus. Si tu n’as pas de compte, choisis « Créer mon compte ». Confirme ton adresse e-mail si WordPress.org le demande.</p></div></div>
+<div class="step"><input type="checkbox" id="s02"><div><label for="s02">J’ai ouvert la page officielle « Ajouter mon plugin »</label><p>Adresse : <a href="https://wordpress.org/plugins/developers/add/" target="_blank" rel="noopener noreferrer">wordpress.org/plugins/developers/add/</a>. Une fois connecté, c’est directement le bon formulaire. Tu n’as aucun statut développeur à demander à l’avance.</p></div></div>
+<div class="step"><input type="checkbox" id="s03"><div><label for="s03">J’ai sécurisé mon compte avec la double authentification (2FA)</label><p>Pour un auteur d’extension, WordPress.org demande la 2FA. <a href="https://wordpress.org/support/users/profile/edit/account/" target="_blank" rel="noopener noreferrer">Ouvrir les réglages de sécurité du compte ↗</a>. Conserve les codes de secours.</p></div></div>
+<div class="copyfield"><label for="depoturl">Adresse à garder sous la main</label><div class="copyrow"><input id="depoturl" readonly value="https://wordpress.org/plugins/developers/add/"><button type="button" class="btn" data-copy="depoturl">Copier le lien</button></div></div>
+</section>
+<section id="fichier"><h2>2. Préparer le fichier à déposer</h2><p>Tu dois soumettre <strong>le ZIP complet du plugin</strong>, pas une capture d’écran, ni son dépôt GitHub.</p>
+<div class="copyfield"><label for="zipname">Nom du ZIP déjà préparé</label><div class="copyrow"><input id="zipname" readonly value="dendrila-simple-edit-0.0.1-wordpressorg.zip"><button type="button" class="btn" data-copy="zipname">Copier le nom</button></div></div>
+<div class="copyfield"><label for="slug">Identifiant souhaité de l’extension</label><div class="copyrow"><input id="slug" readonly value="dendrila-simple-edit"><button type="button" class="btn" data-copy="slug">Copier</button></div></div>
+<div class="warning"><strong>Vérification utile :</strong> le <code>readme.txt</code> de l’archive indique actuellement <code>Contributors: juliane16</code>. Vérifie que cet identifiant est bien un compte WordPress.org devant être crédité. S’il ne correspond pas au véritable contributeur, corrige-le <em>avant le dépôt</em>.</div>
+<div class="step"><input type="checkbox" id="s04"><div><label for="s04">J’ai sauvegardé les données de mon WordPress de test</label><p>Important pour Dendrila Simple Edit : la migration du mailing doit conserver les désinscriptions. N’utilise pas de vrais contacts pour un premier test.</p></div></div>
+<div class="step"><input type="checkbox" id="s05"><div><label for="s05">J’ai vérifié le plugin sur mon environnement de test</label><p>Création et publication de produits, rôles, listes de diffusion, désinscription, assistant initial et formulaires sur mobile. C’est distinct de la démarche de publication sur WordPress.org.</p></div></div>
+<div class="step"><input type="checkbox" id="s06"><div><label for="s06">J’ai vérifié le nom du contributeur et les informations du ZIP</label><p>Contrôle le nom Dendrila Simple Edit, la version 0.0.1, la licence, les dépendances et le fichier <code>readme.txt</code>.</p></div></div>
+<details><summary>Afficher et copier le contenu actuel du readme.txt</summary><p>Si tu veux vérifier le readme dans le validateur officiel sans le chercher dans le ZIP, copie ce texte.</p><div class="copyrow"><textarea id="readmetext" readonly>=== Dendrila Simple Edit ===
+Contributors: juliane16
+Donate link: https://app.lepotager.org/soutenir/
+Tags: editor, permissions, newsletter, content, woocommerce
+Requires at least: 6.5
+Tested up to: 7.1
+Requires PHP: 7.4
+Stable tag: 0.0.1
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+A guided editing space for WordPress pages, posts, events, products and email newsletters with permissions by role.
+
+== Description ==
+
+Dendrila Simple Edit provides a restricted editing interface where site owners choose which content and which actions WordPress roles can perform. It does not grant the delegated role unrestricted access to WordPress settings, orders or payments.
+
+Features:
+
+* Guided editing for explicitly allowed pages and posts, with safe content blocks, image selection and optional approval before publication.
+* Role-based permissions with granular module actions and an installation setup wizard.
+* Optional integration with Advanced Custom Fields (supported text fields), The Events Calendar (events) and WooCommerce (products).
+* WooCommerce simple, external, grouped and variable products with delegated creation, publishing, categories, variations and stock controls where authorized.
+* A built-in newsletter composer with multiple table-based email layouts, customizable palettes saved per author, preview, mailing lists, sending queue and unsubscribe management.
+* Optional WooCommerce checkout newsletter opt-in. Customers must actively select the checkbox and confirm their email address; no customer is automatically subscribed from a purchase.
+* Historical unsubscribe protection: old opt-outs are recovered on upgrade, stored independently of mailing lists, and checked again before each email delivery.
+* Shortcodes [dse_text field=&quot;phone&quot;] and [dse_newsletter_inscription liste=&quot;1&quot;].
+* Green-themed administration and a support link displayed only in the plugin&#x27;s administration, not on public pages.
+
+Builder compatibility: content created by Divi and other page builders is not automatically rewritten. Unsupported layouts are intentionally excluded from delegated edits. Access and compatibility must be tested on the site&#x27;s own plugins and themes.
+
+== External services and privacy ==
+
+Dendrila Simple Edit stores its settings, role assignments, mailing lists, email addresses, consent timestamps, campaign status and suppression history in the site&#x27;s WordPress database. Suppression history uses normalized email hashes and is retained so previous unsubscribes remain effective after plugin updates. Site owners are responsible for providing appropriate privacy information and handling data-subject requests.
+
+Newsletter sending uses WordPress wp_mail(), optionally delivered through a separately configured SMTP extension such as FluentSMTP. The plugin does not send subscriber lists or site content to the plugin author and does not include analytics or advertising telemetry.
+
+The optional WooCommerce checkout integration runs only when enabled by the administrator. Orders and payments remain managed by WooCommerce. An opt-in is never checked by default. The site must configure its own privacy and newsletter policy.
+
+The support/donation link opens https://app.lepotager.org/soutenir/ only when an administrator or delegated editor clicks it in the plugin&#x27;s administration screen.
+
+== Installation ==
+
+1. Back up your WordPress database, especially mailing data, before replacing an earlier experimental version.
+2. Upload the ZIP through Plugins &gt; Add New &gt; Upload Plugin, then activate Dendrila Simple Edit.
+3. Complete the five-step configuration assistant as a user authorized to activate/install plugins.
+4. Choose enabled modules, role permissions and allowed pages or posts. Configure email transport before enabling real newsletters.
+5. Check the WooCommerce product editor and email opt-in in a test environment before using them with real orders or contacts.
+6. For a shortcode, insert it in a WordPress Shortcode block, not in a page-builder internal data structure.
+
+== Frequently Asked Questions ==
+
+= Can I delegate publishing without giving access to WooCommerce orders? =
+Yes. Product creation, publication, variations, categories, stock and other operations are independently authorized for WordPress roles. Order, refund and payment administration is not delegated.
+
+= What happens to a person who unsubscribed before an update? =
+A database migration searches earlier mailing tables and records unsubscribed addresses in a separate suppression register. Campaign delivery is blocked if this migration has not completed. An opted-out address cannot be reactivated by importing a list; only a fresh voluntary confirmation records a new consent while preserving the earlier opt-out history.
+
+= Can I use WooCommerce and newsletters independently? =
+Yes. Each module is optional. Checkout opt-in is disabled by default and requires a mailing list and an email transport.
+
+= Is a Divi layout editable? =
+Not automatically. Unsupported layouts remain protected; administrators can choose safe shortcode placements, while native Divi content may need Divi&#x27;s original editor.
+
+= How do I support development? =
+The plugin&#x27;s administration includes an optional link to https://app.lepotager.org/soutenir/. No donation is required to use the extension.
+
+== Changelog ==
+
+= 0.0.1 =
+* Initial guided content editor and granular WordPress role permissions.
+* WooCommerce product types, categories, variation editing, stock and publishing workflows.
+* Newsletter templates and palettes, optional WooCommerce opt-in and durable unsubscribe history.
+* First-run configuration and mobile administration improvements.
+</textarea><button type="button" class="btn" data-copy="readmetext">Copier le readme</button></div></details>
+</section>
+<section id="controles"><h2>3. Contrôles officiels — sans installer un nouveau plugin</h2>
+<p><strong>Aucune installation supplémentaire n’est nécessaire pour accéder au formulaire de soumission.</strong> Le validateur de <code>readme.txt</code> fonctionne en ligne.</p>
+<div class="links"><a href="https://wordpress.org/plugins/developers/readme-validator/" target="_blank" rel="noopener noreferrer">Vérifier le readme.txt en ligne ↗</a><a href="https://developer.wordpress.org/plugins/wordpress-org/detailed-plugin-guidelines/" target="_blank" rel="noopener noreferrer">Lire les règles WordPress.org ↗</a><a href="https://wordpress.org/plugins/developers/add/" target="_blank" rel="noopener noreferrer">Revenir au formulaire de dépôt ↗</a><a href="https://developer.wordpress.org/plugins/wordpress-org/plugin-developer-faq/" target="_blank" rel="noopener noreferrer">FAQ des auteurs ↗</a></div>
+<div class="step"><input type="checkbox" id="s07"><div><label for="s07">J’ai ouvert le validateur de readme sur WordPress.org</label><p>Colle le contenu du readme dans le formulaire, lance la validation et lis les erreurs éventuelles.</p></div></div>
+<div class="step"><input type="checkbox" id="s08"><div><label for="s08">J’ai corrigé les erreurs signalées dans le readme</label><p>Si le fichier est modifié, cette modification doit aussi se retrouver dans le ZIP qui sera soumis : copier un readme corrigé ici ne modifie pas l’archive.</p></div></div>
+<details><summary>Et « Plugin Check », alors ?</summary><p><strong>Ce n’est pas un « mode développeur ».</strong> Plugin Check est un outil d’analyse du code, distinct du formulaire de publication. Tu n’es pas obligé d’installer une nouvelle extension juste pour accéder au dépôt.</p><p>Sur ton laboratoire, Plugin Check était déjà présent lors du dernier contrôle. Si tu veux t’en servir sans rien installer, va dans <strong>Outils → Plugin Check</strong> sur ton WordPress de test. Sinon, continue vers le dépôt ; WordPress.org effectue sa propre revue après soumission. Ne considère toutefois pas cela comme un remplacement complet des tests de sécurité.</p></details>
+<div class="step"><input type="checkbox" id="s09"><div><label for="s09">J’ai relu les règles de publication et vérifié que l’archive est la bonne</label><p>La revue WordPress.org contrôle notamment la sécurité, les autorisations, les données et les règles du répertoire. Une vérification du readme ne valide pas le code.</p></div></div>
+</section>
+<section id="depot"><h2>4. Déposer Dendrila Simple Edit</h2>
+<a class="cta" href="https://wordpress.org/plugins/developers/add/" target="_blank" rel="noopener noreferrer">Ouvrir le formulaire officiel de soumission <span aria-hidden="true">↗</span></a>
+<div class="step"><input type="checkbox" id="s10"><div><label for="s10">Le formulaire « Add your plugin » s’affiche sur mon compte</label><p>Si WordPress.org te demande de te reconnecter, reconnecte-toi puis recharge le lien direct. Tu n’as pas besoin de passer par l’administration d’un de tes sites WordPress.</p></div></div>
+<div class="step"><input type="checkbox" id="s11"><div><label for="s11">J’ai sélectionné le ZIP de Dendrila Simple Edit dans le formulaire</label><p>Choisis l’archive complète, conserve le nom de l’extension et contrôle les informations affichées avant l’envoi.</p></div></div>
+<div class="step"><input type="checkbox" id="s12"><div><label for="s12">J’ai envoyé la demande de revue</label><p>Le dépôt est alors en attente de vérification par WordPress.org. Cela ne veut pas encore dire que ton plugin est publié.</p></div></div>
+<div class="step"><input type="checkbox" id="s13"><div><label for="s13">J’ai conservé l’e-mail de réponse de WordPress.org</label><p>Vérifie les messages de <code>plugins@wordpress.org</code>. En cas de demande de correction, réponds au fil reçu, sans créer un nouveau dépôt.</p></div></div>
+<div class="copyfield"><label for="teamemail">Adresse de l’équipe de revue</label><div class="copyrow"><input id="teamemail" readonly value="plugins@wordpress.org"><button type="button" class="btn" data-copy="teamemail">Copier</button></div></div>
+</section>
+<section id="apres"><h2>5. Une fois le plugin approuvé</h2><p>Ce n’est qu’après l’accord de WordPress.org qu’un dépôt de publication Subversion (SVN) est attribué. <strong>GitHub et SVN ne sont pas le même dépôt.</strong></p>
+<div class="step"><input type="checkbox" id="s14"><div><label for="s14">J’ai reçu l’approbation et les informations du dépôt SVN</label><p>WordPress.org t’envoie les indications utiles par e-mail.</p></div></div>
+<div class="step"><input type="checkbox" id="s15"><div><label for="s15">J’ai publié les fichiers dans le dépôt SVN attribué</label><p>Les sources vont dans <code>trunk/</code>, les versions stables dans <code>tags/</code>, les visuels de la fiche dans <code>assets/</code>.</p></div></div>
+<div class="step"><input type="checkbox" id="s16"><div><label for="s16">J’ai vérifié la fiche publique et le téléchargement</label><p>Vérifie le texte, les images, la licence, les liens, puis installe la version publique sur un site de test.</p></div></div>
+<div class="links"><a href="https://developer.wordpress.org/plugins/wordpress-org/how-to-use-subversion/" target="_blank" rel="noopener noreferrer">Tutoriel SVN officiel ↗</a><a href="https://developer.wordpress.org/plugins/wordpress-org/" target="_blank" rel="noopener noreferrer">Manuel WordPress.org pour les auteurs ↗</a></div>
+</section>
+<footer>Guide de Dendrila Simple Edit · Actualisé le 22 novembre 2026 · Sans installation d’extension supplémentaire · Fonctionne hors ligne une fois enregistré</footer>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+(()=>{'use strict';const key='dendrila-simple-edit-guide-depot-wporg-v2';const inputs=[...document.querySelectorAll('.step input[type="checkbox"]')];const bar=document.querySelector('#progress'),track=document.querySelector('.progress-track'),label=document.querySelector('#progresslabel'),toast=document.querySelector('#toast');let memory={};try{memory=JSON.parse(localStorage.getItem(key)||'{}')}catch(_){memory={}}inputs.forEach(input=>{input.checked=Boolean(memory[input.id]);input.closest('.step').classList.toggle('done',input.checked)});
+function refresh(){let n=inputs.filter(x=>x.checked).length,pct=Math.round(n/inputs.length*100);bar.style.width=pct+'%';track.setAttribute('aria-valuenow',String(pct));label.textContent=n+' étape'+(n>1?'s':'')+' cochée'+(n>1?'s':'')+' sur '+inputs.length+' ('+pct+' %)'}
+function save(){let values={};inputs.forEach(x=>{values[x.id]=x.checked;x.closest('.step').classList.toggle('done',x.checked)});try{localStorage.setItem(key,JSON.stringify(values))}catch(_){}refresh()}
+inputs.forEach(x=>x.addEventListener('change',save));document.querySelector('#reset').addEventListener('click',()=>{if(confirm('Décocher toutes les étapes ?')){inputs.forEach(x=>x.checked=false);save()}});refresh();let timer;function msg(t){toast.textContent=t;toast.className='show';clearTimeout(timer);timer=setTimeout(()=>toast.className='',1900)}
+async function copy(id){let el=document.getElementById(id);if(!el)return;try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(el.value)}else{el.focus();el.select();if(!document.execCommand('copy'))throw Error('not supported')}msg('Copié !')}catch(_){el.focus();el.select();msg('Texte sélectionné : copie-le depuis le menu')}}
+document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>copy(b.dataset.copy)));
+})();
+</script></body></html>

@@ -2,21 +2,23 @@
  * All save actions remain explicit. No email is sent from this script. */
 (function () {
     'use strict';
+    var dendrilaI18n = window.dendrilaSimpleEditStrings || {};
+    function t(phrase) { return Object.prototype.hasOwnProperty.call(dendrilaI18n, phrase) ? dendrilaI18n[phrase] : phrase; }
     var types = {
-        title:   {label: 'Titre principal', icon: 'heading', hint: 'Le titre qui ouvre le message'},
-        heading: {label: 'Intertitre', icon: 'editor-textcolor', hint: 'Pour séparer deux parties'},
-        text:    {label: 'Texte', icon: 'editor-paragraph', hint: 'Un ou plusieurs paragraphes'},
-        image:   {label: 'Image', icon: 'format-image', hint: 'Photo ou illustration'},
-        button:  {label: 'Bouton', icon: 'arrow-right-alt2', hint: 'Un lien bien visible'},
-        link:    {label: 'Lien', icon: 'admin-links', hint: 'Un lien dans le texte'}
+        title:   {label: t('Titre principal'), icon: 'heading', hint: t('Le titre qui ouvre le message')},
+        heading: {label: t('Intertitre'), icon: 'editor-textcolor', hint: t('Pour séparer deux parties')},
+        text:    {label: t('Texte'), icon: 'editor-paragraph', hint: t('Un ou plusieurs paragraphes')},
+        image:   {label: t('Image'), icon: 'format-image', hint: t('Photo ou illustration')},
+        button:  {label: t('Bouton'), icon: 'arrow-right-alt2', hint: t('Un lien bien visible')},
+        link:    {label: t('Lien'), icon: 'admin-links', hint: t('Un lien dans le texte')}
     };
     var colors = [
-        {key: 'default', name: 'Automatique', value: ''},
-        {key: 'green', name: 'Vert', value: '#24543b'},
-        {key: 'blue', name: 'Bleu', value: '#245185'},
-        {key: 'plum', name: 'Prune', value: '#713e6d'},
-        {key: 'brick', name: 'Brique', value: '#8c3832'},
-        {key: 'slate', name: 'Ardoise', value: '#394758'}
+        {key: 'default', name: t('Automatique'), value: ''},
+        {key: 'green', name: t('Vert'), value: '#24543b'},
+        {key: 'blue', name: t('Bleu'), value: '#245185'},
+        {key: 'plum', name: t('Prune'), value: '#713e6d'},
+        {key: 'brick', name: t('Brique'), value: '#8c3832'},
+        {key: 'slate', name: t('Ardoise'), value: '#394758'}
     ];
     var names = {};
     colors.forEach(function (c) {names[c.key] = c.value;});
@@ -35,23 +37,21 @@
         if (/^#(?:[a-f0-9]{3}|[a-f0-9]{6})$/i.test(code || '')) {return code;}
         return '';
     }
-    function editor(root) {
+    function editor(root, editorIndex) {
         var source = root.querySelector('[data-dendrila-simple-edit-editor-source]');
         if (!source) {return;}
         var form = root.closest('form');
         if (!form) {return;}
         var allowTitle = root.getAttribute('data-allow-title') !== '0';
-        var styleColor = '';
-        var loadingExisting = true;
         var addBar = node('div', '', 'dendrila-simple-edit-block-palette');
-        addBar.setAttribute('aria-label', 'Ajouter un élément');
+        addBar.setAttribute('aria-label', t('Ajouter un élément'));
         var canvas = node('div', '', 'dendrila-simple-edit-block-canvas');
-        var empty = node('p', 'Choisissez un élément ci-dessus pour commencer.', 'dendrila-simple-edit-block-empty');
+        var empty = node('p', t('Choisissez un élément ci-dessus pour commencer.'), 'dendrila-simple-edit-block-empty');
         var status = node('p', '', 'screen-reader-text');
         status.setAttribute('role', 'status');
         var previewPanel = node('section', '', 'dendrila-simple-edit-live-preview');
         var previewBody = node('div', '', 'dendrila-simple-edit-live-preview-body');
-        previewPanel.append(node('h4', 'Aperçu du contenu'), previewBody);
+        previewPanel.append(node('h4', t('Aperçu du contenu')), previewBody);
         var titleButton = null, moving = null, serial = 0;
         canvas.appendChild(empty);
         function blocks() {return Array.from(canvas.querySelectorAll(':scope > [data-block]'));}
@@ -69,7 +69,7 @@
         function inputField(parent, text, value, isArea, inputType) {
             var label = node('label', text);
             var el = node(isArea ? 'textarea' : 'input');
-            var id = 'dendrila-simple-edit-editor-field-' + (++serial);
+            var id = 'dendrila-simple-edit-editor-field-' + editorIndex + '-' + (++serial);
             el.id = id; label.htmlFor = id;
             if (isArea) {el.rows = 4;} else {el.type = inputType || 'text';}
             el.value = value || '';
@@ -94,35 +94,45 @@
             var controls = node('div', '', 'dendrila-simple-edit-block-controls');
             var up = control('↑', function () {
                 var sibling = box.previousElementSibling;
-                if (sibling && sibling.dataset.block) {canvas.insertBefore(box, sibling); repaint('Élément remonté.');}
+                if (sibling && sibling.dataset.block) {canvas.insertBefore(box, sibling); repaint(t('Élément remonté.'));}
             });
-            up.dataset.up = ''; up.setAttribute('aria-label', 'Monter : ' + types[type].label);
+            up.dataset.up = ''; up.setAttribute('aria-label', t('Monter : ') + types[type].label);
             var down = control('↓', function () {
                 var sibling = box.nextElementSibling;
-                if (sibling && sibling.dataset.block) {canvas.insertBefore(sibling, box); repaint('Élément descendu.');}
+                if (sibling && sibling.dataset.block) {canvas.insertBefore(sibling, box); repaint(t('Élément descendu.'));}
             });
-            down.dataset.down = ''; down.setAttribute('aria-label', 'Descendre : ' + types[type].label);
-            controls.append(up, down, control('Retirer', function () {box.remove(); repaint('Élément retiré.');}));
-            bar.append(grip, node('strong', types[type].label), controls);
+            down.dataset.down = ''; down.setAttribute('aria-label', t('Descendre : ') + types[type].label);
+            var toggle = control('⌄', function () {
+                var nowOpen = fields.hidden;
+                fields.hidden = !nowOpen;
+                toggle.setAttribute('aria-expanded', nowOpen ? 'true' : 'false');
+                toggle.setAttribute('aria-label',(nowOpen ? t('Replier') : t('Déplier')) + ' : ' + types[type].label);
+                box.classList.toggle('is-collapsed', !nowOpen);
+            }, 'dendrila-simple-edit-block-toggle');
+            toggle.setAttribute('aria-label', t('Replier : ') + types[type].label);
+            toggle.setAttribute('aria-expanded', 'true');
+            controls.append(toggle,up, down, control(t('Retirer'), function () {box.remove(); repaint(t('Élément retiré.'));}));
+            var heading = node('strong', types[type].label);
+            var summary = node('small', '', 'dendrila-simple-edit-block-summary');
+            bar.append(grip, heading, summary, controls);
             box.appendChild(bar);
             var fields = node('div', '', 'dendrila-simple-edit-block-fields');
-            if (!allowTitle) {
-                var disclosure = node('details');
-                disclosure.open = !loadingExisting;
-                var summary = node('summary', 'Modifier ' + types[type].label.toLowerCase());
-                disclosure.append(summary, fields);
-                box.appendChild(disclosure);
-                fields.addEventListener('invalid', function () { disclosure.open = true; }, true);
-            } else { box.appendChild(fields); }
+            box.appendChild(fields);
+            // Adding an element collapses older ones; manually opened elements stay independent.
+            blocks().forEach(function (other) {
+                var fieldset = other.querySelector('.dendrila-simple-edit-block-fields');
+                var button = other.querySelector('.dendrila-simple-edit-block-toggle');
+                if (fieldset) {fieldset.hidden = true; other.classList.add('is-collapsed');}
+                if (button) {button.setAttribute('aria-expanded','false');
+                    button.setAttribute('aria-label',t('Déplier le bloc'));}
+            });
             var value, other;
             if (type === 'image') {
-                value = inputField(fields, 'Adresse de l’image', values.url, false, 'url');
-                other = inputField(fields, 'Texte alternatif (obligatoire)', values.text, false);
-                other.required = true;
-                inputField(fields, 'Description (facultative)', values.description, false);
+                value = inputField(fields, t('Adresse de l’image'), values.url, false, 'url');
+                other = inputField(fields, t('Description de l’image'), values.text, false);
                 if (window.wp && window.wp.media) {
-                    fields.appendChild(control('Choisir dans la médiathèque', function () {
-                        var media = window.wp.media({title: 'Choisir une image', library: {type: 'image'}, multiple: false});
+                    fields.appendChild(control(t('Choisir dans la médiathèque'), function () {
+                        var media = window.wp.media({title: t('Choisir une image'), library: {type: 'image'}, multiple: false});
                         media.on('select', function () {
                             var selected = media.state().get('selection').first();
                             if (!selected) {return;}
@@ -135,26 +145,26 @@
                     }));
                 }
             } else {
-                value = inputField(fields, 'Contenu', values.text, type === 'text');
-                if (type === 'button' || type === 'link') {other = inputField(fields, 'Adresse du lien', values.url, false, 'url');}
+                value = inputField(fields, t('Contenu'), values.text, type === 'text');
+                if (type === 'button' || type === 'link') {other = inputField(fields, t('Adresse du lien'), values.url, false, 'url');}
             }
-            box.dataset.color = values.color && (names[values.color] !== undefined || colorValue(values.color)) ? (values.color === 'default' ? 'green' : values.color) : (styleColor || 'green');
+            box.dataset.color = values.color && (names[values.color] !== undefined || colorValue(values.color)) ? values.color : 'default';
             var colorWrap = node('fieldset', '', 'dendrila-simple-edit-block-color');
-            var legend = node('legend', type === 'image' ? 'Couleur du cadre' : 'Couleur du texte ou du bouton');
+            var legend = node('legend', type === 'image' ? t('Couleur du cadre') : t('Couleur du texte ou du bouton'));
             var palette = node('div', '', 'dendrila-simple-edit-color-palette');
             colorWrap.append(legend, palette);
-            var pickerLabel = node('label', 'Personnalisée :', 'dendrila-simple-edit-color-custom-label');
+            var pickerLabel = node('label', t('Personnalisée :'), 'dendrila-simple-edit-color-custom-label');
             var picker = node('input');
             picker.type = 'color';
             picker.value = colorValue(box.dataset.color) || '#24543b';
-            picker.setAttribute('aria-label', 'Choisir une couleur personnalisée');
+            picker.setAttribute('aria-label', t('Choisir une couleur personnalisée'));
             pickerLabel.appendChild(picker);
             var colorStatus = node('span', '', 'dendrila-simple-edit-color-label');
             colorStatus.setAttribute('aria-live', 'polite');
             function updateColor() {
                 var chosen = colorValue(box.dataset.color);
                 box.style.setProperty('--dendrila-simple-edit-block-ink', chosen || '#23462a');
-                colorStatus.textContent = box.dataset.color === 'default' ? 'Couleur automatique' :
+                colorStatus.textContent = box.dataset.color === 'default' ? t('Couleur automatique') :
                     (colors.find(function (c) {return c.key === box.dataset.color;}) || {}).name || chosen;
                 Array.from(palette.children).forEach(function (b) {
                     b.setAttribute('aria-pressed', b.dataset.value === box.dataset.color ? 'true' : 'false');
@@ -176,12 +186,12 @@
             colorWrap.append(pickerLabel, colorStatus);
             fields.appendChild(colorWrap);
             var alignment = node('fieldset', '', 'dendrila-simple-edit-block-alignment');
-            alignment.appendChild(node('legend', 'Alignement de cet élément'));
+            alignment.appendChild(node('legend', t('Alignement de cet élément')));
             var alignGroup = node('div', '', 'dendrila-simple-edit-alignment-options');
             alignGroup.setAttribute('role', 'group');
             alignGroup.setAttribute('aria-label', 'Alignement : ' + types[type].label);
             ['left', 'center', 'right'].forEach(function (option, index) {
-                var labels = ['À gauche', 'Centré', 'À droite'];
+                var labels = [t('À gauche'), t('Centré'), t('À droite')];
                 var choice = control(labels[index], function () {
                     box.dataset.align = option;
                     Array.from(alignGroup.children).forEach(function (child) {
@@ -196,13 +206,14 @@
             alignment.appendChild(alignGroup);
             fields.appendChild(alignment);
             var preview = node('div', '', 'dendrila-simple-edit-block-preview');
-            preview.setAttribute('aria-label', 'Aperçu de cet élément');
+            preview.setAttribute('aria-label', t('Aperçu de cet élément'));
             fields.appendChild(preview);
             function updatePreview() {
                 while (preview.firstChild) {preview.removeChild(preview.firstChild);}
                 var v = value.value || types[type].hint;
-                var display = type === 'image' ? node('span', 'Aperçu du cadre de l’image') : node('span', v.slice(0, 100));
+                var display = type === 'image' ? node('span', t('Aperçu du cadre de l’image')) : node('span', v.slice(0, 100));
                 preview.appendChild(display);
+                summary.textContent = (value.value || types[type].hint).replace(/\s+/g,' ').slice(0,74);
                 if (type === 'button') {display.classList.add('dendrila-simple-edit-preview-button');}
                 if (type === 'heading' || type === 'title') {display.classList.add('dendrila-simple-edit-preview-heading');}
                 if (type === 'image') {display.classList.add('dendrila-simple-edit-preview-image');}
@@ -277,17 +288,17 @@
                 var paragraph = addBlock('text', {text: article.paragraph});
                 var action = addBlock(linkType(), {text: linkLabel(), url: article.url});
                 if (!heading || !paragraph || !action) {
-                    feedback.textContent = 'L’insertion n’a pas pu être terminée. Vérifiez le contenu.';
+                    feedback.textContent = t('L’insertion n’a pas pu être terminée. Vérifiez le contenu.');
                     return;
                 }
-                repaint('Article inséré dans la newsletter.');
-                feedback.textContent = 'Article ajouté. Vous pouvez maintenant modifier chaque élément dans la newsletter, sans changer l’article original.';
+                repaint(t('Article inséré dans la newsletter.'));
+                feedback.textContent = t('Article ajouté. Vous pouvez maintenant modifier chaque élément dans la newsletter, sans changer l’article original.');
                 var input = heading.querySelector('.dendrila-simple-edit-block-fields input');
                 if (input) {input.focus();}
             });
             wizard.hidden = false;
             if (selector.options.length <= 1) {
-                feedback.textContent = 'Aucun article publié avec un paragraphe n’est disponible pour le moment.';
+                feedback.textContent = t('Aucun article publié avec un paragraphe n’est disponible pour le moment.');
             }
             refreshWizard();
         }
@@ -310,9 +321,9 @@
             var visual = node('span', '', 'dendrila-simple-edit-add-block-icon dendrila-simple-edit-example-' + type);
             visual.setAttribute('aria-hidden', 'true');
             if (type === 'title') {
-                visual.appendChild(node('span', 'Grand titre', 'dendrila-simple-edit-example-main-title'));
+                visual.appendChild(node('span', t('Grand titre'), 'dendrila-simple-edit-example-main-title'));
             } else if (type === 'heading') {
-                visual.appendChild(node('span', 'Titre de section', 'dendrila-simple-edit-example-section-title'));
+                visual.appendChild(node('span', t('Titre de section'), 'dendrila-simple-edit-example-section-title'));
                 visual.appendChild(node('span', '', 'dendrila-simple-edit-example-rule'));
             } else if (type === 'text') {
                 visual.appendChild(node('span', '', 'dendrila-simple-edit-example-lines'));
@@ -337,7 +348,7 @@
             if (target && event.clientY > target.getBoundingClientRect().top + target.offsetHeight / 2) {target = target.nextElementSibling;}
             if (typeof moving === 'string') {addBlock(moving, {}, target);}
             else if (target !== moving) {canvas.insertBefore(moving, target || null);}
-            moving = null; repaint('Ordre mis à jour.');
+            moving = null; repaint(t('Ordre mis à jour.'));
         });
         var holder = node('template'); holder.innerHTML = source.value;
         // Never silently flatten layouts or rich HTML from an earlier editor.
@@ -368,7 +379,8 @@
             if (!html) {return;}
             // An imported post may contain HTML that cannot be reconstructed safely.
             // Its access is filtered server-side before reaching this editor.
-            addBlock('text', {text: html});
+            var tmp = node('div');tmp.innerHTML = html;
+            addBlock('text', {text: tmp.textContent.trim()});
         }
         Array.from(holder.content.childNodes).forEach(function (child) {
             if (child.nodeType === 3 && !child.textContent.trim()) {return;}
@@ -384,7 +396,7 @@
                     body = inner.textContent || '';
                 }
                 addBlock(kind, {text: kind === 'image' ? inner.getAttribute('alt') : body,
-                    description: inner.title, url: inner.getAttribute(kind === 'image' ? 'src' : 'href'), color: inner.getAttribute('data-dendrila-simple-edit-color') || 'green',
+                    url: inner.getAttribute(kind === 'image' ? 'src' : 'href'), color: inner.getAttribute('data-dendrila-simple-edit-color') || 'green',
                     align: child.getAttribute('data-dendrila-simple-edit-align') || inner.getAttribute('data-dendrila-simple-edit-align') || 'left'});
             } else if (child.nodeType === 1 && /^(P|H1|H2|IMG)$/.test(child.tagName)) {
                 flushLegacy();
@@ -397,7 +409,6 @@
             } else {legacy.push(child.nodeType === 1 ? child.outerHTML : child.textContent);}
         });
         flushLegacy();
-        loadingExisting = false;
         function compose() {
             return blocks().map(function (item) {
                 var type = item.dataset.block, fields = item.querySelectorAll('.dendrila-simple-edit-block-fields > input, .dendrila-simple-edit-block-fields > textarea');
@@ -410,7 +421,7 @@
                 if (type === 'text') {
                     inner.replaceChildren();
                     content.split('\n').forEach(function (line, idx) {if (idx) {inner.appendChild(node('br'));}inner.appendChild(document.createTextNode(line));});
-                } else if (type === 'image') {inner.setAttribute('src', content);inner.alt = other; if (fields[2].value) inner.title = fields[2].value;}
+                } else if (type === 'image') {inner.setAttribute('src', content);inner.alt = other;}
                 else if (type === 'link' || type === 'button') {
                     inner.setAttribute('href', other);
                     if (type === 'button') {inner.className = 'dendrila-simple-edit-newsletter-cta';}
@@ -465,24 +476,7 @@
         source.hidden = true;
         var label = root.querySelector('label[for="' + source.id + '"]');
         if (label) {label.hidden = true;}
-        if (root.closest('.dendrila-simple-edit-newsletter-item, .dendrila-simple-edit-newsletter-new')) {
-            var styleLabel = node('label', 'Palette de la newsletter ');
-            var styles = node('select');
-            [['','Choisir un style'],['green','Jardin'],['blue','Océan'],['plum','Prune']].forEach(function (pair) {
-                styles.add(new Option(pair[1],pair[0]));
-            });
-            styles.addEventListener('change', function () {
-                styleColor = styles.value;
-                if (!styleColor) return;
-                blocks().forEach(function (block) {
-                    var shade = block.dataset.block === 'text' ? 'slate' : styleColor;
-                    block.querySelector('[data-value="' + shade + '"]').click();
-                });
-            });
-            styleLabel.appendChild(styles);
-            root.appendChild(styleLabel);
-        }
-        root.append(node('h4', 'Ajouter un élément', 'dendrila-simple-edit-builder-heading'), addBar, canvas, status, previewPanel);
+        root.append(node('h4', t('Ajouter un élément'), 'dendrila-simple-edit-builder-heading'), addBar, canvas, status, previewPanel);
         // Move the assistant beneath the six insertion tiles; native <details> keeps it
         // collapsed by default, with keyboard and screen-reader support.
         var articleImport = root.querySelector('[data-dendrila-simple-edit-article-import]');
@@ -490,7 +484,20 @@
         initArticleImport();
         repaint();
     }
-    function init() {document.querySelectorAll('[data-dendrila-simple-edit-block-editor]').forEach(editor);}
+    function init() {
+        document.querySelectorAll('[data-dendrila-simple-edit-block-editor]').forEach(function (root, index) {
+            // Hundreds of eligible posts may be listed. Build a visual editor only
+            // when its accordion is opened, to keep the admin page responsive.
+            var details = root.closest('details');
+            if (!details || details.open) { editor(root, index); return; }
+            function onToggle() {
+                if (!details.open) return;
+                details.removeEventListener('toggle', onToggle);
+                editor(root, index);
+            }
+            details.addEventListener('toggle', onToggle);
+        });
+    }
     if (document.readyState === 'loading') {document.addEventListener('DOMContentLoaded', init, {once: true});}
     else {init();}
 }());

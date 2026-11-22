@@ -2,6 +2,8 @@
  * URLs keep tabs working without JavaScript. Saving the form is always explicit. */
 (function () {
     'use strict';
+    var dendrilaI18n = window.dendrilaSimpleEditStrings || {};
+    function t(phrase) { return Object.prototype.hasOwnProperty.call(dendrilaI18n, phrase) ? dendrilaI18n[phrase] : phrase; }
 
     function revealSelectedTab() {
         var nav = document.querySelector('.dendrila-simple-edit-nav-tabs');
@@ -42,7 +44,7 @@
             if (!Number.isSafeInteger(id) || id < 1 || ids.indexOf(id) !== -1) { return; }
             ids.push(id);
             records[id] = {
-                title: node.getAttribute('data-dendrila-simple-edit-media-title') || ('Image ' + id),
+                title: node.getAttribute('data-dendrila-simple-edit-media-title') || (t('Image ') + id),
                 url: node.getAttribute('data-dendrila-simple-edit-media-url') || ''
             };
         });
@@ -57,7 +59,7 @@
             if (model.get('type') && model.get('type') !== 'image') { return null; }
             var sizes = model.get('sizes') || {};
             records[id] = {
-                title: model.get('title') || model.get('filename') || ('Image ' + id),
+                title: model.get('title') || model.get('filename') || (t('Image ') + id),
                 url: (sizes.thumbnail && sizes.thumbnail.url) || model.get('icon') || model.get('url') || ''
             };
             return id;
@@ -68,7 +70,7 @@
         function render() {
             while (list.firstChild) { list.removeChild(list.firstChild); }
             ids.forEach(function (id) {
-                var data = records[id] || {title: 'Image ' + id, url: ''};
+                var data = records[id] || {title: t('Image ') + id, url: ''};
                 var item = document.createElement('li');
                 item.className = 'dendrila-simple-edit-media-item';
                 if (data.url) {
@@ -93,7 +95,7 @@
                 remove.type = 'button';
                 remove.className = 'button-link-delete dendrila-simple-edit-media-remove';
                 remove.textContent = 'Retirer';
-                remove.setAttribute('aria-label', 'Retirer ' + data.title + ' de la sélection');
+                remove.setAttribute('aria-label', t('Retirer ') + data.title + t(' de la sélection'));
                 remove.addEventListener('click', function () {
                     ids = ids.filter(function (itemId) { return itemId !== id; });
                     syncForm();
@@ -106,7 +108,7 @@
                 item.appendChild(remove);
                 list.appendChild(item);
             });
-            count.textContent = ids.length + (ids.length === 1 ? ' image sélectionnée' : ' images sélectionnées');
+            count.textContent = ids.length + (ids.length === 1 ? t(' image sélectionnée') : t(' images sélectionnées'));
             empty.hidden = ids.length !== 0;
             clearButton.hidden = ids.length === 0;
         }
@@ -125,8 +127,8 @@
             setFeedback('');
             if (!frame) {
                 frame = window.wp.media({
-                    title: 'Choisir les images autorisées',
-                    button: {text: 'Utiliser ces images'},
+                    title: t('Choisir les images autorisées'),
+                    button: {text: t('Utiliser ces images')},
                     library: {type: 'image'},
                     multiple: true
                 });
@@ -147,7 +149,7 @@
                         if (id && nextIds.indexOf(id) === -1) { nextIds.push(id); }
                     });
                     if (nextIds.length > limit) {
-                        setFeedback('Vous pouvez choisir 60 images maximum. Réduisez votre sélection.');
+                        setFeedback(t('Vous pouvez choisir 60 images maximum. Réduisez votre sélection.'));
                         return;
                     }
                     ids = nextIds;
@@ -163,7 +165,7 @@
             var raw = field.value.trim();
             var chunks = raw ? raw.split(/[\s,;]+/) : [];
             if (chunks.length > limit || chunks.some(function (chunk) { return !/^[1-9][0-9]*$/.test(chunk); })) {
-                setFeedback('Vérifiez la liste : numéros valides, 60 images maximum.');
+                setFeedback(t('Vérifiez la liste : numéros valides, 60 images maximum.'));
                 return;
             }
             var parsed = [];
@@ -192,14 +194,14 @@
         trigger.addEventListener('click', function () {
             if (!frame) {
                 frame = window.wp.media({
-                    title: 'Ajouter des images',
+                    title: t('Ajouter des images'),
                     button: {text: 'Terminer'},
                     library: {type: 'image'},
                     multiple: true
                 });
                 frame.on('close', function () {
                     if (status) {
-                        status.textContent = 'Les images importées sont disponibles. Rechargez la page pour voir les nouvelles miniatures.';
+                        status.textContent = t('Les images importées sont disponibles. Rechargez la page pour voir les nouvelles miniatures.');
                     }
                 });
             }
@@ -225,7 +227,7 @@
                 if (url) {
                     var img = document.createElement('img');
                     img.src = url;
-                    img.alt = title || 'Image sélectionnée';
+                    img.alt = title || t('Image sélectionnée');
                     img.loading = 'lazy';
                     preview.appendChild(img);
                 }
@@ -235,7 +237,7 @@
                 if (!model) { return; }
                 var id = String(model.id || '');
                 if (!/^\d+$/.test(id) || !id || model.get('type') !== 'image') { return; }
-                var title = model.get('title') || model.get('filename') || 'Image choisie';
+                var title = model.get('title') || model.get('filename') || t('Image choisie');
                 var option = Array.prototype.find.call(select.options, function (item) {
                     return item.value === id;
                 });
@@ -252,8 +254,8 @@
             trigger.addEventListener('click', function () {
                 if (!frame) {
                     frame = window.wp.media({
-                        title: 'Choisir ou importer une image',
-                        button: {text: 'Utiliser cette image'},
+                        title: t('Choisir ou importer une image'),
+                        button: {text: t('Utiliser cette image')},
                         library: {type: 'image'},
                         multiple: false
                     });
@@ -305,9 +307,9 @@
             function announcePosition(row) {
                 var all = rows();
                 var title = row.querySelector('.dendrila-simple-edit-nav-sort-label');
-                announce((title ? title.textContent.trim() : 'Élément') + ' : position ' +
+                announce((title ? title.textContent.trim() : t('Élément')) + ' : position ' +
                     (all.indexOf(row) + 1) + ' sur ' + all.length +
-                    '. Pensez à enregistrer.');
+                    t('. Pensez à enregistrer.'));
             }
             function reorderAt(x, y) {
                 if (!drag) { return; }
@@ -346,7 +348,7 @@
                 }
                 if (cancelled) {
                     selected.original.forEach(function (row) { list.appendChild(row); });
-                    announce('Déplacement annulé.');
+                    announce(t('Déplacement annulé.'));
                 } else {
                     announcePosition(selected.row);
                 }
@@ -427,10 +429,90 @@
         });
     }
 
+    /**
+     * Show a second set of form actions at the top of every creation/edit form.
+     * Both sets belong to the SAME HTML form: browser validation, nonce checks,
+     * editor serialization and permission checks are therefore unchanged.
+     *
+     * Never clone one-click destructive actions (remove, restore, unsubscribe).
+     * Forms without editable controls also stay unchanged.
+     */
+    function initTopFormActions() {
+        var excluded = [
+            'dendrila_simple_edit_restore', 'dendrila_simple_edit_acf_remove', 'dendrila_simple_edit_acf_add', 'dendrila_simple_edit_newsletter_approve',
+            'dendrila_simple_edit_newsletter_reject', 'dendrila_simple_edit_ml_remove', 'dendrila_simple_edit_ml_reinvite',
+            'dendrila_simple_edit_ml_start', 'dendrila_simple_edit_ml_pause'
+        ];
+        var forms = document.querySelectorAll('.dendrila-simple-edit-wrap form[method="post"]');
+        Array.prototype.forEach.call(forms, function (form) {
+            if (form.querySelector('.dendrila-simple-edit-form-actions-top') ||
+                form.querySelector('[data-dendrila-simple-edit-template-editor][hidden]')) { return; }
+            var actionField = form.querySelector('input[name="action"]');
+            if (!actionField || actionField.value.indexOf('dendrila_simple_edit_') !== 0 ||
+                excluded.indexOf(actionField.value) !== -1) { return; }
+            var editable = form.querySelector('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), select, textarea');
+            if (!editable) { return; }
+            // Keep compact forms uncluttered. The extra action is useful only when
+            // a form has several controls and takes meaningful scrolling to finish.
+            var editableControls = form.querySelectorAll(
+                'input:not([type="hidden"]):not([type="submit"]):not([type="button"]), select, textarea'
+            );
+            if (editableControls.length < 4) { return; }
+            var submits = Array.prototype.filter.call(
+                form.querySelectorAll('button[type="submit"], input[type="submit"]'),
+                function (button) {
+                    return button.closest('form') === form &&
+                        !button.closest('.dendrila-simple-edit-form-actions-top');
+                }
+            );
+            if (!submits.length) { return; }
+            var bar = document.createElement('div');
+            bar.className = 'dendrila-simple-edit-form-actions-top';
+            bar.setAttribute('role', 'group');
+            bar.setAttribute('aria-label', t('Actions du formulaire (également disponibles en bas)'));
+            submits.forEach(function (original) {
+                var copy = original.cloneNode(true);
+                copy.removeAttribute('id');
+                copy.removeAttribute('form');
+                copy.classList.add('dendrila-simple-edit-form-top-submit');
+                bar.appendChild(copy);
+            });
+            // Keep the heading and short description above the action bar.
+            var before = null;
+            Array.prototype.some.call(form.children, function (child) {
+                var tag = child.tagName;
+                if (tag === 'H2' || tag === 'H3' || tag === 'H4' ||
+                    (tag === 'INPUT' && child.type === 'hidden') ||
+                    (tag === 'P' && !child.querySelector('input, select, textarea, button'))) {
+                    return false;
+                }
+                before = child;
+                return true;
+            });
+            form.insertBefore(bar, before);
+        });
+    }
+
+    function initBulkRolePermissions() {
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('[data-dendrila-simple-edit-select-all], [data-dendrila-simple-edit-select-none]');
+            if (!button) { return; }
+            var groupId = button.getAttribute('data-dendrila-simple-edit-select-all') ||
+                button.getAttribute('data-dendrila-simple-edit-select-none');
+            var fieldset = document.getElementById(groupId);
+            if (!fieldset) { return; }
+            var selected = button.hasAttribute('data-dendrila-simple-edit-select-all');
+            Array.prototype.forEach.call(fieldset.querySelectorAll('input[type="checkbox"]'), function (checkbox) {
+                if (!checkbox.disabled) { checkbox.checked = selected; }
+            });
+        });
+    }
+
     function init() {
         revealSelectedTab();
         initListCreator();
-
+        initBulkRolePermissions();
+        initTopFormActions();
         initNavigationSorter();
         initAcfSelector();
         initMediaPicker();
@@ -464,9 +546,140 @@ document.addEventListener('click', async function(event) {
             if (!document.execCommand('copy')) throw new Error('Copy unavailable');
             temporary.remove();
         }
-        button.textContent = 'Copié !';
+        button.textContent = t('Copié !');
     } catch (error) {
-        button.textContent = 'Copie impossible : sélectionnez le code';
+        button.textContent = t('Copie impossible : sélectionnez le code');
         if (typeof target.select === 'function') target.select();
     }
 });
+
+// WooCommerce product subtabs. Native forms still work if JavaScript is disabled.
+(function () {
+    'use strict';
+    function setupTabs(group) {
+        const buttons = Array.from(group.querySelectorAll('[data-dendrila-simple-edit-product-tab]'));
+        const panels = Array.from(group.querySelectorAll('[data-dendrila-simple-edit-product-panel]'));
+        if (!buttons.length || !panels.length) return;
+        const prefix = 'dendrila-simple-edit-product-panel-' + Array.from(document.querySelectorAll('[data-dendrila-simple-edit-product-tabs]')).indexOf(group);
+        function activate(key, focus) {
+            buttons.forEach(function (button) {
+                const selected = button.dataset.dendrilaSimpleEditProductTab === key;
+                button.setAttribute('aria-selected', selected ? 'true' : 'false');
+                button.tabIndex = selected ? 0 : -1;
+                if (selected && focus) button.focus();
+            });
+            panels.forEach(function (panel) {
+                panel.hidden = panel.dataset.dendrilaSimpleEditProductPanel !== key;
+            });
+        }
+        buttons.forEach(function (button, index) {
+            const key = button.dataset.dendrilaSimpleEditProductTab;
+            button.setAttribute('role', 'tab');
+            button.id = prefix + '-tab-' + key;
+            const panel = panels.find(function (item) { return item.dataset.dendrilaSimpleEditProductPanel === key; });
+            if (panel) { panel.id = prefix + '-section-' + key; panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', button.id); button.setAttribute('aria-controls', panel.id); }
+            button.addEventListener('click', function () { activate(key, false); });
+            button.addEventListener('keydown', function (event) {
+                let next = index;
+                if (event.key === 'ArrowRight') next = (index + 1) % buttons.length;
+                else if (event.key === 'ArrowLeft') next = (index + buttons.length - 1) % buttons.length;
+                else if (event.key === 'Home') next = 0;
+                else if (event.key === 'End') next = buttons.length - 1;
+                else return;
+                event.preventDefault(); activate(buttons[next].dataset.dendrilaSimpleEditProductTab, true);
+            });
+        });
+        const nav = group.querySelector('.dendrila-simple-edit-product-subnav');
+        if (nav) nav.setAttribute('role', 'tablist');
+        activate(buttons[0].dataset.dendrilaSimpleEditProductTab, false);
+        const form = group.closest('form');
+        if (form) form.addEventListener('invalid', function (event) {
+            const panel = event.target.closest('[data-dendrila-simple-edit-product-panel]');
+            if (panel && panel.hidden) activate(panel.dataset.dendrilaSimpleEditProductPanel, false);
+        }, true);
+    }
+    function init() { document.querySelectorAll('[data-dendrila-simple-edit-product-tabs]').forEach(setupTabs); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, {once:true});
+    else init();
+}());
+
+/* Mobile layout, newsletter template steps and WooCommerce contextual panels. */
+(function () {
+    'use strict';
+    function init() {
+        document.querySelectorAll('.dendrila-simple-edit-newsletter-item-details').forEach(function (details) {
+            var bar=details.closest('.dendrila-simple-edit-newsletter-item-bar');
+            if (!bar) {return;}
+            function sync() {bar.classList.toggle('is-open',details.open);}
+            details.addEventListener('toggle',sync);
+            sync();
+        });
+        document.querySelectorAll('[data-dendrila-simple-edit-template-step]').forEach(function(step){
+            var parent=step.closest('form');
+            if(!parent){return;}
+            var compose=parent.querySelector('[data-dendrila-simple-edit-template-editor]');
+            var next=step.querySelector('[data-dendrila-simple-edit-template-next]');
+            if(next && compose){
+                next.addEventListener('click',function(){
+                    compose.hidden=false;
+                    step.classList.add('is-finished');
+                    next.hidden=true;
+                    var subject=compose.querySelector('input[name="dendrila_simple_edit_nsubject"]');
+                    if(subject){subject.focus({preventScroll:true});subject.scrollIntoView({behavior:'smooth',block:'center'});}
+                });
+            }
+            function syncColors(){
+                step.querySelectorAll('input[type="color"]').forEach(function(input){
+                    var key=(input.name.match(/\[([^\]]+)\]$/)||[])[1];
+                    if(key){step.style.setProperty('--template-'+key,input.value);parent.style.setProperty('--template-'+key,input.value);}
+                });
+            }
+            step.addEventListener('input',syncColors);
+            syncColors();
+        });
+        document.querySelectorAll('[data-dendrila-simple-edit-product-tabs]').forEach(function(group){
+            var form=group.closest('form');
+            if(!form){return;}
+            var type=form.querySelector('[data-dendrila-simple-edit-type-select]');
+            var stock=form.querySelector('input[name="dendrila_simple_edit_pfields[manage_stock]"][type="checkbox"]');
+            function refresh(){
+                var value=type?type.value:(form.querySelector('[data-dendrila-simple-edit-current-type]')?.value||'simple');
+                form.querySelectorAll('[data-dendrila-simple-edit-for-type]').forEach(function(panel){
+                    panel.hidden=panel.dataset.dendrilaSimpleEditForType!==value;
+                    panel.querySelectorAll('input,select,textarea').forEach(function(el){el.disabled=panel.hidden;});
+                });
+                var manage=!!stock && stock.checked;
+                form.querySelectorAll('[data-dendrila-simple-edit-stock-managed]').forEach(function(el){
+                    el.hidden=!manage;
+                    el.querySelectorAll('input,select').forEach(function(input){input.disabled=!manage;});
+                });
+                form.querySelectorAll('[data-dendrila-simple-edit-stock-simple]').forEach(function(el){
+                    el.hidden=manage;
+                    el.querySelectorAll('input,select').forEach(function(input){input.disabled=manage;});
+                });
+            }
+            if(type){type.addEventListener('change',refresh);}
+            if(stock){stock.addEventListener('change',refresh);}
+            form.addEventListener('invalid',function(event){
+                var panel=event.target.closest('[data-dendrila-simple-edit-product-panel]');
+                if(!panel){return;}
+                var key=panel.dataset.dendrilaSimpleEditProductPanel;
+                var tab=group.querySelector('[data-dendrila-simple-edit-product-tab="'+key+'"]');
+                if(tab && !tab.hidden && !panel.hidden){return;}
+                if(tab){tab.click();}
+            },true);
+            refresh();
+        });
+        document.querySelectorAll('[data-dendrila-simple-edit-select-all]').forEach(function(btn){
+            btn.addEventListener('click',function(){
+                btn.closest('fieldset').querySelectorAll('input[type="checkbox"]').forEach(function(el){el.checked=true;});
+            });
+        });
+        document.querySelectorAll('[data-dendrila-simple-edit-select-none]').forEach(function(btn){
+            btn.addEventListener('click',function(){
+                btn.closest('fieldset').querySelectorAll('input[type="checkbox"]').forEach(function(el){el.checked=false;});
+            });
+        });
+    }
+    if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init,{once:true});}else{init();}
+}());

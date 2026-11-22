@@ -21,7 +21,7 @@ final class Dendrila_Simple_Edit_Newsletters
     public static function register()
     {
         register_post_type(self::TYPE, array(
-            'label' => 'Brouillons de newsletters',
+            'label' => __('Brouillons de newsletters', 'dendrila-simple-edit'),
             'public' => false,
             'publicly_queryable' => false,
             'exclude_from_search' => true,
@@ -57,9 +57,10 @@ final class Dendrila_Simple_Edit_Newsletters
             in_array($post->post_status, array('draft', 'pending'), true) ? $post : false;
     }
 
-    private static function post_id()
+    private static function post_id($nonce_action)
     {
-        $raw = isset($_POST['dendrila_simple_edit_nid']) ? wp_unslash($_POST['dendrila_simple_edit_nid']) : '';
+        check_admin_referer($nonce_action);
+        $raw = isset($_POST['dendrila_simple_edit_nid']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nid'])) : '';
         return is_string($raw) && ctype_digit($raw) ? (int) $raw : 0;
     }
 
@@ -106,14 +107,14 @@ final class Dendrila_Simple_Edit_Newsletters
     public static function save()
     {
         check_admin_referer('dendrila_simple_edit_newsletter_save');
-        $id = self::post_id();
+        $id = self::post_id('dendrila_simple_edit_newsletter_save');
         $action = $id ? 'edit' : 'create';
         if (!Dendrila_Simple_Edit_Modules::allowed('newsletters', $action) &&
             !Dendrila_Simple_Edit_Modules::allowed('newsletters', 'send')) {
             wp_die('Création ou modification non autorisée.', 'Accès refusé', array('response' => 403));
         }
-        $title = isset($_POST['dendrila_simple_edit_nsubject']) ? wp_unslash($_POST['dendrila_simple_edit_nsubject']) : null;
-        $body = isset($_POST['dendrila_simple_edit_nbody']) ? wp_unslash($_POST['dendrila_simple_edit_nbody']) : null;
+        $title = isset($_POST['dendrila_simple_edit_nsubject']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nsubject'])) : null;
+        $body = isset($_POST['dendrila_simple_edit_nbody']) ? wp_kses(wp_unslash($_POST['dendrila_simple_edit_nbody']), Dendrila_Simple_Edit_Block_Editor::allowed_tags(), array('http', 'https', 'mailto')) : null;
         if (!is_string($title) || !is_string($body) ||
             strlen($title) > 640 || strlen($body) > 40000) {
             wp_die('Format ou taille de newsletter incorrect.', 'Requête incorrecte', array('response' => 400));
@@ -125,7 +126,7 @@ final class Dendrila_Simple_Edit_Newsletters
         }
         if ($id) {
             $post = self::get_draft($id);
-            $expected = isset($_POST['dendrila_simple_edit_nversion']) ? wp_unslash($_POST['dendrila_simple_edit_nversion']) : '';
+            $expected = isset($_POST['dendrila_simple_edit_nversion']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nversion'])) : '';
             if (!$post || (!current_user_can('manage_options') &&
                 (int) $post->post_author !== get_current_user_id())) {
                 wp_die('Vous ne pouvez pas modifier ce brouillon.', 'Accès refusé', array('response' => 403));
@@ -152,6 +153,10 @@ final class Dendrila_Simple_Edit_Newsletters
             ), true);
             if (is_wp_error($result) || !$result) { self::redirect('error'); }
         }
+        $template = isset($_POST['dendrila_simple_edit_template']) ?
+            map_deep(wp_unslash($_POST['dendrila_simple_edit_template']), 'sanitize_text_field') : array();
+        Dendrila_Simple_Edit_Newsletter_Templates::save((int)$result,$template,
+            !$id || isset($_POST['dendrila_simple_edit_template_set_default']));
         self::redirect('saved', (int) $result);
     }
 
@@ -159,13 +164,13 @@ final class Dendrila_Simple_Edit_Newsletters
     {
         check_admin_referer('dendrila_simple_edit_newsletter_review');
         if (self::can_send()) {
-            self::redirect('send_direct', self::post_id());
+            self::redirect('send_direct', self::post_id('dendrila_simple_edit_newsletter_review'));
         }
         if (!Dendrila_Simple_Edit_Modules::allowed('newsletters', 'review')) {
             wp_die('Validation non autorisée.', 'Accès refusé', array('response' => 403));
         }
-        $post = self::get_draft(self::post_id());
-        $expected = isset($_POST['dendrila_simple_edit_nversion']) ? wp_unslash($_POST['dendrila_simple_edit_nversion']) : '';
+        $post = self::get_draft(self::post_id('dendrila_simple_edit_newsletter_review'));
+        $expected = isset($_POST['dendrila_simple_edit_nversion']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nversion'])) : '';
         if (!$post || !self::visible_to_user($post)) {
             wp_die('Vous ne pouvez pas soumettre ce brouillon.', 'Accès refusé', array('response' => 403));
         }
@@ -185,8 +190,8 @@ final class Dendrila_Simple_Edit_Newsletters
             !Dendrila_Simple_Edit_Approvals::can_approve('newsletter')) {
             wp_die('Approbation non autorisée.', 'Accès refusé', array('response' => 403));
         }
-        $post = self::get_draft(self::post_id());
-        $expected = isset($_POST['dendrila_simple_edit_nversion']) ? wp_unslash($_POST['dendrila_simple_edit_nversion']) : '';
+        $post = self::get_draft(self::post_id('dendrila_simple_edit_newsletter_approve'));
+        $expected = isset($_POST['dendrila_simple_edit_nversion']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nversion'])) : '';
         if (!$post || !self::visible_to_user($post)) {
             wp_die('Validation de ce brouillon non autorisée.', 'Accès refusé', array('response' => 403));
         }
@@ -218,13 +223,14 @@ final class Dendrila_Simple_Edit_Newsletters
         $admin = current_user_can('manage_options');
         $section = isset($_GET['dendrila_simple_edit_nl_section']) && is_string($_GET['dendrila_simple_edit_nl_section']) ?
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_nl_section'])) : 'rediger';
-        $sections = array('rediger' => 'Rédiger les newsletters');
-        if ($admin || $may_manage_lists) { $sections['listes'] = 'Listes et contacts'; }
+        $sections = array('rediger' => __('Rédiger les newsletters', 'dendrila-simple-edit'));
+        if ($admin || $may_manage_lists) { $sections['listes'] = __('Listes et contacts', 'dendrila-simple-edit'); }
         if ($admin || $may_send) {
             $sections['envois'] = __('Préparer un envoi', 'dendrila-simple-edit');
-            $sections['suivi'] = 'Suivre les envois';
+            $sections['suivi'] = __('Suivre les envois', 'dendrila-simple-edit');
         }
-        if ($admin) { $sections['connexion'] = 'Configuration des envois'; }
+        if ($admin) { $sections['connexion'] = __('Configuration des envois', 'dendrila-simple-edit');
+            $sections['woocommerce'] = 'WooCommerce'; }
         if (!$admin && $may_manage_lists && !$may_create && !$may_edit &&
             !$may_review && !$may_approve && !$may_send &&
             $section === 'rediger') { $section = 'listes'; }
@@ -240,6 +246,7 @@ final class Dendrila_Simple_Edit_Newsletters
             echo '</nav>';
         }
         if ($section !== 'rediger') {
+            if ($section === 'woocommerce') { Dendrila_Simple_Edit_Woo_Mailing::render_admin(); return; }
             Dendrila_Simple_Edit_Mailing::render_admin($section);
             return;
         }
@@ -249,10 +256,10 @@ final class Dendrila_Simple_Edit_Newsletters
             'Préparez votre message, puis ouvrez « Préparer un envoi » pour choisir les destinataires. Aucune validation préalable n’est nécessaire avec votre autorisation d’envoi.' :
             'Les brouillons sont présentés du plus récent au plus ancien. Vous pouvez les soumettre à validation ou les valider directement si vous avez ce droit.') .
             '</p>';
-        $notices = array('saved' => 'Brouillon enregistré.', 'review' => 'Contenu soumis à validation.',
-            'approved' => 'Contenu validé. Aucun e-mail envoyé.',
+        $notices = array('saved' => __('Brouillon enregistré.', 'dendrila-simple-edit'), 'review' => __('Contenu soumis à validation.', 'dendrila-simple-edit'),
+            'approved' => __('Contenu validé. Aucun e-mail envoyé.', 'dendrila-simple-edit'),
             'send_direct' => 'Votre compte peut envoyer directement : ouvrez « Préparer un envoi ».', 'conflict' => 'Ce brouillon a changé. Rechargez la page.',
-            'error' => 'Enregistrement non confirmé.');
+            'error' => __('Enregistrement non confirmé.', 'dendrila-simple-edit'));
         $notice = isset($_GET['dendrila_simple_edit_nnotice']) && is_string($_GET['dendrila_simple_edit_nnotice']) ?
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_nnotice'])) : '';
         if (isset($notices[$notice])) {
@@ -275,16 +282,16 @@ final class Dendrila_Simple_Edit_Newsletters
                 }
             }
         }
-        if (!$posts) { echo '<p>Aucun brouillon enregistré pour le moment.</p>'; }
+        if (!$posts) { echo '<p>' . esc_html__('Aucun brouillon enregistré pour le moment.', 'dendrila-simple-edit') . '</p>'; }
         foreach ($posts as $post) {
             if (!$post || !self::get_draft((int) $post->ID) ||
                 !self::visible_to_user($post)) { continue; }
             $hash = self::fingerprint($post);
             $approved = $post->post_status === 'pending' &&
                 hash_equals($hash, (string) get_post_meta($post->ID, self::APPROVED, true));
-            $status = $may_send && self::can_prepare_for_send($post) ? 'Prête à préparer pour un envoi' :
-                ($approved ? 'Validée, non envoyée' :
-                ($post->post_status === 'pending' ? 'En attente de validation' : 'Brouillon'));
+            $status = $may_send && self::can_prepare_for_send($post) ? __('Prête à préparer pour un envoi', 'dendrila-simple-edit') :
+                ($approved ? __('Validée, non envoyée', 'dendrila-simple-edit') :
+                ($post->post_status === 'pending' ? __('En attente de validation', 'dendrila-simple-edit') : __('Brouillon', 'dendrila-simple-edit')));
             echo '<article class="dendrila-simple-edit-subcard dendrila-simple-edit-newsletter-item"' .
                 ($current === (int) $post->ID ? ' data-dendrila-simple-edit-current-draft="1"' : '') . '>';
             echo '<div class="dendrila-simple-edit-newsletter-item-bar">';
@@ -292,9 +299,9 @@ final class Dendrila_Simple_Edit_Newsletters
                 esc_html($post->post_title) . '</span><small class="dendrila-simple-edit-newsletter-item-status">' .
                 esc_html($status) . '</small></summary>';
             echo '<div class="dendrila-simple-edit-newsletter-item-content">';
-            echo '<details><summary>Prévisualiser le contenu</summary><div class="dendrila-simple-edit-preview"><strong>' .
+            echo '<details><summary>' . esc_html__('Prévisualiser le contenu', 'dendrila-simple-edit') . '</summary><div class="dendrila-simple-edit-preview"><strong>' .
                 esc_html($post->post_title) . '</strong><p>' .
-                Dendrila_Simple_Edit_Block_Editor::email_body($post->post_content) . '</div></details>';
+                wp_kses_post(Dendrila_Simple_Edit_Block_Editor::email_body($post->post_content)) . '</div></details>';
             if ($may_edit && ($admin || (int)$post->post_author === get_current_user_id())) { self::form($post); }
             echo '</div></details>';
             echo '<div class="dendrila-simple-edit-newsletter-quick-actions">';
@@ -305,7 +312,7 @@ final class Dendrila_Simple_Edit_Newsletters
                         admin_url('admin.php'))) . '">Préparer un envoi</a>';
             } elseif ($may_approve && !$approved) {
                 self::action_form('dendrila_simple_edit_newsletter_approve', 'dendrila_simple_edit_newsletter_approve',
-                    'Valider', $post, $hash);
+                    __('Valider', 'dendrila-simple-edit'), $post, $hash);
             } elseif ($may_review && $post->post_status === 'draft') {
                 self::action_form('dendrila_simple_edit_newsletter_review', 'dendrila_simple_edit_newsletter_review',
                     __('Soumettre à validation', 'dendrila-simple-edit'), $post, $hash);
@@ -315,7 +322,7 @@ final class Dendrila_Simple_Edit_Newsletters
         echo '</section>';
         if ($may_create) {
             echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-newsletter-new">';
-            echo '<summary>Créer une nouvelle newsletter</summary>';
+            echo '<summary>' . esc_html__('Créer une nouvelle newsletter', 'dendrila-simple-edit') . '</summary>';
             self::form(null);
             echo '</details>';
         }
@@ -362,13 +369,13 @@ final class Dendrila_Simple_Edit_Newsletters
             'posts_per_page' => 120, 'orderby' => 'date', 'order' => 'DESC'
         ));
         echo '<details class="dendrila-simple-edit-article-import" data-dendrila-simple-edit-article-import hidden>';
-        echo '<summary>Insérer un article du site</summary>';
+        echo '<summary>' . esc_html__('Insérer un article du site', 'dendrila-simple-edit') . '</summary>';
         echo '<div class="dendrila-simple-edit-article-import-body">';
-        echo '<p class="description">Récupérez son titre et son premier paragraphe. Après insertion, ces textes sont indépendants : vous pouvez les modifier sans changer l’article d’origine.</p>';
+        echo '<p class="description">' . esc_html__('Récupérez son titre et son premier paragraphe. Après insertion, ces textes sont indépendants : vous pouvez les modifier sans changer l’article d’origine.', 'dendrila-simple-edit') . '</p>';
         echo '<div class="dendrila-simple-edit-article-import-controls">';
-        echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-import-article-' . esc_attr($suffix) . '">Article à présenter</label>';
+        echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-import-article-' . esc_attr($suffix) . '">' . esc_html__('Article à présenter', 'dendrila-simple-edit') . '</label>';
         echo '<select data-dendrila-simple-edit-article-select id="dendrila-simple-edit-import-article-' . esc_attr($suffix) . '">';
-        echo '<option value="">Choisir un article publié</option>';
+        echo '<option value="">' . esc_html__('Choisir un article publié', 'dendrila-simple-edit') . '</option>';
         foreach ($articles as $article) {
             if (!$article || $article->post_password !== '') { continue; }
             $excerpt = self::first_article_paragraph($article);
@@ -392,7 +399,7 @@ final class Dendrila_Simple_Edit_Newsletters
         echo '<div class="dendrila-simple-edit-article-import-preview" data-dendrila-simple-edit-article-preview hidden aria-live="polite">';
         echo '<strong data-dendrila-simple-edit-article-preview-title></strong><p data-dendrila-simple-edit-article-preview-text></p>';
         echo '<span data-dendrila-simple-edit-article-preview-action></span></div>';
-        echo '<p><button type="button" class="button button-secondary" data-dendrila-simple-edit-article-insert disabled>Ajouter cet article à la newsletter</button></p>';
+        echo '<p><button type="button" class="button button-secondary" data-dendrila-simple-edit-article-insert disabled>' . esc_html__('Ajouter cet article à la newsletter', 'dendrila-simple-edit') . '</button></p>';
         echo '<p class="dendrila-simple-edit-article-import-feedback" data-dendrila-simple-edit-article-feedback role="status"></p>';
         echo '</div></details>';
     }
@@ -401,7 +408,9 @@ final class Dendrila_Simple_Edit_Newsletters
     {
         $existing = $post !== null;
         echo '<form class="dendrila-simple-edit-subcard" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        echo '<h3>' . ($existing ? 'Modifier le brouillon' : 'Nouvelle newsletter') . '</h3>';
+        echo '<h3>' . ($existing ? __('Modifier le brouillon', 'dendrila-simple-edit') : __('Nouvelle newsletter', 'dendrila-simple-edit')) . '</h3>';
+        Dendrila_Simple_Edit_Newsletter_Templates::form($post);
+        if (!$existing) { echo '<div data-dendrila-simple-edit-template-editor hidden>'; }
         echo '<input type="hidden" name="action" value="dendrila_simple_edit_newsletter_save">';
         if ($existing) {
             echo '<input type="hidden" name="dendrila_simple_edit_nid" value="' . esc_attr((string) $post->ID) . '">';
@@ -420,8 +429,10 @@ final class Dendrila_Simple_Edit_Newsletters
         echo '<textarea data-dendrila-simple-edit-editor-source id="dendrila-simple-edit-body-' . esc_attr($suffix) .
             '" name="dendrila_simple_edit_nbody" rows="9">' .
             esc_textarea($existing ? $post->post_content : '') . '</textarea></div>';
-        echo '<p class="description">Lors de chaque envoi, Simple Edit ajoute automatiquement un lien de désinscription individuel en bas du message. Vous n’avez rien à insérer et ce lien ne peut pas être retiré depuis l’éditeur.</p>';
-        echo '<p><button type="submit" class="button button-secondary">Enregistrer le brouillon</button></p></form>';
+        echo '<p class="description">' . esc_html__('Lors de chaque envoi, Simple Edit ajoute automatiquement un lien de désinscription individuel en bas du message. Vous n’avez rien à insérer et ce lien ne peut pas être retiré depuis l’éditeur.', 'dendrila-simple-edit') . '</p>';
+        echo '<p><button type="submit" class="button button-primary">Enregistrer le brouillon</button></p>';
+        if (!$existing) { echo '</div>'; }
+        echo '</form>';
     }
 
     private static function action_form($action, $nonce, $button, $post, $hash)

@@ -1,7 +1,7 @@
 # French (France) translations for Dendrila Simple Edit.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the Dendrila Simple
-# Edit project.
+# Copyright (C) 2026 Le Potager du Web
+# This file is distributed under the same license as the Dendrila Simple Edit
+# project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
 #
 #, fuzzy
@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Dendrila Simple Edit 0.0.1\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-22 11:36+0000\n"
+"POT-Creation-Date: 2026-11-22 15:33+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: fr_FR\n"
@@ -20,20 +20,138 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
+msgid " de la sélection"
+msgstr " de la sélection"
+
+msgid " image sélectionnée"
+msgstr " image sélectionnée"
+
+msgid " images sélectionnées"
+msgstr " images sélectionnées"
+
+msgid " sur 5 — "
+msgstr " sur 5 — "
+
+msgid ". Pensez à enregistrer."
+msgstr ". Pensez à enregistrer."
+
+msgid "1. Choisissez la mise en page"
+msgstr "1. Choisissez la mise en page"
+
+msgid "2. Personnalisez les couleurs du modèle"
+msgstr "2. Personnalisez les couleurs du modèle"
+
 msgid "Accueil"
 msgstr "Accueil"
+
+msgid "Actions du formulaire (également disponibles en bas)"
+msgstr "Actions du formulaire (également disponibles en bas)"
+
+msgid "Activer uniquement les outils nécessaires"
+msgstr "Activer uniquement les outils nécessaires"
+
+msgid "Adresse de l’image"
+msgstr "Adresse de l’image"
+
+msgid "Adresse du lien"
+msgstr "Adresse du lien"
 
 msgid "Aide"
 msgstr "Aide"
 
+msgid "Ajouter cet article à la newsletter"
+msgstr "Ajouter cet article à la newsletter"
+
+msgid "Ajouter des images"
+msgstr "Ajouter des images"
+
+msgid "Ajouter un élément"
+msgstr "Ajouter un élément"
+
+msgid "Alignement de cet élément"
+msgstr "Alignement de cet élément"
+
+msgid "Aperçu de cet élément"
+msgstr "Aperçu de cet élément"
+
+msgid "Aperçu du cadre de l’image"
+msgstr "Aperçu du cadre de l’image"
+
+msgid "Aperçu du contenu"
+msgstr "Aperçu du contenu"
+
+msgid "Après validation, l’espace d’édition est accessible aux rôles autorisés."
+msgstr "Après validation, l’espace d’édition est accessible aux rôles autorisés."
+
+msgid "Ardoise"
+msgstr "Ardoise"
+
+msgid ""
+"Article ajouté. Vous pouvez maintenant modifier chaque élément dans la "
+"newsletter, sans changer l’article original."
+msgstr ""
+"Article ajouté. Vous pouvez maintenant modifier chaque élément dans la "
+"newsletter, sans changer l’article original."
+
+msgid "Article inséré dans la newsletter."
+msgstr "Article inséré dans la newsletter."
+
+msgid "Article à présenter"
+msgstr "Article à présenter"
+
 msgid "Articles"
 msgstr "Articles"
+
+msgid "Attribuer cette liste à un éditeur"
+msgstr "Attribuer cette liste à un éditeur"
+
+msgid "Aucun article publié avec un paragraphe n’est disponible pour le moment."
+msgstr "Aucun article publié avec un paragraphe n’est disponible pour le moment."
+
+msgid "Aucun brouillon enregistré pour le moment."
+msgstr "Aucun brouillon enregistré pour le moment."
+
+msgid "Automatique"
+msgstr "Automatique"
 
 msgid "Autorisations"
 msgstr "Autorisations"
 
+msgid "Bleu"
+msgstr "Bleu"
+
 msgid "Boutique"
 msgstr "Boutique"
+
+msgid "Bouton"
+msgstr "Bouton"
+
+msgid "Boutons"
+msgstr "Boutons"
+
+msgid "Brique"
+msgstr "Brique"
+
+msgid "Brouillon"
+msgstr "Brouillon"
+
+msgid "Brouillon enregistré."
+msgstr "Brouillon enregistré."
+
+msgid "Brouillons de newsletters"
+msgstr "Brouillons de newsletters"
+
+msgid "Campagnes préparées et envoyées"
+msgstr "Campagnes préparées et envoyées"
+
+msgid "Catalogue — fiches en grille de deux colonnes"
+msgstr "Catalogue — fiches en grille de deux colonnes"
+
+msgid "Centré"
+msgstr "Centré"
+
+msgid "Changer la mise en page et les couleurs de ce brouillon"
+msgstr "Changer la mise en page et les couleurs de ce brouillon"
 
 msgid "Changez l’ordre des liens, sans toucher à leur destination."
 msgstr "Changez l’ordre des liens, sans toucher à leur destination."
@@ -41,41 +159,388 @@ msgstr "Changez l’ordre des liens, sans toucher à leur destination."
 msgid "Choisir ce que chacun peut modifier"
 msgstr "Choisir ce que chacun peut modifier"
 
-msgid ""
-"Choisissez la page à modifier et personnalisez son titre, ses textes et "
-"ses images."
-msgstr ""
-"Choisissez la page à modifier et personnalisez son titre, ses textes et "
-"ses images."
+msgid "Choisir dans la médiathèque"
+msgstr "Choisir dans la médiathèque"
+
+msgid "Choisir les images autorisées"
+msgstr "Choisir les images autorisées"
+
+msgid "Choisir les pages et articles modifiables"
+msgstr "Choisir les pages et articles modifiables"
+
+msgid "Choisir ou importer une image"
+msgstr "Choisir ou importer une image"
+
+msgid "Choisir un article publié"
+msgstr "Choisir un article publié"
+
+msgid "Choisir une couleur personnalisée"
+msgstr "Choisir une couleur personnalisée"
+
+msgid "Choisir une image"
+msgstr "Choisir une image"
+
+msgid "Choisir une image autorisée"
+msgstr "Choisir une image autorisée"
 
 msgid ""
-"Choisissez les outils et les images accessibles aux comptes ayant le rôle"
-" « Édition simple »."
+"Choisissez la page à modifier et personnalisez son titre, ses textes et ses "
+"images."
 msgstr ""
-"Choisissez les outils et les images accessibles aux comptes ayant le rôle"
-" « Édition simple »."
+"Choisissez la page à modifier et personnalisez son titre, ses textes et ses "
+"images."
+
+msgid ""
+"Choisissez les outils et les images accessibles aux comptes ayant le rôle « "
+"Édition simple »."
+msgstr ""
+"Choisissez les outils et les images accessibles aux comptes ayant le rôle « "
+"Édition simple »."
 
 msgid "Choisissez un article autorisé et modifiez son titre et son contenu."
 msgstr "Choisissez un article autorisé et modifiez son titre et son contenu."
 
+msgid "Choisissez un élément ci-dessus pour commencer."
+msgstr "Choisissez un élément ci-dessus pour commencer."
+
+msgid "Classique — en-tête, contenu, bouton"
+msgstr "Classique — en-tête, contenu, bouton"
+
+msgid ""
+"Cochez uniquement les contenus que les utilisateurs « Édition simple » "
+"pourront modifier. Les pages construites avec Gutenberg, Divi, Elementor ou "
+"d’autres constructeurs restent protégées."
+msgstr ""
+"Cochez uniquement les contenus que les utilisateurs « Édition simple » "
+"pourront modifier. Les pages construites avec Gutenberg, Divi, Elementor ou "
+"d’autres constructeurs restent protégées."
+
 msgid "Comprendre comment ça marche"
 msgstr "Comprendre comment ça marche"
 
-msgid ""
-"Consultez les changements précédents et les pages qui utilisent vos "
-"textes."
-msgstr ""
-"Consultez les changements précédents et les pages qui utilisent vos "
-"textes."
+msgid "Configuration de Dendrila Simple Edit"
+msgstr "Configuration de Dendrila Simple Edit"
+
+msgid "Configuration des envois"
+msgstr "Configuration des envois"
+
+msgid "Configuration en cours"
+msgstr "Configuration en cours"
+
+msgid "Configurer FluentSMTP"
+msgstr "Configurer FluentSMTP"
+
+msgid "Connexion FluentSMTP nécessaire"
+msgstr "Connexion FluentSMTP nécessaire"
+
+msgid "Connexion détectée, vous pouvez activer le module."
+msgstr "Connexion détectée, vous pouvez activer le module."
+
+msgid "Connexion pour envoyer les e-mails"
+msgstr "Connexion pour envoyer les e-mails"
+
+msgid "Consultez les changements précédents et les pages qui utilisent vos textes."
+msgstr "Consultez les changements précédents et les pages qui utilisent vos textes."
+
+msgid "Contenu"
+msgstr "Contenu"
+
+msgid "Contenu de la newsletter"
+msgstr "Contenu de la newsletter"
+
+msgid "Contenu soumis à validation."
+msgstr "Contenu soumis à validation."
+
+msgid "Contenu validé. Aucun e-mail envoyé."
+msgstr "Contenu validé. Aucun e-mail envoyé."
+
+msgid "Contenus accessibles"
+msgstr "Contenus accessibles"
 
 msgid "Contenus en attente de validation"
 msgstr "Contenus en attente de validation"
 
+msgid "Continuer vers la rédaction"
+msgstr "Continuer vers la rédaction"
+
+msgid "Copie impossible : sélectionnez le code"
+msgstr "Copie impossible : sélectionnez le code"
+
+msgid "Copié !"
+msgstr "Copié !"
+
+msgid "Couleur automatique"
+msgstr "Couleur automatique"
+
+msgid "Couleur du cadre"
+msgstr "Couleur du cadre"
+
+msgid "Couleur du texte ou du bouton"
+msgstr "Couleur du texte ou du bouton"
+
+msgid "Couleur d’accent"
+msgstr "Couleur d’accent"
+
+msgid "Courriels et inscription lors d’une commande"
+msgstr "Courriels et inscription lors d’une commande"
+
+msgid "Création de contenus et menu principal"
+msgstr "Création de contenus et menu principal"
+
+msgid "Créer de nouveaux articles (brouillons)"
+msgstr "Créer de nouveaux articles (brouillons)"
+
+msgid "Créer de nouvelles pages (brouillons)"
+msgstr "Créer de nouvelles pages (brouillons)"
+
+msgid "Créer des catégories et sous-catégories de produits"
+msgstr "Créer des catégories et sous-catégories de produits"
+
+msgid "Créer des produits variables, groupés ou externes"
+msgstr "Créer des produits variables, groupés ou externes"
+
+msgid "Créer et gérer ses listes et leurs contacts"
+msgstr "Créer et gérer ses listes et leurs contacts"
+
+msgid "Créer un brouillon"
+msgstr "Créer un brouillon"
+
+msgid "Créer un produit (brouillon)"
+msgstr "Créer un produit (brouillon)"
+
+msgid "Créer une nouvelle newsletter"
+msgstr "Créer une nouvelle newsletter"
+
+msgid ""
+"Demandez explicitement l’inscription pendant le paiement, sans cocher la "
+"case par défaut. Les clients reçoivent une demande de confirmation. Une "
+"désinscription antérieure reste protégée."
+msgstr ""
+"Demandez explicitement l’inscription pendant le paiement, sans cocher la "
+"case par défaut. Les clients reçoivent une demande de confirmation. Une "
+"désinscription antérieure reste protégée."
+
+msgid "Dendrila Simple Edit doit être configuré avant utilisation."
+msgstr "Dendrila Simple Edit doit être configuré avant utilisation."
+
+msgid "Dendrila Simple Edit est incomplet. Réinstallez le ZIP complet du plugin."
+msgstr "Dendrila Simple Edit est incomplet. Réinstallez le ZIP complet du plugin."
+
+msgid "Descendre : "
+msgstr "Descendre : "
+
+msgid "Description de l’image"
+msgstr "Description de l’image"
+
+msgid "Donnez un nom à la liste. Vous pourrez ensuite y ajouter des contacts."
+msgstr "Donnez un nom à la liste. Vous pourrez ensuite y ajouter des contacts."
+
+msgid "Définir les autorisations des rôles"
+msgstr "Définir les autorisations des rôles"
+
+msgid "Déplacement annulé."
+msgstr "Déplacement annulé."
+
+msgid "Déplier"
+msgstr "Déplier"
+
+msgid "Déplier le bloc"
+msgstr "Déplier le bloc"
+
+msgid "Elle pourra confirmer son réabonnement par e-mail."
+msgstr "Elle pourra confirmer son réabonnement par e-mail."
+
+msgid "En attente de validation"
+msgstr "En attente de validation"
+
+msgid "Enregistrement non confirmé."
+msgstr "Enregistrement non confirmé."
+
+msgid "Enregistrer la synchronisation"
+msgstr "Enregistrer la synchronisation"
+
+msgid "Enregistrer le brouillon"
+msgstr "Enregistrer le brouillon"
+
+msgid "Envoyez une invitation uniquement si cette personne vous l’a demandé."
+msgstr "Envoyez une invitation uniquement si cette personne vous l’a demandé."
+
+msgid ""
+"FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa "
+"connexion avant de lancer une newsletter."
+msgstr ""
+"FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa "
+"connexion avant de lancer une newsletter."
+
+msgid ""
+"FluentSMTP doit être actif et posséder une connexion e-mail configurée avant"
+" de terminer la configuration du module Newsletters."
+msgstr ""
+"FluentSMTP doit être actif et posséder une connexion e-mail configurée avant"
+" de terminer la configuration du module Newsletters."
+
+msgid ""
+"FluentSMTP doit être installé et actif. Une connexion doit être configurée "
+"avant le premier envoi."
+msgstr ""
+"FluentSMTP doit être installé et actif. Une connexion doit être configurée "
+"avant le premier envoi."
+
+msgid ""
+"FluentSMTP est absent ou inactif. L’activation du module Newsletters est "
+"bloquée jusqu’à son activation."
+msgstr ""
+"FluentSMTP est absent ou inactif. L’activation du module Newsletters est "
+"bloquée jusqu’à son activation."
+
+msgid "FluentSMTP est obligatoire pour le mailing."
+msgstr "FluentSMTP est obligatoire pour le mailing."
+
+msgid "FluentSMTP nécessaire"
+msgstr "FluentSMTP nécessaire"
+
+msgid "FluentSMTP requis"
+msgstr "FluentSMTP requis"
+
+msgid "Fond du contenu"
+msgstr "Fond du contenu"
+
+msgid "Fond extérieur"
+msgstr "Fond extérieur"
+
+msgid "Grand titre"
+msgstr "Grand titre"
+
+msgid "Gérer les variations des produits"
+msgstr "Gérer les variations des produits"
+
 msgid "Historique"
 msgstr "Historique"
 
+msgid "Image"
+msgstr "Image"
+
+msgid "Image "
+msgstr "Image "
+
+msgid "Image choisie"
+msgstr "Image choisie"
+
+msgid "Image sélectionnée"
+msgstr "Image sélectionnée"
+
+msgid "Installer FluentSMTP"
+msgstr "Installer FluentSMTP"
+
+msgid ""
+"Installez/activez FluentSMTP et configurez une connexion avant d’activer ce "
+"module."
+msgstr ""
+"Installez/activez FluentSMTP et configurez une connexion avant d’activer ce "
+"module."
+
+msgid "Insérer un article du site"
+msgstr "Insérer un article du site"
+
+msgid "Intertitre"
+msgstr "Intertitre"
+
+msgid "Je souhaite recevoir la newsletter du site (confirmation par e-mail)."
+msgstr "Je souhaite recevoir la newsletter du site (confirmation par e-mail)."
+
+msgid ""
+"Le module Newsletters exige FluentSMTP installé, activé et configuré avec "
+"une connexion d’envoi. L’inscription marketing pendant la commande est "
+"facultative et décochée par défaut."
+msgstr ""
+"Le module Newsletters exige FluentSMTP installé, activé et configuré avec "
+"une connexion d’envoi. L’inscription marketing pendant la commande est "
+"facultative et décochée par défaut."
+
+msgid ""
+"Le module Newsletters nécessite FluentSMTP installé et activé. Activez "
+"FluentSMTP dans Extensions, puis reprenez cette étape."
+msgstr ""
+"Le module Newsletters nécessite FluentSMTP installé et activé. Activez "
+"FluentSMTP dans Extensions, puis reprenez cette étape."
+
+msgid "Le titre qui ouvre le message"
+msgstr "Le titre qui ouvre le message"
+
+msgid ""
+"Les administrateurs conservent leurs droits natifs. Tout autre rôle est "
+"refusé par défaut."
+msgstr ""
+"Les administrateurs conservent leurs droits natifs. Tout autre rôle est "
+"refusé par défaut."
+
+msgid ""
+"Les couleurs des éléments individuels peuvent ensuite être personnalisées "
+"séparément."
+msgstr ""
+"Les couleurs des éléments individuels peuvent ensuite être personnalisées "
+"séparément."
+
+msgid ""
+"Les désinscriptions historiques doivent être migrées avant le premier envoi."
+" Le module refuse les campagnes si cette protection échoue."
+msgstr ""
+"Les désinscriptions historiques doivent être migrées avant le premier envoi."
+" Le module refuse les campagnes si cette protection échoue."
+
+msgid ""
+"Les fonctions désactivées resteront inaccessibles. Elles pourront être "
+"activées plus tard."
+msgstr ""
+"Les fonctions désactivées resteront inaccessibles. Elles pourront être "
+"activées plus tard."
+
+msgid ""
+"Les images importées sont disponibles. Rechargez la page pour voir les "
+"nouvelles miniatures."
+msgstr ""
+"Les images importées sont disponibles. Rechargez la page pour voir les "
+"nouvelles miniatures."
+
+msgid ""
+"Les mises en page complexes restent protégées. Ne cochez que les contenus "
+"dont l’édition est volontairement déléguée."
+msgstr ""
+"Les mises en page complexes restent protégées. Ne cochez que les contenus "
+"dont l’édition est volontairement déléguée."
+
+msgid "Les modifications ultérieures se font depuis les réglages du plugin."
+msgstr "Les modifications ultérieures se font depuis les réglages du plugin."
+
+msgid "Lien"
+msgstr "Lien"
+
+msgid "Listes et contacts"
+msgstr "Listes et contacts"
+
+msgid ""
+"Lors de chaque envoi, Simple Edit ajoute automatiquement un lien de "
+"désinscription individuel en bas du message. Vous n’avez rien à insérer et "
+"ce lien ne peut pas être retiré depuis l’éditeur."
+msgstr ""
+"Lors de chaque envoi, Simple Edit ajoute automatiquement un lien de "
+"désinscription individuel en bas du message. Vous n’avez rien à insérer et "
+"ce lien ne peut pas être retiré depuis l’éditeur."
+
+msgid "L’insertion n’a pas pu être terminée. Vérifiez le contenu."
+msgstr "L’insertion n’a pas pu être terminée. Vérifiez le contenu."
+
+msgid "Magazine — une grande ouverture et des rubriques"
+msgstr "Magazine — une grande ouverture et des rubriques"
+
+msgid "Mailing et WooCommerce"
+msgstr "Mailing et WooCommerce"
+
 msgid "Menu principal"
 msgstr "Menu principal"
+
+msgid "Mes newsletters"
+msgstr "Mes newsletters"
 
 msgid ""
 "Mettez à jour uniquement les informations de produits qui vous ont été "
@@ -84,8 +549,35 @@ msgstr ""
 "Mettez à jour uniquement les informations de produits qui vous ont été "
 "confiées."
 
+msgid "Modifier des produits déjà publiés"
+msgstr "Modifier des produits déjà publiés"
+
+msgid "Modifier le brouillon"
+msgstr "Modifier le brouillon"
+
+msgid "Modifier le prix régulier"
+msgstr "Modifier le prix régulier"
+
+msgid "Modifier le stock"
+msgstr "Modifier le stock"
+
+msgid "Modifier les articles existants autorisés"
+msgstr "Modifier les articles existants autorisés"
+
+msgid "Modifier les brouillons"
+msgstr "Modifier les brouillons"
+
+msgid "Modifier les catégories existantes"
+msgstr "Modifier les catégories existantes"
+
+msgid "Modifier les pages existantes autorisées"
+msgstr "Modifier les pages existantes autorisées"
+
 msgid "Modifier les produits"
 msgstr "Modifier les produits"
+
+msgid "Modifier les textes"
+msgstr "Modifier les textes"
 
 msgid "Modifier mon site"
 msgstr "Modifier mon site"
@@ -100,30 +592,122 @@ msgid "Modifier une page"
 msgstr "Modifier une page"
 
 msgid ""
-"Modifiez le titre, la description, les dates, les horaires et le lieu des"
-" événements autorisés."
+"Modifiez le titre, la description, les dates, les horaires et le lieu des "
+"événements autorisés."
 msgstr ""
-"Modifiez le titre, la description, les dates, les horaires et le lieu des"
-" événements autorisés."
+"Modifiez le titre, la description, les dates, les horaires et le lieu des "
+"événements autorisés."
+
+msgid "Modules"
+msgstr "Modules"
+
+msgid "Modèle de newsletter"
+msgstr "Modèle de newsletter"
+
+msgid "Monter : "
+msgstr "Monter : "
 
 msgid "Newsletters"
 msgstr "Newsletters"
 
+msgid "Newsletters :"
+msgstr "Newsletters :"
+
+msgid "Nouvelle newsletter"
+msgstr "Nouvelle newsletter"
+
+msgid "Objet de la newsletter"
+msgstr "Objet de la newsletter"
+
+msgid "Offrez un café au développeur"
+msgstr "Offrez un café au développeur"
+
+msgid "Ordre mis à jour."
+msgstr "Ordre mis à jour."
+
+msgid "Ouvrir les réglages FluentSMTP"
+msgstr "Ouvrir les réglages FluentSMTP"
+
+msgid "Ouvrir l’assistant"
+msgstr "Ouvrir l’assistant"
+
 msgid "Pages"
 msgstr "Pages"
 
+msgid "Permissions par rôle"
+msgstr "Permissions par rôle"
+
+msgid "Personnalisée :"
+msgstr "Personnalisée :"
+
+msgid "Photo ou illustration"
+msgstr "Photo ou illustration"
+
+msgid ""
+"Pour activer le module Newsletters, installez et activez FluentSMTP, puis "
+"configurez au moins une connexion d’envoi dans ses réglages."
+msgstr ""
+"Pour activer le module Newsletters, installez et activez FluentSMTP, puis "
+"configurez au moins une connexion d’envoi dans ses réglages."
+
+msgid "Pour séparer deux parties"
+msgstr "Pour séparer deux parties"
+
+msgid "Produits WooCommerce"
+msgstr "Produits WooCommerce"
+
+msgid "Proposer un réabonnement"
+msgstr "Proposer un réabonnement"
+
+msgid "Proposer une inscription facultative lors de la commande"
+msgstr "Proposer une inscription facultative lors de la commande"
+
+msgid "Prune"
+msgstr "Prune"
+
+msgid "Préparer et envoyer ses newsletters sans validation préalable"
+msgstr "Préparer et envoyer ses newsletters sans validation préalable"
+
 msgid "Préparer un envoi"
 msgstr "Préparer un envoi"
+
+msgid "Préparer une campagne"
+msgstr "Préparer une campagne"
 
 msgid "Préparer une newsletter"
 msgstr "Préparer une newsletter"
 
 msgid ""
-"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez "
-"vos destinataires et lancez votre campagne."
+"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez vos "
+"destinataires et lancez votre campagne."
 msgstr ""
-"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez "
-"vos destinataires et lancez votre campagne."
+"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez vos "
+"destinataires et lancez votre campagne."
+
+msgid "Prévisualiser le contenu"
+msgstr "Prévisualiser le contenu"
+
+msgid "Prête à préparer pour un envoi"
+msgstr "Prête à préparer pour un envoi"
+
+msgid "Publier les nouveaux articles sans validation"
+msgstr "Publier les nouveaux articles sans validation"
+
+msgid "Publier les nouvelles pages sans validation"
+msgstr "Publier les nouvelles pages sans validation"
+
+msgid "Publier les produits sans validation"
+msgstr "Publier les produits sans validation"
+
+msgid "Publier sur le site immédiatement"
+msgstr "Publier sur le site immédiatement"
+
+msgid ""
+"Quatre structures différentes. Votre dernier modèle choisi est "
+"présélectionné."
+msgstr ""
+"Quatre structures différentes. Votre dernier modèle choisi est "
+"présélectionné."
 
 msgid "Que voulez-vous faire ?"
 msgstr "Que voulez-vous faire ?"
@@ -131,20 +715,188 @@ msgstr "Que voulez-vous faire ?"
 msgid "Quelques repères pour modifier le site sans risque."
 msgstr "Quelques repères pour modifier le site sans risque."
 
+msgid "Rechercher FluentSMTP dans les extensions"
+msgstr "Rechercher FluentSMTP dans les extensions"
+
+msgid "Replier"
+msgstr "Replier"
+
+msgid "Replier : "
+msgstr "Replier : "
+
+msgid "Retirer"
+msgstr "Retirer"
+
+msgid "Retirer "
+msgstr "Retirer "
+
 msgid "Retrouver une ancienne version"
 msgstr "Retrouver une ancienne version"
+
+msgid ""
+"Récupérez son titre et son premier paragraphe. Après insertion, ces textes "
+"sont indépendants : vous pouvez les modifier sans changer l’article "
+"d’origine."
+msgstr ""
+"Récupérez son titre et son premier paragraphe. Après insertion, ces textes "
+"sont indépendants : vous pouvez les modifier sans changer l’article "
+"d’origine."
+
+msgid "Rédiger les newsletters"
+msgstr "Rédiger les newsletters"
 
 msgid "Réorganiser le menu principal"
 msgstr "Réorganiser le menu principal"
 
+msgid "Souhaitez-vous recevoir à nouveau les newsletters de cette liste ?"
+msgstr "Souhaitez-vous recevoir à nouveau les newsletters de cette liste ?"
+
+msgid "Soumettre pour publication après validation"
+msgstr "Soumettre pour publication après validation"
+
 msgid "Soumettre à validation"
 msgstr "Soumettre à validation"
+
+msgid "Soutenir le développement"
+msgstr "Soutenir le développement"
+
+msgid "Suivre les envois"
+msgstr "Suivre les envois"
+
+msgid "Synchronisation WooCommerce"
+msgstr "Synchronisation WooCommerce"
+
+msgid "Texte"
+msgstr "Texte"
+
+msgid "Titre de section"
+msgstr "Titre de section"
+
+msgid "Titre principal"
+msgstr "Titre principal"
+
+msgid "Tout désélectionner"
+msgstr "Tout désélectionner"
+
+msgid "Tout sélectionner"
+msgstr "Tout sélectionner"
+
+msgid ""
+"Un administrateur doit terminer la configuration de Dendrila Simple Edit "
+"avant son utilisation."
+msgstr ""
+"Un administrateur doit terminer la configuration de Dendrila Simple Edit "
+"avant son utilisation."
+
+msgid ""
+"Un clic sur « Lancer » n’envoie rien immédiatement : les messages seront "
+"traités par petits lots planifiés."
+msgstr ""
+"Un clic sur « Lancer » n’envoie rien immédiatement : les messages seront "
+"traités par petits lots planifiés."
+
+msgid "Un lien bien visible"
+msgstr "Un lien bien visible"
+
+msgid "Un lien dans le texte"
+msgstr "Un lien dans le texte"
+
+msgid "Un ou plusieurs paragraphes"
+msgstr "Un ou plusieurs paragraphes"
+
+msgid ""
+"Uniquement les commandes payées et consenties. Les courriels transactionnels"
+" restent gérés par WooCommerce."
+msgstr ""
+"Uniquement les commandes payées et consenties. Les courriels transactionnels"
+" restent gérés par WooCommerce."
+
+msgid "Utiliser aussi ce modèle par défaut pour mes prochaines newsletters"
+msgstr "Utiliser aussi ce modèle par défaut pour mes prochaines newsletters"
+
+msgid "Utiliser ces images"
+msgstr "Utiliser ces images"
+
+msgid "Utiliser cette image"
+msgstr "Utiliser cette image"
 
 msgid "Validations"
 msgstr "Validations"
 
+msgid "Valider"
+msgstr "Valider"
+
+msgid "Valider les produits proposés"
+msgstr "Valider les produits proposés"
+
+msgid "Valider un contenu"
+msgstr "Valider un contenu"
+
+msgid "Validée, non envoyée"
+msgstr "Validée, non envoyée"
+
+msgid "Vert"
+msgstr "Vert"
+
+msgid "Vous pouvez choisir 60 images maximum. Réduisez votre sélection."
+msgstr "Vous pouvez choisir 60 images maximum. Réduisez votre sélection."
+
+msgid "Vérification"
+msgstr "Vérification"
+
+msgid "Vérification finale"
+msgstr "Vérification finale"
+
+msgid "Vérifiez la liste : numéros valides, 60 images maximum."
+msgstr "Vérifiez la liste : numéros valides, 60 images maximum."
+
 msgid "Vérifiez les propositions avant qu’elles ne soient mises en ligne."
 msgstr "Vérifiez les propositions avant qu’elles ne soient mises en ligne."
+
+msgid "connexion détectée"
+msgstr "connexion détectée"
+
+msgid "connexion manquante"
+msgstr "connexion manquante"
+
+msgid "inactif ou non configuré — veuillez corriger avant validation"
+msgstr "inactif ou non configuré — veuillez corriger avant validation"
+
+msgid "nouvel onglet"
+msgstr "nouvel onglet"
+
+msgid "prêt"
+msgstr "prêt"
+
+msgid "À droite"
+msgstr "À droite"
+
+msgid "À gauche"
+msgstr "À gauche"
+
+msgid "À modifier"
+msgstr "À modifier"
+
+msgid "Éditorial — lettre aérée et typographie soignée"
+msgstr "Éditorial — lettre aérée et typographie soignée"
+
+msgid "Élément"
+msgstr "Élément"
+
+msgid "Élément descendu."
+msgstr "Élément descendu."
+
+msgid "Élément remonté."
+msgstr "Élément remonté."
+
+msgid "Élément retiré."
+msgstr "Élément retiré."
+
+msgid "Étape "
+msgstr "Étape "
+
+msgid "État FluentSMTP :"
+msgstr "État FluentSMTP :"
 
 msgid "Événements"
 msgstr "Événements"

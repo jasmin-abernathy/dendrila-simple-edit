@@ -127,7 +127,7 @@
 }
 @media(max-width:380px){.dendrila-simple-edit-media-list {grid-template-columns:minmax(0,1fr)}}
 
-/* Dendrila Simple Edit 0.2.1 beta 4: uploads and image access controls. */
+/* Uploads and image-access controls (version 0.0.1). */
 /* Permissions follow Dendrila Privacy's simple green cards. */
 .dendrila-simple-edit-media-team-option,.dendrila-simple-edit-media-all-option {padding:14px;border:1px solid #bdd8c1;border-radius:9px;background:#f0f8ef;margin:12px 0}
 .dendrila-simple-edit-media-all-option {background:#f8faf8}
@@ -414,13 +414,141 @@
 .dendrila-simple-edit-advanced>summary{cursor:pointer}
 @media(max-width:782px){.dendrila-simple-edit-copy{margin:6px 0 0!important;display:inline-block}}
 
-/* An expanded draft needs the entire row, including on small tablets. */
-.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-bar:has(.dendrila-simple-edit-newsletter-item-details[open]) {display:block;padding:0}
-.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-bar:has(details[open]) .dendrila-simple-edit-newsletter-quick-actions {padding:0 12px 12px}
-@media(max-width:782px){
- .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-content form.dendrila-simple-edit-subcard {padding:0;border:0;background:transparent}
- .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-content {padding:10px}
- .dendrila-simple-edit-wrap .dendrila-simple-edit-block-palette {grid-template-columns:repeat(auto-fit,minmax(min(100%,115px),1fr))}
- .dendrila-simple-edit-wrap .dendrila-simple-edit-add-block small {display:none}
- .dendrila-simple-edit-wrap .dendrila-simple-edit-add-block {min-height:80px}
+/* Role permission bulk actions and administration sub-navigation. */
+.dendrila-simple-edit-bulk-permissions {display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 12px}
+.dendrila-simple-edit-settings-subnav {grid-column:1/-1}
+.dendrila-simple-edit-settings-subnav + .dendrila-simple-edit-card {margin-top:12px}
+
+/* Support footer, deliberately consistent with the plugin's green theme. */
+.dendrila-simple-edit-wrap .dendrila-simple-edit-support {
+    display:flex;justify-content:center;align-items:center;
+    padding:18px 12px 26px;margin-top:12px;
+    border-top:1px solid #d8e6da;
 }
+.dendrila-simple-edit-wrap .dendrila-simple-edit-support-link,
+.dendrila-simple-edit-wrap .dendrila-simple-edit-support-link:visited {
+    display:inline-flex;align-items:center;gap:8px;
+    padding:9px 13px;border:1px solid #bfd8c2;border-radius:999px;
+    background:#f0f7f0;color:var(--dendrila-simple-edit-green-dark);
+    text-decoration:none;font-size:13px;font-weight:650;line-height:1.4;
+    transition:background-color .15s,border-color .15s,color .15s;
+}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-support-link:hover,
+.dendrila-simple-edit-wrap .dendrila-simple-edit-support-link:focus-visible {
+    background:#e3f2e5;border-color:#639f6b;color:#174e20;text-decoration:none;
+}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-support-link .dashicons {
+    color:inherit;font-size:18px;width:18px;height:18px;
+}
+@media (prefers-reduced-motion:reduce){
+    .dendrila-simple-edit-wrap .dendrila-simple-edit-support-link{transition:none}
+}
+
+/* Collapsible content cards: their editors stay inside each item, no extra page loads. */
+.dendrila-simple-edit-content-list{display:grid;gap:12px;min-width:0}
+.dendrila-simple-edit-post-item{padding:0;overflow:hidden}
+.dendrila-simple-edit-post-item>summary{display:list-item;list-style-position:inside;cursor:pointer;padding:16px 20px;font-weight:700;color:var(--dendrila-simple-edit-green-dark);background:#f3f8f3;line-height:1.55}
+.dendrila-simple-edit-post-item[open]>summary{border-bottom:1px solid var(--dendrila-simple-edit-border)}
+.dendrila-simple-edit-post-item>form,.dendrila-simple-edit-post-item>p{margin:14px 20px}
+.dendrila-simple-edit-post-item .dendrila-simple-edit-photo-editor{border:1px solid #d8e5d9;border-radius:9px;margin:16px 0;padding:13px;min-width:0}
+.dendrila-simple-edit-post-item .dendrila-simple-edit-photo-editor label{display:block;margin:12px 0;font-weight:600}
+.dendrila-simple-edit-post-item .dendrila-simple-edit-status{font-weight:400;font-size:13px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-live-link,.dendrila-simple-edit-wrap .dendrila-simple-edit-live-link:visited{color:var(--dendrila-simple-edit-green-dark);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-live-link:hover{color:#174e20}
+@media(max-width:782px){.dendrila-simple-edit-post-item>summary{padding:14px}.dendrila-simple-edit-post-item>form,.dendrila-simple-edit-post-item>p{margin:12px 14px}}
+
+.dendrila-simple-edit-post-item .dendrila-simple-edit-revision-list{margin:12px 20px 20px;padding:12px;border-top:1px solid var(--dendrila-simple-edit-border)}
+.dendrila-simple-edit-post-item .dendrila-simple-edit-revision-list>summary{cursor:pointer;font-weight:600;color:var(--dendrila-simple-edit-green-dark)}
+.dendrila-simple-edit-post-item .dendrila-simple-edit-revision-list ul{padding-left:22px;margin:9px 0 0}
+@media(max-width:782px){.dendrila-simple-edit-post-item .dendrila-simple-edit-revision-list{margin:12px 14px 14px}}
+
+/* Product accordion and accessible sub-tabs. */
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-item{border:1px solid var(--dendrila-simple-edit-border);border-radius:9px;margin:12px 0;background:#fff;overflow:hidden}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-item>summary{cursor:pointer;padding:13px 16px;font-weight:700;color:var(--dendrila-simple-edit-green-dark);background:#f3f8f3}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-item>form{padding:14px 16px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-subnav{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 16px;padding-bottom:8px;border-bottom:1px solid #d8e5d9}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-tab{cursor:pointer;border:1px solid #abc9b0;border-radius:8px;padding:10px 12px;background:#f1f7f2;color:var(--dendrila-simple-edit-green-dark);font-weight:650}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-tab[aria-selected=true]{background:var(--dendrila-simple-edit-green-dark);color:#fff;border-color:var(--dendrila-simple-edit-green-dark)}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-tab:focus-visible{outline:2px solid var(--dendrila-simple-edit-green-dark);outline-offset:2px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-panel{min-width:0}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-panel[hidden]{display:none!important}
+
+/* Newsletter existing-draft editing: a full-width form when expanded. */
+.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-bar.is-open{
+ display:block!important;width:100%;padding:0!important;min-width:0;
+}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-bar.is-open>.dendrila-simple-edit-newsletter-item-details{
+ display:block;width:100%;min-width:0;
+}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-bar.is-open>.dendrila-simple-edit-newsletter-quick-actions{
+ display:flex;width:100%;padding:0 15px 14px;flex-wrap:wrap;justify-content:flex-start;
+}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-content{
+ min-width:0;max-width:100%;overflow-wrap:anywhere;
+}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-content form{
+ width:100%;min-width:0;max-width:100%;
+}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-block-canvas,
+.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-block,
+.dendrila-simple-edit-wrap .dendrila-simple-edit-block-fields{min-width:0;max-width:100%;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-block-fields[hidden]{display:none!important;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-block-bar{min-width:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-block-bar strong{flex:0 1 auto;min-width:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-block-summary{font-size:12px;line-height:1.3;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#5d7264;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-block-toggle{font-size:20px;line-height:1;padding:5px 8px;min-width:36px;min-height:36px;border:1px solid #9ac09d;border-radius:6px;background:#edf7ed;color:#24543b;cursor:pointer;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-block.is-collapsed{padding-bottom:8px;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-block.is-collapsed .dendrila-simple-edit-block-bar{border-bottom:0;padding-bottom:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-block.is-collapsed .dendrila-simple-edit-block-toggle{transform:rotate(-90deg);}
+/* Four templates use genuinely different structures. */
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-step{padding:15px 0 24px;border-bottom:1px solid #d9e8da;margin-bottom:20px;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0 20px;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-card{display:grid;gap:9px;grid-template-columns:auto 1fr;align-items:center;border:2px solid #cbdccf;border-radius:10px;padding:12px;background:#fff;cursor:pointer;min-width:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-card:has(input:checked){border-color:#236b2b;background:#f0f8f0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-card strong{grid-column:1/-1;font-size:13px;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-thumb{height:74px;grid-column:2;display:flex;flex-direction:column;gap:5px;overflow:hidden;padding:8px;background:var(--template-paper,#fff);border:1px solid #dce8de;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-thumb>span{display:block;border-radius:3px;background:var(--template-accent,#3f9146);height:9px;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-thumb>span:nth-child(2){background:#cad9cd;height:6px;width:80%;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-thumb>span:nth-child(3){background:#cad9cd;height:6px;width:90%;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-thumb.is-magazine>span:first-child{height:30px;width:100%;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-thumb.is-editorial{align-items:center;gap:8px;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-thumb.is-editorial>span{height:3px;width:65%;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-thumb.is-catalogue{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-thumb.is-catalogue>span{height:25px;width:100%;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-colors>label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:650;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-colors input[type=color]{width:100%;max-width:none;height:45px;padding:4px;cursor:pointer;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-step.is-finished{border-bottom:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-template-existing>summary{color:#236b2b;font-weight:650;cursor:pointer;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-submit{display:flex;align-items:end;flex-wrap:wrap;gap:12px;margin-top:18px;padding-top:15px;border-top:1px solid #dce8dc;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-product-submit>label{min-width:min(100%,240px);flex:1;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-setup-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,135px),1fr));gap:6px;list-style:none;padding:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-setup-steps li{border:1px solid #cee2d0;padding:10px;border-radius:8px;color:#496454;background:#f4f9f4;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-setup-steps li[aria-current=step]{background:#236b2b;color:#fff;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-setup-module>summary{padding:12px 0;cursor:pointer;font-weight:700;color:#236b2b;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-setup-actions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:25px;}
+@media(max-width:782px){
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-list{padding:12px!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-content{padding:8px!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item-content>.dendrila-simple-edit-subcard{padding:8px!important;margin:8px 0 0!important;border:0!important;background:transparent!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-block{padding:11px!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-block-canvas{padding:7px!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-block-palette{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-add-block{min-height:89px!important;padding:10px!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-template-grid{grid-template-columns:minmax(0,1fr);}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-form-actions-top{display:flex;flex-direction:column;align-items:stretch;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-form-actions-top .button{width:100%!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-quick-actions .button{max-width:100%;min-width:0;}
+}
+@media(max-width:410px){
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-list{padding:7px!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-item{margin:8px 0;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-newsletter-block{padding:8px!important;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-block-bar{gap:5px;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-block-grip{display:none;}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-block-controls{gap:3px;}
+}
+
+.dendrila-simple-edit-wrap .dendrila-simple-edit-live-preview{background:var(--template-paper,#ffffff);color:var(--template-ink,#293a30);}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-live-preview h1,.dendrila-simple-edit-wrap .dendrila-simple-edit-live-preview h2{color:var(--template-accent,#24543b);}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-preview-button{background:var(--template-button,#24543b);}

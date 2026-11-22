@@ -249,7 +249,7 @@ final class Dendrila_Simple_Edit_Media
             wp_die('Configuration réservée à l’administration.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_media_configure');
-        $raw = isset($_POST['dendrila_simple_edit_attachment_ids']) ? wp_unslash($_POST['dendrila_simple_edit_attachment_ids']) : '';
+        $raw = isset($_POST['dendrila_simple_edit_attachment_ids']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_attachment_ids'])) : '';
         if (!is_string($raw) || strlen($raw) > 1000) {
             wp_die('Liste d’images incorrecte.', 'Requête incorrecte', array('response' => 400));
         }
@@ -304,9 +304,10 @@ final class Dendrila_Simple_Edit_Media
         echo '<button type="button" class="button button-secondary" data-dendrila-simple-edit-media-open hidden ' .
             'aria-controls="dendrila-simple-edit-media-selected"><span class="dashicons dashicons-format-gallery" ' .
             'aria-hidden="true"></span> Choisir des images</button>';
+        // translators: %d: number of images currently selected in the media library.
+        $selected_count_label = _n('%d image sélectionnée', '%d images sélectionnées', count($ids), 'dendrila-simple-edit');
         echo '<span class="dendrila-simple-edit-media-count" data-dendrila-simple-edit-media-count role="status" aria-live="polite">' .
-            esc_html(sprintf(_n('%d image sélectionnée', '%d images sélectionnées', count($ids),
-            'dendrila-simple-edit'), count($ids))) . '</span></div>';
+            esc_html(sprintf($selected_count_label, count($ids))) . '</span></div>';
         echo '<div class="dendrila-simple-edit-media-list-wrap"><h3>Images sélectionnées</h3>';
         echo '<ul class="dendrila-simple-edit-media-list" data-dendrila-simple-edit-media-list id="dendrila-simple-edit-media-selected" aria-label="Images sélectionnées">';
         foreach ($ids as $attachment_id) {
