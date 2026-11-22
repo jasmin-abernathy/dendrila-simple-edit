@@ -5,9 +5,9 @@
  */
 if (!defined('ABSPATH')) { exit; }
 
-final class DSE_Modules
+final class Dendrila_Simple_Edit_Modules
 {
-    const OPTION = 'dse_modules';
+    const OPTION = 'dendrila_simple_edit_modules';
 
     public static function definitions()
     {
@@ -19,16 +19,16 @@ final class DSE_Modules
                     'publish_pages' => 'Publier les nouvelles pages sans validation',
                     'create_articles' => 'Créer de nouveaux articles (brouillons)',
                     'publish_articles' => 'Publier les nouveaux articles sans validation',
-                    'reorder_menu' => 'Réorganiser le menu principal',
+                    'reorder_menu' => __('Réorganiser le menu principal', 'dendrila-simple-edit'),
                 ),
                 'future' => 'Ces autorisations s’attribuent individuellement. Aucun accès à Gutenberg, au thème, aux extensions ou aux réglages WordPress.',
             ),
             'newsletters' => array(
-                'label' => 'Newsletters',
+                'label' => __('Newsletters', 'dendrila-simple-edit'),
                 'actions' => array(
                     'create' => 'Créer un brouillon',
                     'edit' => 'Modifier les brouillons',
-                    'review' => 'Soumettre à validation',
+                    'review' => __('Soumettre à validation', 'dendrila-simple-edit'),
                     'approve' => 'Valider un contenu',
                     'send' => 'Préparer et envoyer ses newsletters sans validation préalable',
                     'manage_lists' => 'Créer et gérer ses listes et leurs contacts',
@@ -76,7 +76,7 @@ final class DSE_Modules
         $id = $user_id === null ? get_current_user_id() : $user_id;
         if (!is_int($id) || $id < 1) { return false; }
         if (user_can($id, 'manage_options')) { return true; }
-        if (!user_can($id, 'read') || !user_can($id, 'dse_access')) {
+        if (!user_can($id, 'read') || !user_can($id, 'dendrila_simple_edit_access')) {
             return false;
         }
         $settings = self::settings();
@@ -87,7 +87,7 @@ final class DSE_Modules
 
     public static function boot()
     {
-        add_action('admin_post_dse_module_configure', array(__CLASS__, 'configure'));
+        add_action('admin_post_dendrila_simple_edit_module_configure', array(__CLASS__, 'configure'));
     }
 
     public static function configure()
@@ -95,13 +95,13 @@ final class DSE_Modules
         if (!current_user_can('manage_options')) {
             wp_die('Configuration réservée à l’administration.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_module_configure');
-        $module = isset($_POST['dse_module']) ? wp_unslash($_POST['dse_module']) : '';
+        check_admin_referer('dendrila_simple_edit_module_configure');
+        $module = isset($_POST['dendrila_simple_edit_module']) ? wp_unslash($_POST['dendrila_simple_edit_module']) : '';
         $definitions = self::definitions();
         if (!is_string($module) || !isset($definitions[$module])) {
             wp_die('Module inconnu.', 'Requête incorrecte', array('response' => 400));
         }
-        $submitted = isset($_POST['dse_grants']) ? wp_unslash($_POST['dse_grants']) : array();
+        $submitted = isset($_POST['dendrila_simple_edit_grants']) ? wp_unslash($_POST['dendrila_simple_edit_grants']) : array();
         if (!is_array($submitted) || count($submitted) > 50) {
             wp_die('Autorisations incorrectes.', 'Requête incorrecte', array('response' => 400));
         }
@@ -112,7 +112,7 @@ final class DSE_Modules
             if (!ctype_digit($user_id) || (int) $user_id < 1 ||
                 !is_array($actions) || count($actions) > count($allowed_actions) ||
                 !get_user_by('id', (int) $user_id) ||
-                !user_can((int) $user_id, 'dse_access') ||
+                !user_can((int) $user_id, 'dendrila_simple_edit_access') ||
                 user_can((int) $user_id, 'manage_options')) {
                 wp_die('Utilisateur ou autorisation incorrect.', 'Requête incorrecte', array('response' => 400));
             }
@@ -125,11 +125,11 @@ final class DSE_Modules
         }
         $settings = self::settings();
         $settings[$module] = array(
-            'enabled' => isset($_POST['dse_module_enabled']) && $_POST['dse_module_enabled'] === '1',
+            'enabled' => isset($_POST['dendrila_simple_edit_module_enabled']) && $_POST['dendrila_simple_edit_module_enabled'] === '1',
             'grants' => $grants,
         );
         update_option(self::OPTION, $settings, false);
-        wp_safe_redirect(add_query_arg(array('dse_notice' => 'module_configured', 'dse_tab' => 'reglages'),
+        wp_safe_redirect(add_query_arg(array('dendrila_simple_edit_notice' => 'module_configured', 'dendrila_simple_edit_tab' => 'reglages'),
             admin_url('admin.php?page=dendrila-simple-edit')));
         exit;
     }
@@ -137,27 +137,27 @@ final class DSE_Modules
     public static function render_admin()
     {
         if (!current_user_can('manage_options')) { return; }
-        $users = get_users(array('role' => DSE_Plugin::ROLE, 'number' => 50, 'orderby' => 'display_name'));
+        $users = get_users(array('role' => Dendrila_Simple_Edit_Plugin::ROLE, 'number' => 50, 'orderby' => 'display_name'));
         $settings = self::settings();
         foreach (self::definitions() as $module => $definition) {
             $configured = $settings[$module] ?? array();
             $grants = is_array($configured) ? ($configured['grants'] ?? array()) : array();
-            echo '<form class="dse-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            echo '<form class="dendrila-simple-edit-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             echo '<h2>' . esc_html($definition['label']) . '</h2>';
             echo '<p>Choisissez qui pourra utiliser cet outil et ce que cette personne pourra y faire, sans lui donner accès à toute l’administration.</p>';
-            echo '<input type="hidden" name="action" value="dse_module_configure">';
-            echo '<input type="hidden" name="dse_module" value="' . esc_attr($module) . '">';
-            wp_nonce_field('dse_module_configure');
-            echo '<label class="dse-check"><input type="checkbox" name="dse_module_enabled" value="1" ' .
+            echo '<input type="hidden" name="action" value="dendrila_simple_edit_module_configure">';
+            echo '<input type="hidden" name="dendrila_simple_edit_module" value="' . esc_attr($module) . '">';
+            wp_nonce_field('dendrila_simple_edit_module_configure');
+            echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_module_enabled" value="1" ' .
                 checked(self::enabled($module), true, false) . '> Activer ce module</label>';
             if (!$users) {
                 echo '<p>Aucun utilisateur ne possède encore le rôle « Édition simple ». Créez un compte avec ce rôle pour pouvoir lui donner ces autorisations.</p>';
             }
             foreach ($users as $user) {
                 $assigned = is_array($grants) ? ($grants[(string) $user->ID] ?? array()) : array();
-                echo '<fieldset class="dse-permissions"><legend>' . esc_html($user->display_name) . '</legend>';
+                echo '<fieldset class="dendrila-simple-edit-permissions"><legend>' . esc_html($user->display_name) . '</legend>';
                 foreach ($definition['actions'] as $key => $label) {
-                    echo '<label class="dse-check"><input type="checkbox" name="dse_grants[' .
+                    echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_grants[' .
                         esc_attr((string) $user->ID) . '][]" value="' . esc_attr($key) . '" ' .
                         checked(is_array($assigned) && in_array($key, $assigned, true), true, false) .
                         '> ' . esc_html($label) . '</label>';

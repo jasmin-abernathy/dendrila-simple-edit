@@ -2,19 +2,19 @@
 /** Shared content block safety and e-mail output for Dendrila Simple Edit. */
 if (!defined('ABSPATH')) { exit; }
 
-final class DSE_Block_Editor
+final class Dendrila_Simple_Edit_Block_Editor
 {
     public static function clean($value)
     {
         if (!is_string($value)) { return ''; }
         $tags = array_fill_keys(array('p', 'br', 'h1', 'h2', 'h3', 'h4', 'strong', 'b',
             'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'hr'), array());
-        $tags['div'] = array('data-dse-block' => true, 'data-dse-align' => true);
+        $tags['div'] = array('data-dendrila-simple-edit-block' => true, 'data-dendrila-simple-edit-align' => true);
         $tags['a'] = array('href' => true, 'title' => true, 'class' => true);
-        $tags['img'] = array('src' => true, 'alt' => true, 'width' => true, 'height' => true);
+        $tags['img'] = array('src' => true, 'alt' => true, 'title' => true, 'width' => true, 'height' => true);
         foreach (array('h1', 'h2', 'h3', 'p', 'a', 'img') as $tag) {
-            $tags[$tag]['data-dse-color'] = true;
-            $tags[$tag]['data-dse-align'] = true;
+            $tags[$tag]['data-dendrila-simple-edit-color'] = true;
+            $tags[$tag]['data-dendrila-simple-edit-align'] = true;
         }
         $clean = wp_kses($value, $tags, array('https', 'http', 'mailto'));
         // There may only be one H1 *in the newsletter body*; posts have a separate title.
@@ -67,11 +67,11 @@ final class DSE_Block_Editor
         $html = new WP_HTML_Tag_Processor($raw);
         while ($html->next_tag()) {
             $tag = $html->get_tag();
-            $color = self::color($html->get_attribute('data-dse-color'));
-            $align = self::alignment($html->get_attribute('data-dse-align'));
-            if ($tag === 'DIV' && $html->get_attribute('data-dse-block')) {
+            $color = self::color($html->get_attribute('data-dendrila-simple-edit-color'));
+            $align = self::alignment($html->get_attribute('data-dendrila-simple-edit-align'));
+            if ($tag === 'DIV' && $html->get_attribute('data-dendrila-simple-edit-block')) {
                 $html->set_attribute('style', 'text-align:' . $align . ';');
-            } elseif ($tag === 'A' && $html->has_class('dse-newsletter-cta')) {
+            } elseif ($tag === 'A' && $html->has_class('dendrila-simple-edit-newsletter-cta')) {
                 $background = $color ?: '#24543b';
                 $html->set_attribute('style', 'display:inline-block;background-color:' .
                     $background . ';color:' . self::contrast_text($background) .
@@ -119,12 +119,12 @@ final class DSE_Block_Editor
         $old_errors = libxml_use_internal_errors(true);
         try {
             $dom->loadHTML('<?xml encoding="UTF-8"?><html><body>' .
-                '<div id="dse-email-source">' . $html . '</div></body></html>');
+                '<div id="dendrila-simple-edit-email-source">' . $html . '</div></body></html>');
         } finally {
             libxml_clear_errors();
             libxml_use_internal_errors($old_errors);
         }
-        $source = $dom->getElementById('dse-email-source');
+        $source = $dom->getElementById('dendrila-simple-edit-email-source');
         if (!$source) {
             return '<tr><td align="left" valign="top" style="padding:0 0 18px;">' .
                 $html . '</td></tr>';
@@ -132,20 +132,20 @@ final class DSE_Block_Editor
         $rows = '';
         foreach ($source->childNodes as $block) {
             if (!($block instanceof DOMElement)) { continue; }
-            $kind = $block->getAttribute('data-dse-block');
+            $kind = $block->getAttribute('data-dendrila-simple-edit-block');
             if ($kind !== '' && $block->firstElementChild) {
                 $inner = $block->firstElementChild;
             } else {
                 $kind = '';
                 $inner = $block;
             }
-            $alignment = self::alignment($block->getAttribute('data-dse-align') ?:
-                $inner->getAttribute('data-dse-align'));
+            $alignment = self::alignment($block->getAttribute('data-dendrila-simple-edit-align') ?:
+                $inner->getAttribute('data-dendrila-simple-edit-align'));
             $content = $dom->saveHTML($inner);
             if (!$content) { continue; }
             $padding = $kind === 'image' ? 22 : ($kind === 'title' ? 25 : 19);
             if ($kind === 'button' && $inner->tagName === 'a') {
-                $color = self::color($inner->getAttribute('data-dse-color')) ?: '#24543b';
+                $color = self::color($inner->getAttribute('data-dendrila-simple-edit-color')) ?: '#24543b';
                 // VML-less bulletproof button: background and padding on the cell,
                 // so the CTA keeps its shape when link padding is ignored.
                 $content = '<table role="presentation" align="' . esc_attr($alignment) .
@@ -181,7 +181,7 @@ final class DSE_Block_Editor
             '<tr><td align="left" valign="top" style="padding:28px 28px 24px;text-align:left;">' .
             '<table role="presentation" border="0" cellspacing="0" cellpadding="0" width="100%" ' .
             'style="width:100%;border-collapse:collapse;">' .
-            $rows . '<!--DSE_UNSUBSCRIBE_ROW-->' .
+            $rows . '<!--DENDRILA_SIMPLE_EDIT_UNSUBSCRIBE_ROW-->' .
             '</table></td></tr></table></td></tr></table></body></html>';
     }
 
@@ -190,10 +190,10 @@ final class DSE_Block_Editor
      */
     public static function modernize_email_document($saved)
     {
-        if (!is_string($saved) || strpos($saved, '<!--DSE_UNSUBSCRIBE_ROW-->') !== false) {
+        if (!is_string($saved) || strpos($saved, '<!--DENDRILA_SIMPLE_EDIT_UNSUBSCRIBE_ROW-->') !== false) {
             return $saved;
         }
-        if (strpos($saved, 'data-dse-block=') === false || !class_exists('DOMDocument')) {
+        if (strpos($saved, 'data-dendrila-simple-edit-block=') === false || !class_exists('DOMDocument')) {
             return $saved;
         }
         $dom = new DOMDocument('1.0', 'UTF-8');
@@ -206,7 +206,7 @@ final class DSE_Block_Editor
         }
         if (!$ok) { return $saved; }
         $xpath = new DOMXPath($dom);
-        $nodes = $xpath->query('//div[@data-dse-block]');
+        $nodes = $xpath->query('//div[@data-dendrila-simple-edit-block]');
         if (!$nodes || $nodes->length < 1) { return $saved; }
         $body = '';
         foreach ($nodes as $node) {
@@ -222,7 +222,7 @@ final class DSE_Block_Editor
         if (!is_string($html)) { return false; }
         if (trim($html) === '') { return true; }
         if (self::has_unsafe_layout($html)) { return false; }
-        $remaining = preg_replace_callback('~<div\s+data-dse-block="(title|heading|text|image|button|link)"(?:\s+data-dse-align="(?:left|center|right)")?\s*>([\s\S]*?)</div>~i',
+        $remaining = preg_replace_callback('~<div\s+data-dendrila-simple-edit-block="(title|heading|text|image|button|link)"(?:\s+data-dendrila-simple-edit-align="(?:left|center|right)")?\s*>([\s\S]*?)</div>~i',
             static function ($match) {
                 $tag = array('title' => 'h1', 'heading' => 'h2', 'text' => 'p',
                     'image' => 'img', 'button' => 'a', 'link' => 'a')[strtolower($match[1])];

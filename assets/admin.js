@@ -4,7 +4,7 @@
     'use strict';
 
     function revealSelectedTab() {
-        var nav = document.querySelector('.dse-nav-tabs');
+        var nav = document.querySelector('.dendrila-simple-edit-nav-tabs');
         if (!nav) { return; }
         var selected = nav.querySelector('[aria-current="page"]');
         if (!selected) { return; }
@@ -13,16 +13,16 @@
     }
 
     function initMediaPicker() {
-        var form = document.querySelector('[data-dse-media-picker]');
+        var form = document.querySelector('[data-dendrila-simple-edit-media-picker]');
         if (!form) { return; }
-        var field = form.querySelector('#dse-media-ids');
-        var list = form.querySelector('[data-dse-media-list]');
-        var openButton = form.querySelector('[data-dse-media-open]');
-        var clearButton = form.querySelector('[data-dse-media-clear]');
-        var count = form.querySelector('[data-dse-media-count]');
-        var empty = form.querySelector('[data-dse-media-empty]');
-        var feedback = form.querySelector('[data-dse-media-feedback]');
-        var advanced = form.querySelector('.dse-media-advanced');
+        var field = form.querySelector('#dendrila-simple-edit-media-ids');
+        var list = form.querySelector('[data-dendrila-simple-edit-media-list]');
+        var openButton = form.querySelector('[data-dendrila-simple-edit-media-open]');
+        var clearButton = form.querySelector('[data-dendrila-simple-edit-media-clear]');
+        var count = form.querySelector('[data-dendrila-simple-edit-media-count]');
+        var empty = form.querySelector('[data-dendrila-simple-edit-media-empty]');
+        var feedback = form.querySelector('[data-dendrila-simple-edit-media-feedback]');
+        var advanced = form.querySelector('.dendrila-simple-edit-media-advanced');
         if (!field || !list || !openButton || !clearButton || !count || !empty || !feedback) {
             return;
         }
@@ -37,13 +37,13 @@
         var limit = 60;
         var records = {};
         var ids = [];
-        Array.prototype.forEach.call(list.querySelectorAll('[data-dse-media-id]'), function (node) {
-            var id = Number(node.getAttribute('data-dse-media-id'));
+        Array.prototype.forEach.call(list.querySelectorAll('[data-dendrila-simple-edit-media-id]'), function (node) {
+            var id = Number(node.getAttribute('data-dendrila-simple-edit-media-id'));
             if (!Number.isSafeInteger(id) || id < 1 || ids.indexOf(id) !== -1) { return; }
             ids.push(id);
             records[id] = {
-                title: node.getAttribute('data-dse-media-title') || ('Image ' + id),
-                url: node.getAttribute('data-dse-media-url') || ''
+                title: node.getAttribute('data-dendrila-simple-edit-media-title') || ('Image ' + id),
+                url: node.getAttribute('data-dendrila-simple-edit-media-url') || ''
             };
         });
 
@@ -70,7 +70,7 @@
             ids.forEach(function (id) {
                 var data = records[id] || {title: 'Image ' + id, url: ''};
                 var item = document.createElement('li');
-                item.className = 'dse-media-item';
+                item.className = 'dendrila-simple-edit-media-item';
                 if (data.url) {
                     var img = document.createElement('img');
                     img.src = data.url;
@@ -81,17 +81,17 @@
                     item.appendChild(img);
                 } else {
                     var placeholder = document.createElement('span');
-                    placeholder.className = 'dse-media-placeholder dashicons dashicons-format-image';
+                    placeholder.className = 'dendrila-simple-edit-media-placeholder dashicons dashicons-format-image';
                     placeholder.setAttribute('aria-hidden', 'true');
                     item.appendChild(placeholder);
                 }
                 var name = document.createElement('span');
-                name.className = 'dse-media-name';
+                name.className = 'dendrila-simple-edit-media-name';
                 name.textContent = data.title;
                 item.appendChild(name);
                 var remove = document.createElement('button');
                 remove.type = 'button';
-                remove.className = 'button-link-delete dse-media-remove';
+                remove.className = 'button-link-delete dendrila-simple-edit-media-remove';
                 remove.textContent = 'Retirer';
                 remove.setAttribute('aria-label', 'Retirer ' + data.title + ' de la sélection');
                 remove.addEventListener('click', function () {
@@ -100,7 +100,7 @@
                     setFeedback('');
                     render();
                     // Keep keyboard focus on the next available action.
-                    var next = list.querySelector('.dse-media-remove');
+                    var next = list.querySelector('.dendrila-simple-edit-media-remove');
                     (next || openButton).focus();
                 });
                 item.appendChild(remove);
@@ -184,10 +184,10 @@
 
     /** Uploads always belong to the logged-in editor; there is no admin approval step. */
     function initPersonalUploads() {
-        var trigger = document.querySelector('[data-dse-upload-open]');
+        var trigger = document.querySelector('[data-dendrila-simple-edit-upload-open]');
         if (!trigger || !window.wp || !window.wp.media) { return; }
         trigger.hidden = false;
-        var status = document.querySelector('[data-dse-upload-status]');
+        var status = document.querySelector('[data-dendrila-simple-edit-upload-status]');
         var frame;
         trigger.addEventListener('click', function () {
             if (!frame) {
@@ -210,11 +210,11 @@
     /** Single image attached to one editable shortcode; use the native picker. */
     function initContentPhotoPickers() {
         if (!window.wp || !window.wp.media) { return; }
-        Array.prototype.forEach.call(document.querySelectorAll('[data-dse-photo-picker]'), function (panel) {
-            var select = panel.querySelector('[data-dse-photo-select]');
-            var trigger = panel.querySelector('[data-dse-photo-open]');
-            var clear = panel.querySelector('[data-dse-photo-clear]');
-            var preview = panel.querySelector('[data-dse-photo-preview]');
+        Array.prototype.forEach.call(document.querySelectorAll('[data-dendrila-simple-edit-photo-picker]'), function (panel) {
+            var select = panel.querySelector('[data-dendrila-simple-edit-photo-select]');
+            var trigger = panel.querySelector('[data-dendrila-simple-edit-photo-open]');
+            var clear = panel.querySelector('[data-dendrila-simple-edit-photo-clear]');
+            var preview = panel.querySelector('[data-dendrila-simple-edit-photo-preview]');
             if (!select || !trigger || !clear || !preview) { return; }
             trigger.hidden = false;
             // JS-enhanced UI is image-first; the HTML select remains a fallback.
@@ -276,9 +276,9 @@
     }
 
     function initAcfSelector() {
-        var select = document.getElementById('dse-acf-content-select');
+        var select = document.getElementById('dendrila-simple-edit-acf-content-select');
         if (!select || !select.form) { return; }
-        var button = select.form.querySelector('[data-dse-acf-open]');
+        var button = select.form.querySelector('[data-dendrila-simple-edit-acf-open]');
         select.addEventListener('change', function () {
             if (!select.value) { return; }
             // Keep the normal GET form as a no-JavaScript fallback.
@@ -292,19 +292,19 @@
     }
 
     function initNavigationSorter() {
-        Array.prototype.forEach.call(document.querySelectorAll('[data-dse-nav-sort]'), function (list) {
-            var status = list.parentNode.querySelector('[data-dse-nav-status]');
+        Array.prototype.forEach.call(document.querySelectorAll('[data-dendrila-simple-edit-nav-sort]'), function (list) {
+            var status = list.parentNode.querySelector('[data-dendrila-simple-edit-nav-status]');
             var drag = null;
             var frame = null;
             function rows() {
-                return Array.prototype.slice.call(list.querySelectorAll(':scope > .dse-nav-sort-item'));
+                return Array.prototype.slice.call(list.querySelectorAll(':scope > .dendrila-simple-edit-nav-sort-item'));
             }
             function announce(message) {
                 if (status) { status.textContent = message; }
             }
             function announcePosition(row) {
                 var all = rows();
-                var title = row.querySelector('.dse-nav-sort-label');
+                var title = row.querySelector('.dendrila-simple-edit-nav-sort-label');
                 announce((title ? title.textContent.trim() : 'Élément') + ' : position ' +
                     (all.indexOf(row) + 1) + ' sur ' + all.length +
                     '. Pensez à enregistrer.');
@@ -312,7 +312,7 @@
             function reorderAt(x, y) {
                 if (!drag) { return; }
                 var hit = document.elementFromPoint(x, y);
-                var target = hit && hit.closest('.dse-nav-sort-item');
+                var target = hit && hit.closest('.dendrila-simple-edit-nav-sort-item');
                 if (!target || target === drag.row || target.parentNode !== list) { return; }
                 var rect = target.getBoundingClientRect();
                 if (y < rect.top + rect.height / 2) {
@@ -358,10 +358,10 @@
                 }
             }
             list.addEventListener('pointerdown', function (event) {
-                var handle = event.target.closest('[data-dse-nav-handle]');
+                var handle = event.target.closest('[data-dendrila-simple-edit-nav-handle]');
                 if (!handle || !list.contains(handle) || drag ||
                     (event.pointerType === 'mouse' && event.button !== 0)) { return; }
-                var row = handle.closest('.dse-nav-sort-item');
+                var row = handle.closest('.dendrila-simple-edit-nav-sort-item');
                 if (!row) { return; }
                 event.preventDefault();
                 handle.focus({preventScroll: true});
@@ -392,10 +392,10 @@
                 if (drag && event.pointerId === drag.pointerId) { finish(true); }
             });
             list.addEventListener('keydown', function (event) {
-                var handle = event.target.closest('[data-dse-nav-handle]');
+                var handle = event.target.closest('[data-dendrila-simple-edit-nav-handle]');
                 if (!handle || !list.contains(handle) || drag ||
                     ['ArrowUp', 'ArrowDown', 'Home', 'End'].indexOf(event.key) === -1) { return; }
-                var row = handle.closest('.dse-nav-sort-item');
+                var row = handle.closest('.dendrila-simple-edit-nav-sort-item');
                 if (!row) { return; }
                 event.preventDefault();
                 if (event.key === 'ArrowUp' && row.previousElementSibling) {
@@ -414,80 +414,23 @@
     }
 
     function initListCreator() {
-        Array.prototype.forEach.call(document.querySelectorAll('[data-dse-list-open]'), function (link) {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-dendrila-simple-edit-list-open]'), function (link) {
             link.addEventListener('click', function (event) {
-                var details = document.getElementById('dse-add-list');
+                var details = document.getElementById('dendrila-simple-edit-add-list');
                 if (!details) { return; }
                 event.preventDefault();
                 details.open = true;
                 details.scrollIntoView({behavior: 'smooth', block: 'start'});
-                var field = details.querySelector('[data-dse-new-list-name]');
+                var field = details.querySelector('[data-dendrila-simple-edit-new-list-name]');
                 if (field) { field.focus({preventScroll: true}); }
             });
-        });
-    }
-
-    /**
-     * Show a second set of form actions at the top of every creation/edit form.
-     * Both sets belong to the SAME HTML form: browser validation, nonce checks,
-     * editor serialization and permission checks are therefore unchanged.
-     *
-     * Never clone one-click destructive actions (remove, restore, unsubscribe).
-     * Forms without editable controls also stay unchanged.
-     */
-    function initTopFormActions() {
-        var excluded = [
-            'dse_restore', 'dse_acf_remove', 'dse_acf_add', 'dse_newsletter_approve',
-            'dse_newsletter_reject', 'dse_ml_remove', 'dse_ml_reinvite',
-            'dse_ml_start', 'dse_ml_pause'
-        ];
-        var forms = document.querySelectorAll('.dse-wrap form[method="post"]');
-        Array.prototype.forEach.call(forms, function (form) {
-            if (form.querySelector('.dse-form-actions-top')) { return; }
-            var actionField = form.querySelector('input[name="action"]');
-            if (!actionField || actionField.value.indexOf('dse_') !== 0 ||
-                excluded.indexOf(actionField.value) !== -1) { return; }
-            var editable = form.querySelector('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), select, textarea');
-            if (!editable) { return; }
-            var submits = Array.prototype.filter.call(
-                form.querySelectorAll('button[type="submit"], input[type="submit"]'),
-                function (button) {
-                    return button.closest('form') === form &&
-                        !button.closest('.dse-form-actions-top');
-                }
-            );
-            if (!submits.length) { return; }
-            var bar = document.createElement('div');
-            bar.className = 'dse-form-actions-top';
-            bar.setAttribute('role', 'group');
-            bar.setAttribute('aria-label', 'Actions du formulaire (également disponibles en bas)');
-            submits.forEach(function (original) {
-                var copy = original.cloneNode(true);
-                copy.removeAttribute('id');
-                copy.removeAttribute('form');
-                copy.classList.add('dse-form-top-submit');
-                bar.appendChild(copy);
-            });
-            // Keep the heading and short description above the action bar.
-            var before = null;
-            Array.prototype.some.call(form.children, function (child) {
-                var tag = child.tagName;
-                if (tag === 'H2' || tag === 'H3' || tag === 'H4' ||
-                    (tag === 'INPUT' && child.type === 'hidden') ||
-                    (tag === 'P' && !child.querySelector('input, select, textarea, button'))) {
-                    return false;
-                }
-                before = child;
-                return true;
-            });
-            form.insertBefore(bar, before);
         });
     }
 
     function init() {
         revealSelectedTab();
         initListCreator();
-        initTopFormActions();
+
         initNavigationSorter();
         initAcfSelector();
         initMediaPicker();
@@ -500,3 +443,30 @@
         init();
     }
 }());
+
+// Native clipboard: visible feedback and fallback for browsers without Clipboard API.
+document.addEventListener('click', async function(event) {
+    const button = event.target.closest('[data-dendrila-simple-edit-copy]');
+    if (!button) return;
+    const target = document.getElementById(button.getAttribute('data-dendrila-simple-edit-copy'));
+    if (!target) return;
+    const value = 'value' in target ? target.value : target.textContent;
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(value);
+        } else {
+            const temporary = document.createElement('textarea');
+            temporary.value = value;
+            temporary.style.position = 'fixed';
+            temporary.style.opacity = '0';
+            document.body.appendChild(temporary);
+            temporary.select();
+            if (!document.execCommand('copy')) throw new Error('Copy unavailable');
+            temporary.remove();
+        }
+        button.textContent = 'Copié !';
+    } catch (error) {
+        button.textContent = 'Copie impossible : sélectionnez le code';
+        if (typeof target.select === 'function') target.select();
+    }
+});

@@ -6,17 +6,17 @@
  */
 if (!defined('ABSPATH')) { exit; }
 
-final class DSE_Mailing
+final class Dendrila_Simple_Edit_Mailing
 {
     const DB_VERSION = '4';
-    const DB_OPTION = 'dse_mailing_schema_version';
-    const CRON_HOOK = 'dse_mailing_dispatch';
+    const DB_OPTION = 'dendrila_simple_edit_mailing_schema_version';
+    const CRON_HOOK = 'dendrila_simple_edit_mailing_dispatch';
     const BATCH_SIZE = 5;
 
     private static function table($name)
     {
         global $wpdb;
-        return $wpdb->prefix . 'dse_ml_' . $name;
+        return $wpdb->prefix . 'dendrila_simple_edit_ml_' . $name;
     }
 
     public static function install()
@@ -111,16 +111,16 @@ final class DSE_Mailing
         add_action('admin_init', array(__CLASS__, 'maybe_install'));
         foreach (array('list', 'import', 'prepare', 'start', 'pause', 'test', 'remove',
             'edit_contact', 'reinvite', 'assign_list') as $task) {
-            add_action('admin_post_dse_ml_' . $task, array(__CLASS__, $task));
+            add_action('admin_post_dendrila_simple_edit_ml_' . $task, array(__CLASS__, $task));
         }
-        add_action('admin_post_dse_ml_subscribe', array(__CLASS__, 'subscribe'));
-        add_action('admin_post_nopriv_dse_ml_subscribe', array(__CLASS__, 'subscribe'));
-        add_action('admin_post_dse_ml_confirm', array(__CLASS__, 'confirm'));
-        add_action('admin_post_nopriv_dse_ml_confirm', array(__CLASS__, 'confirm'));
-        add_action('admin_post_dse_ml_reconfirm', array(__CLASS__, 'reconfirm'));
-        add_action('admin_post_nopriv_dse_ml_reconfirm', array(__CLASS__, 'reconfirm'));
-        add_action('admin_post_dse_ml_unsubscribe', array(__CLASS__, 'unsubscribe'));
-        add_action('admin_post_nopriv_dse_ml_unsubscribe', array(__CLASS__, 'unsubscribe'));
+        add_action('admin_post_dendrila_simple_edit_ml_subscribe', array(__CLASS__, 'subscribe'));
+        add_action('admin_post_nopriv_dendrila_simple_edit_ml_subscribe', array(__CLASS__, 'subscribe'));
+        add_action('admin_post_dendrila_simple_edit_ml_confirm', array(__CLASS__, 'confirm'));
+        add_action('admin_post_nopriv_dendrila_simple_edit_ml_confirm', array(__CLASS__, 'confirm'));
+        add_action('admin_post_dendrila_simple_edit_ml_reconfirm', array(__CLASS__, 'reconfirm'));
+        add_action('admin_post_nopriv_dendrila_simple_edit_ml_reconfirm', array(__CLASS__, 'reconfirm'));
+        add_action('admin_post_dendrila_simple_edit_ml_unsubscribe', array(__CLASS__, 'unsubscribe'));
+        add_action('admin_post_nopriv_dendrila_simple_edit_ml_unsubscribe', array(__CLASS__, 'unsubscribe'));
         add_action(self::CRON_HOOK, array(__CLASS__, 'dispatch'), 10, 1);
         add_shortcode('dse_newsletter_inscription', array(__CLASS__, 'signup_form'));
     }
@@ -150,7 +150,7 @@ final class DSE_Mailing
         if (!current_user_can('manage_options')) {
             wp_die('Réservé à l’administration.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_ml_' . $action);
+        check_admin_referer('dendrila_simple_edit_ml_' . $action);
         if (get_option(self::DB_OPTION) !== self::DB_VERSION) { self::install(); }
     }
 
@@ -175,11 +175,11 @@ final class DSE_Mailing
             'duplicate_email', 'blocked_unsubscribed', 'invite_sent', 'invite_failed',
             'invite_no_permission', 'invite_rate_limited', 'invite_not_allowed',
             'invalid_contact'), true)) { $section = 'listes'; }
-        elseif (in_array($notice, array('started', 'paused', 'not_ready', 'cron_failed'), true)) { $section = 'suivi'; }
+        elseif (in_array($notice, array('prepared', 'started', 'paused', 'not_ready', 'cron_failed'), true)) { $section = 'suivi'; }
         elseif (in_array($notice, array('test_accepted', 'test_failed', 'smtp_missing'), true)) { $section = 'connexion'; }
         wp_safe_redirect(add_query_arg(array('page' => 'dendrila-simple-edit',
-            'dse_tab' => 'newsletters', 'dse_nl_section' => $section,
-            'dse_ml_notice' => $notice), admin_url('admin.php')));
+            'dendrila_simple_edit_tab' => 'newsletters', 'dendrila_simple_edit_nl_section' => $section,
+            'dendrila_simple_edit_ml_notice' => $notice), admin_url('admin.php')));
         exit;
     }
 
@@ -191,8 +191,8 @@ final class DSE_Mailing
             return $wpdb->get_results("SELECT id,name,owner_user_id FROM $table ORDER BY name ASC");
         }
         // Assigned lists can be used by send-only accounts without exposing others.
-        if (!DSE_Newsletters::can_send() &&
-            !DSE_Modules::allowed('newsletters', 'manage_lists')) { return array(); }
+        if (!Dendrila_Simple_Edit_Newsletters::can_send() &&
+            !Dendrila_Simple_Edit_Modules::allowed('newsletters', 'manage_lists')) { return array(); }
         return $wpdb->get_results($wpdb->prepare(
             "SELECT id,name,owner_user_id FROM $table WHERE owner_user_id=%d ORDER BY name ASC",
             get_current_user_id()));
@@ -211,7 +211,7 @@ final class DSE_Mailing
     private static function can_manage_lists()
     {
         return current_user_can('manage_options') ||
-            DSE_Modules::allowed('newsletters', 'manage_lists');
+            Dendrila_Simple_Edit_Modules::allowed('newsletters', 'manage_lists');
     }
 
     private static function require_lists($action, $list_id = 0)
@@ -219,7 +219,7 @@ final class DSE_Mailing
         if (!self::can_manage_lists() || ($list_id > 0 && !self::owns_list($list_id))) {
             wp_die('Gestion de cette liste non autorisée.', 'Accès refusé', array('response'=>403));
         }
-        check_admin_referer('dse_ml_' . $action);
+        check_admin_referer('dendrila_simple_edit_ml_' . $action);
         if (get_option(self::DB_OPTION) !== self::DB_VERSION) {
             wp_die('Configuration incomplète : demandez la mise à jour du module à l’administrateur.',
                 'Configuration nécessaire',array('response'=>503));
@@ -245,7 +245,7 @@ final class DSE_Mailing
         $list_id = self::id('list_id');
         $owner = self::input('owner_user_id');
         if ($owner !== '0' && (!ctype_digit($owner) || (int)$owner < 1 ||
-            !user_can((int)$owner,'dse_access') || user_can((int)$owner,'manage_options'))) {
+            !user_can((int)$owner,'dendrila_simple_edit_access') || user_can((int)$owner,'manage_options'))) {
             wp_die('Le nouveau responsable doit posséder le rôle Édition simple.',
                 'Utilisateur invalide',array('response'=>400));
         }
@@ -294,7 +294,7 @@ final class DSE_Mailing
             $challenge = bin2hex(random_bytes(24));
             $wpdb->update($table, array('confirm_hash' => hash('sha256', $challenge)),
                 array('id' => $cid));
-            set_transient('dse_ml_confirmation_' . $cid . '_' . $list_id,
+            set_transient('dendrila_simple_edit_ml_confirmation_' . $cid . '_' . $list_id,
                 hash('sha256', $challenge), 2 * DAY_IN_SECONDS);
         }
         $members = self::table('members');
@@ -455,7 +455,7 @@ final class DSE_Mailing
             'permission_source'=>$origin, 'created_at'=>$created,
             'expires_at'=>$expires))) { self::redirect('error'); }
         $id = (int)$wpdb->insert_id;
-        $url = add_query_arg(array('action'=>'dse_ml_reconfirm','rid'=>$id,
+        $url = add_query_arg(array('action'=>'dendrila_simple_edit_ml_reconfirm','rid'=>$id,
             'token'=>$raw_token), admin_url('admin-post.php'));
         $list_name = (string) $wpdb->get_var($wpdb->prepare(
             'SELECT name FROM ' . self::table('lists') . ' WHERE id=%d', $lid));
@@ -506,7 +506,7 @@ final class DSE_Mailing
             echo '<h1>Confirmer mon réabonnement</h1>';
             echo '<p>Souhaitez-vous recevoir à nouveau les newsletters de cette liste ?</p>';
             echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
-            echo '<input type="hidden" name="action" value="dse_ml_reconfirm">';
+            echo '<input type="hidden" name="action" value="dendrila_simple_edit_ml_reconfirm">';
             echo '<input type="hidden" name="rid" value="'.(int)$rid.'">';
             echo '<input type="hidden" name="token" value="'.esc_attr($token).'">';
             echo '<p><label><input type="checkbox" name="confirm_optin" value="yes" required> Oui, ';
@@ -540,24 +540,15 @@ final class DSE_Mailing
     private static function newsletter_approved($post_id)
     {
         $post = get_post($post_id);
-        if (!$post || $post->post_type !== DSE_Newsletters::TYPE || $post->post_status !== 'pending') { return false; }
-        $hash = (string) get_post_meta($post->ID, DSE_Newsletters::APPROVED, true);
-        return $hash !== '' && hash_equals(DSE_Newsletters::fingerprint($post), $hash) ? $post : false;
+        if (!$post || $post->post_type !== Dendrila_Simple_Edit_Newsletters::TYPE || $post->post_status !== 'pending') { return false; }
+        $hash = (string) get_post_meta($post->ID, Dendrila_Simple_Edit_Newsletters::APPROVED, true);
+        return $hash !== '' && hash_equals(Dendrila_Simple_Edit_Newsletters::fingerprint($post), $hash) ? $post : false;
     }
 
-    /** Sending is independent of editorial approval, but always limited by author ownership. */
+    /** Author-safe preparation, identical to the newsletter editor's button state. */
     private static function can_prepare_newsletter($post)
     {
-        if (!$post || $post->post_type !== DSE_Newsletters::TYPE ||
-            !in_array($post->post_status, array('draft', 'pending'), true)) { return false; }
-        if (DSE_Newsletters::can_send($post)) {
-            // Admins may send their own unapproved drafts. Delegated senders can
-            // only send drafts they authored themselves.
-            if (!current_user_can('manage_options') ||
-                (int)$post->post_author === get_current_user_id()) { return true; }
-        }
-        return current_user_can('manage_options') &&
-            (bool)self::newsletter_approved((int)$post->ID);
+        return Dendrila_Simple_Edit_Newsletters::can_prepare_for_send($post);
     }
 
     /** Prepared and running campaigns belong to the newsletter author. */
@@ -565,16 +556,16 @@ final class DSE_Mailing
     {
         if (!$campaign) { return false; }
         if (current_user_can('manage_options')) { return true; }
-        return DSE_Newsletters::can_send() &&
-            DSE_Newsletters::can_send(get_post((int)$campaign->newsletter_id));
+        return Dendrila_Simple_Edit_Newsletters::can_send() &&
+            Dendrila_Simple_Edit_Newsletters::can_send(get_post((int)$campaign->newsletter_id));
     }
 
     private static function require_send($action)
     {
-        if (!DSE_Newsletters::can_send()) {
+        if (!Dendrila_Simple_Edit_Newsletters::can_send()) {
             wp_die('Envoi de newsletters non autorisé.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_ml_' . $action);
+        check_admin_referer('dendrila_simple_edit_ml_' . $action);
         if (get_option(self::DB_OPTION) !== self::DB_VERSION) {
             wp_die('La configuration des envois doit être terminée par un administrateur.',
                 'Envoi indisponible', array('response' => 503));
@@ -599,7 +590,7 @@ final class DSE_Mailing
             'INNER JOIN ' . self::table('members') . ' m ON m.contact_id=c.id ' .
             'WHERE m.list_id=%d AND c.status=%s AND m.status=%s ORDER BY c.id ASC', $list_id, 'confirmed', 'confirmed'));
         if (!$contacts) { self::redirect('empty_list'); }
-        $html = DSE_Block_Editor::document($post->post_content);
+        $html = Dendrila_Simple_Edit_Block_Editor::document($post->post_content);
         $ok = $wpdb->insert(self::table('campaigns'), array(
             'newsletter_id' => $post->ID, 'list_id' => $list_id,
             'subject' => $post->post_title, 'html_body' => $html, 'status' => 'prepared',
@@ -666,7 +657,7 @@ final class DSE_Mailing
     {
         $extra = '';
         if ($purpose === 'confirm') {
-            $extra = '|' . (string) get_transient('dse_ml_confirmation_' .
+            $extra = '|' . (string) get_transient('dendrila_simple_edit_ml_confirmation_' .
                 (int) $contact->id . '_' . (int) $list_id);
         }
         return hash_hmac('sha256', $purpose . '|' . (int) $contact->id . '|' .
@@ -675,7 +666,7 @@ final class DSE_Mailing
 
     private static function recipient_url($contact, $action, $list_id = 0)
     {
-        return add_query_arg(array('action' => 'dse_ml_' . $action,
+        return add_query_arg(array('action' => 'dendrila_simple_edit_ml_' . $action,
             'cid' => $contact->id, 'lid' => (int) $list_id,
             'token' => self::token($contact, $action, $list_id)), admin_url('admin-post.php'));
     }
@@ -689,7 +680,7 @@ final class DSE_Mailing
         if (!$cid || !preg_match('/^[a-f0-9]{64}$/', $token) || ($action === 'confirm' && !$lid)) { return false; }
         $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . self::table('contacts') . ' WHERE id=%d', $cid));
         if (!$contact || ($action === 'confirm' &&
-            !get_transient('dse_ml_confirmation_' . (int) $cid . '_' . (int) $lid)) ||
+            !get_transient('dendrila_simple_edit_ml_confirmation_' . (int) $cid . '_' . (int) $lid)) ||
             !hash_equals(self::token($contact, $action, $lid), $token)) { return false; }
         $contact->requested_list = $lid;
         return $contact;
@@ -703,7 +694,7 @@ final class DSE_Mailing
             $url = esc_url(admin_url('admin-post.php'));
             echo '<!doctype html><html lang="fr"><meta charset="utf-8"><title>Se désinscrire</title><body style="max-width:500px;margin:4em auto;font:16px Arial,sans-serif">';
             echo '<h1>Se désinscrire</h1><p>Ne plus recevoir les newsletters de ce site ?</p>';
-            echo '<form method="post" action="' . $url . '"><input type="hidden" name="action" value="dse_ml_unsubscribe">';
+            echo '<form method="post" action="' . $url . '"><input type="hidden" name="action" value="dendrila_simple_edit_ml_unsubscribe">';
             echo '<input type="hidden" name="cid" value="' . (int) $contact->id . '">';
             echo '<input type="hidden" name="token" value="' . esc_attr(self::token($contact, 'unsubscribe')) . '">';
             echo '<button type="submit">Confirmer ma désinscription</button></form></body></html>';
@@ -735,7 +726,7 @@ final class DSE_Mailing
         $wpdb->update(self::table('contacts'), array('status' => 'confirmed',
             'consent_source' => 'Formulaire avec double confirmation', 'consent_at' => $now),
             array('id' => (int) $contact->id));
-        delete_transient('dse_ml_confirmation_' . (int) $contact->id . '_' .
+        delete_transient('dendrila_simple_edit_ml_confirmation_' . (int) $contact->id . '_' .
             (int) $contact->requested_list);
         wp_die('Votre abonnement est confirmé. Merci !', 'Inscription', array('response' => 200));
     }
@@ -744,12 +735,12 @@ final class DSE_Mailing
     {
         $atts = shortcode_atts(array('liste' => 0), $atts, 'dse_newsletter_inscription');
         $id = (int) $atts['liste'];
-        if (!DSE_Modules::enabled('newsletters') || $id < 1 || !self::list_exists($id)) { return ''; }
+        if (!Dendrila_Simple_Edit_Modules::enabled('newsletters') || $id < 1 || !self::list_exists($id)) { return ''; }
         $action = esc_url(admin_url('admin-post.php'));
         $html = '<form method="post" action="' . $action . '">' .
-            '<input type="hidden" name="action" value="dse_ml_subscribe">' .
+            '<input type="hidden" name="action" value="dendrila_simple_edit_ml_subscribe">' .
             '<input type="hidden" name="list_id" value="' . $id . '">' .
-            wp_nonce_field('dse_ml_subscribe_' . $id, '_wpnonce', true, false) .
+            wp_nonce_field('dendrila_simple_edit_ml_subscribe_' . $id, '_wpnonce', true, false) .
             '<p><label>Votre adresse e-mail <input type="email" name="email" required autocomplete="email"></label></p>' .
             '<p style="display:none"><label>Site web <input type="text" name="website" tabindex="-1" autocomplete="off"></label></p>' .
             '<p><label><input type="checkbox" name="consent" value="1" required> Je souhaite recevoir les newsletters et je peux me désinscrire à tout moment.</label></p>' .
@@ -760,12 +751,12 @@ final class DSE_Mailing
     public static function subscribe()
     {
         $list_id = self::id('list_id');
-        if (!self::list_exists($list_id) || !wp_verify_nonce(self::input('_wpnonce'), 'dse_ml_subscribe_' . $list_id) ||
+        if (!self::list_exists($list_id) || !wp_verify_nonce(self::input('_wpnonce'), 'dendrila_simple_edit_ml_subscribe_' . $list_id) ||
             self::input('website') !== '' || self::input('consent') !== '1' || !self::transport_ready()) {
             wp_die('Inscription indisponible. Réessayez plus tard.', 'Inscription', array('response' => 400));
         }
         $ip = isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
-        $key = 'dse_ml_signup_' . hash_hmac('sha256', $ip, wp_salt('nonce'));
+        $key = 'dendrila_simple_edit_ml_signup_' . hash_hmac('sha256', $ip, wp_salt('nonce'));
         if (get_transient($key)) { wp_die('Veuillez réessayer dans quelques minutes.', 'Inscription', array('response' => 429)); }
         set_transient($key, 1, 10 * MINUTE_IN_SECONDS);
         $email = strtolower(sanitize_email(self::input('email')));
@@ -824,7 +815,7 @@ final class DSE_Mailing
         $footer = is_string($footer) ? $footer : '';
         if ($footer === '') { return $html; }
         // Use the dedicated footer row of the centered email table.
-        $marker = '<!--DSE_UNSUBSCRIBE_ROW-->';
+        $marker = '<!--DENDRILA_SIMPLE_EDIT_UNSUBSCRIBE_ROW-->';
         if (strpos($html, $marker) !== false) {
             $row = '<tr><td align="center" valign="top" style="padding:18px 3px 2px;' .
                 'border-top:1px solid #e4ece5;text-align:center;font-size:13px;' .
@@ -880,7 +871,7 @@ final class DSE_Mailing
                     'Ne plus recevoir les newsletters de ce site</a>';
                 // Convert older prepared campaigns from their immutable content snapshot.
                 // Never fetch the current source article or newsletter at send time.
-                $prepared_html = DSE_Block_Editor::modernize_email_document($campaign->html_body);
+                $prepared_html = Dendrila_Simple_Edit_Block_Editor::modernize_email_document($campaign->html_body);
                 $html = self::insert_required_footer($prepared_html, $footer);
                 $headers = array('Content-Type: text/html; charset=UTF-8',
                     'List-Unsubscribe: <' . esc_url_raw($url) . '>',
@@ -915,8 +906,9 @@ final class DSE_Mailing
     public static function render_admin($section = 'envois')
     {
         $admin = current_user_can('manage_options');
-        $sender = DSE_Newsletters::can_send();
+        $sender = Dendrila_Simple_Edit_Newsletters::can_send();
         $manager = self::can_manage_lists();
+        if ($section === 'connexion' && !$admin) { return; }
         if (!$admin && !(($sender && in_array($section,array('envois','suivi'),true)) ||
             ($manager && $section === 'listes'))) { return; }
         if (!in_array($section, array('listes', 'envois', 'suivi', 'connexion'), true)) { return; }
@@ -934,7 +926,7 @@ final class DSE_Mailing
             'approval_required' => 'La newsletter doit d’abord être validée.',
             'empty_list' => 'Aucun abonné confirmé dans cette liste.',
             'prepared' => 'Campagne préparée, aucun e-mail envoyé.',
-            'started' => 'Campagne programmée. Le traitement dépend de WP-Cron.',
+            'started' => 'Campagne programmée. WordPress traitera les e-mails à l’heure prévue.',
             'paused' => 'Campagne suspendue.',
             'smtp_missing' => 'Activez FluentSMTP et configurez une connexion avant tout envoi.',
             'confirmation_required' => 'Confirmez explicitement le lancement.',
@@ -958,10 +950,10 @@ final class DSE_Mailing
             'cron_failed' => 'La programmation a échoué. Aucun envoi démarré.',
             'error' => 'Opération non enregistrée.',
         );
-        $notice = isset($_GET['dse_ml_notice']) ? sanitize_key(wp_unslash($_GET['dse_ml_notice'])) : '';
+        $notice = isset($_GET['dendrila_simple_edit_ml_notice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_ml_notice'])) : '';
         if (isset($notices[$notice])) { echo '<p class="notice notice-info" role="status">' . esc_html($notices[$notice]) . '</p>'; }
         if ($section === 'connexion') {
-        echo '<section class="dse-card"><h2>Connexion pour envoyer les e-mails</h2><p>FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa connexion avant de lancer une newsletter.</p>';
+        echo '<section class="dendrila-simple-edit-card"><h2>Connexion pour envoyer les e-mails</h2><p>FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa connexion avant de lancer une newsletter.</p>';
         echo '<p><strong>Transport :</strong> ' . (self::transport_ready() ?
             'FluentSMTP détecté. Vérifiez sa connexion avant de lancer une campagne.' :
             'FluentSMTP n’a pas encore de connexion prête. Les campagnes ne peuvent pas démarrer.') . '</p>';
@@ -970,9 +962,9 @@ final class DSE_Mailing
         echo '</section>';
         }
         if ($section === 'listes') {
-            echo '<section class="dse-card"><div class="dse-list-heading">';
-            echo '<h2>Mes listes</h2><a href="#dse-add-list" class="button dse-list-add-shortcut" ';
-            echo 'aria-label="Ajouter une liste" title="Ajouter une liste" data-dse-list-open>+</a></div>';
+            echo '<section class="dendrila-simple-edit-card"><div class="dendrila-simple-edit-list-heading">';
+            echo '<h2>Mes listes</h2><a href="#dendrila-simple-edit-add-list" class="button dendrila-simple-edit-list-add-shortcut" ';
+            echo 'aria-label="Ajouter une liste" title="Ajouter une liste" data-dendrila-simple-edit-list-open>+</a></div>';
             if (!$lists) { echo '<p>Aucune liste pour le moment. Utilisez « Ajouter une liste » ci-dessous.</p>'; }
             foreach ($lists as $list) {
                 $count = (int) $wpdb->get_var($wpdb->prepare(
@@ -980,12 +972,12 @@ final class DSE_Mailing
                     ' m JOIN ' . self::table('contacts') .
                     ' c ON c.id=m.contact_id WHERE m.list_id=%d AND c.status=%s AND m.status=%s',
                     $list->id, 'confirmed', 'confirmed'));
-                echo '<details class="dse-subcard dse-list-card"><summary><strong>' .
+                echo '<details class="dendrila-simple-edit-subcard dendrila-simple-edit-list-card"><summary><strong>' .
                     esc_html($list->name) . '</strong> · ' . $count .
                     ($count === 1 ? ' abonné confirmé' : ' abonnés confirmés') . '</summary>';
                 if ($admin) {
-                    echo '<details class="dse-list-assignment"><summary>Attribuer cette liste à un éditeur</summary>';
-                    $users = get_users(array('role'=>DSE_Plugin::ROLE,'number'=>100));
+                    echo '<details class="dendrila-simple-edit-list-assignment"><summary>Attribuer cette liste à un éditeur</summary>';
+                    $users = get_users(array('role'=>Dendrila_Simple_Edit_Plugin::ROLE,'number'=>100));
                     $options = '<option value="0"' . selected((int)$list->owner_user_id,0,false) .
                         '>Administration (non attribuée)</option>';
                     foreach ($users as $user) {
@@ -1000,8 +992,8 @@ final class DSE_Mailing
                     ));
                     echo '</details>';
                 }
-                echo '<p>Formulaire d’inscription à placer sur une page :</p><p><code>[dse_newsletter_inscription liste="' .
-                    (int)$list->id . '"]</code></p>';
+                echo '<details class="dendrila-simple-edit-list-shortcode"><summary>Formulaire d’inscription</summary><p>Code à placer sur une page</p><code id="dendrila-simple-edit-list-code-' . (int)$list->id . '">[dse_newsletter_inscription liste="' .
+                    (int)$list->id . '"]</code> <button class="button dendrila-simple-edit-copy" type="button" data-dendrila-simple-edit-copy="dendrila-simple-edit-list-code-' . (int)$list->id . '">Copier le code</button></details>';
                 $members = $wpdb->get_results($wpdb->prepare(
                     'SELECT c.id,c.email,c.display_name,c.status AS contact_status,m.status AS membership_status FROM ' .
                     self::table('members') . ' m JOIN ' . self::table('contacts') .
@@ -1013,14 +1005,14 @@ final class DSE_Mailing
                         $member->membership_status === 'unsubscribed';
                     $label = $unsubscribed ? 'Désabonné·e' :
                         ($member->membership_status === 'confirmed' ? 'Abonné·e' : 'Confirmation en attente');
-                    echo '<div class="dse-mailing-contact dse-mailing-contact-card">';
-                    echo '<div><strong>' . esc_html($member->display_name ?: $member->email) . '</strong>';
+                    echo '<div class="dendrila-simple-edit-mailing-contact dendrila-simple-edit-mailing-contact-card">';
+                    echo '<div class="dendrila-simple-edit-contact-identity"><strong>' . esc_html($member->display_name ?: $member->email) . '</strong>';
                     if ($member->display_name) {
-                        echo '<div class="dse-contact-email">' . esc_html($member->email) . '</div>';
+                        echo '<div class="dendrila-simple-edit-contact-email">' . esc_html($member->email) . '</div>';
                     }
-                    echo '<span class="dse-contact-status' . ($unsubscribed ? ' is-unsubscribed' : '') .
+                    echo '<span class="dendrila-simple-edit-contact-status' . ($unsubscribed ? ' is-unsubscribed' : '') .
                         '">' . esc_html($label) . '</span></div>';
-                    echo '<details class="dse-contact-edit"><summary>Modifier</summary>';
+                    echo '<details class="dendrila-simple-edit-contact-edit"><summary>Modifier</summary>';
                     self::form('edit_contact', 'Enregistrer le contact', array(
                         '<input type="hidden" name="contact_id" value="' . (int)$member->id . '">',
                         '<input type="hidden" name="list_id" value="' . (int)$list->id . '">',
@@ -1032,26 +1024,26 @@ final class DSE_Mailing
                         '<p class="description">Changer l’adresse ne transfère pas l’ancien consentement : '
                             . 'la nouvelle adresse devra confirmer son inscription.</p>',
                         $unsubscribed ? '' :
-                            '<details class="dse-contact-change-address"><summary>Pour changer d’adresse e-mail</summary>' .
+                            '<details class="dendrila-simple-edit-contact-change-address"><summary>Pour changer d’adresse e-mail</summary>' .
                             '<label>Origine de la demande <input type="text" name="email_permission_source" maxlength="255" ' .
                             'placeholder="Ex. demande reçue directement de la personne"></label>' .
-                            '<label class="dse-check"><input type="checkbox" name="email_permission" value="1"> ' .
+                            '<label class="dendrila-simple-edit-check"><input type="checkbox" name="email_permission" value="1"> ' .
                             'Cette personne a demandé explicitement la vérification de sa nouvelle adresse.</label>' .
                             '</details>'
                     ));
                     echo '</details>';
                     if ($unsubscribed) {
-                        echo '<details class="dse-contact-invite"><summary>Proposer un réabonnement</summary>';
-                        echo '<p class="description">Une personne désabonnée ne peut pas être réajoutée par import. ' .
-                            'Cette invitation n’est possible que si elle vous a spécifiquement donné son accord pour recevoir ' .
-                            'un e-mail de réabonnement. Elle devra ensuite confirmer son choix.</p>';
-                        self::form('reinvite', 'Envoyer une invitation de réabonnement', array(
+                        echo '<details class="dendrila-simple-edit-contact-invite"><summary>Proposer un réabonnement</summary>';
+                        echo '<p class="description">Envoyez une invitation uniquement si cette personne vous l’a demandé. ' .
+                            '' .
+                            'Elle pourra confirmer son réabonnement par e-mail.</p>';
+                        self::form('reinvite', 'Envoyer l’invitation', array(
                             '<input type="hidden" name="contact_id" value="' . (int)$member->id . '">',
                             '<input type="hidden" name="list_id" value="' . (int)$list->id . '">',
                             '<label>Comment cette personne a-t-elle accepté de recevoir cette invitation ? ' .
                                 '<input name="permission_source" type="text" minlength="12" maxlength="255" required ' .
-                                'placeholder="Ex. demande explicite reçue le 21/11/2026"></label>',
-                            '<label class="dse-check"><input type="checkbox" name="permission_confirmed" value="1" required> ' .
+                                'placeholder="Ex. demande par téléphone"></label>',
+                            '<label class="dendrila-simple-edit-check"><input type="checkbox" name="permission_confirmed" value="1" required> ' .
                                 'Je confirme disposer de son accord explicite pour lui envoyer cette seule invitation.</label>'
                         ));
                         echo '</details>';
@@ -1064,40 +1056,40 @@ final class DSE_Mailing
                     echo '</div>';
                 }
                 echo '<p class="description">Affichage des 40 premiers contacts, sans envoi automatique.</p>';
-                echo '<details class="dse-list-import"><summary>Ajouter des contacts à cette liste</summary>';
+                echo '<details class="dendrila-simple-edit-list-import"><summary>Ajouter des contacts à cette liste</summary>';
                 self::form('import', 'Ajouter ces contacts', array(
                     '<input type="hidden" name="list_id" value="' . (int)$list->id . '">',
                     '<label>Adresses e-mail (une par ligne, maximum 200) ' .
                         '<textarea name="emails" rows="5" required></textarea></label>',
                     '<label>Origine du consentement <input name="origin" type="text" minlength="8" maxlength="255" required ' .
                         'placeholder="Ex. inscription validée le 10/11/2026"></label>',
-                    '<label class="dse-check"><input type="checkbox" name="consent_confirmed" value="1" required> ' .
+                    '<label class="dendrila-simple-edit-check"><input type="checkbox" name="consent_confirmed" value="1" required> ' .
                         'Je confirme disposer d’un accord valable pour chaque personne.</label>'
                 ));
                 echo '</details></details>';
             }
             echo '</section>';
-            echo '<details class="dse-card dse-create-list" id="dse-add-list">';
+            echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-create-list" id="dendrila-simple-edit-add-list">';
             echo '<summary>Ajouter une liste</summary>';
             echo '<p class="description">Donnez un nom à la liste. Vous pourrez ensuite y ajouter des contacts.</p>';
             self::form('list', 'Créer la nouvelle liste', array(
                 '<label>Nom de la nouvelle liste <input name="name" type="text" required maxlength="160" ' .
-                    'data-dse-new-list-name></label>'
+                    'data-dendrila-simple-edit-new-list-name></label>'
             ));
             echo '</details>';
         }
         if ($section === 'envois') {
-        $query = array('post_type' => DSE_Newsletters::TYPE,
+        $query = array('post_type' => Dendrila_Simple_Edit_Newsletters::TYPE,
             'post_status' => array('draft','pending'), 'posts_per_page' => 80,
             'orderby' => 'modified', 'order' => 'DESC');
         if (!$admin) { $query['author'] = get_current_user_id(); }
         $approved = array_filter(get_posts($query), array(__CLASS__, 'can_prepare_newsletter'));
-        echo '<section class="dse-card"><h2>Préparer une campagne</h2>';
+        echo '<section class="dendrila-simple-edit-card"><h2>Préparer une campagne</h2>';
         if (!$approved || !$lists) {
             echo '<p>Il faut au moins une newsletter que vous êtes autorisé à envoyer et une liste existante.</p>';
         }
         else {
-            $selected = isset($_GET['dse_send_nid']) ? absint($_GET['dse_send_nid']) : 0;
+            $selected = isset($_GET['dendrila_simple_edit_send_nid']) ? absint($_GET['dendrila_simple_edit_send_nid']) : 0;
             $choices = '<option value="">Choisir une newsletter</option>';
             foreach ($approved as $post) {
                 $choices .= '<option value="' . (int) $post->ID . '"' .
@@ -1112,24 +1104,48 @@ final class DSE_Mailing
         echo '</section>';
         }
         if ($section === 'suivi') {
-        $campaigns = $wpdb->get_results('SELECT * FROM ' . self::table('campaigns') . ' ORDER BY id DESC LIMIT 100');
+        $campaigns = $wpdb->get_results('SELECT c.*, l.name AS list_name FROM ' .
+            self::table('campaigns') . ' c LEFT JOIN ' . self::table('lists') .
+            ' l ON l.id=c.list_id ORDER BY c.id DESC LIMIT 100');
         if (!$admin) { $campaigns = array_values(array_filter((array)$campaigns,
             array(__CLASS__, 'can_manage_campaign'))); }
         $campaigns = array_slice((array)$campaigns, 0, 15);
-        echo '<section class="dse-card"><h2>Campagnes préparées et envoyées</h2>';
+        echo '<section class="dendrila-simple-edit-card"><h2>Campagnes préparées et envoyées</h2>';
         foreach ((array) $campaigns as $c) {
             $counts = $wpdb->get_results($wpdb->prepare('SELECT status,COUNT(*) as total FROM ' .
                 self::table('queue') . ' WHERE campaign_id=%d GROUP BY status', $c->id));
+            $queue_labels = array(
+                'queued' => 'en attente',
+                'processing' => 'en cours de traitement',
+                'accepted' => 'acceptés par le serveur de messagerie',
+                'failed' => 'en échec',
+                'skipped' => 'ignorés',
+                'uncertain' => 'à vérifier après une interruption',
+            );
+            $campaign_labels = array(
+                'prepared' => 'prête à être lancée',
+                'paused' => 'suspendue',
+                'sending' => 'en cours',
+                'scheduled' => 'programmée',
+                'completed' => 'terminée',
+            );
             $stats = array();
-            foreach ($counts as $row) { $stats[] = $row->status . ' : ' . (int) $row->total; }
-            echo '<div class="dse-subcard"><h3>' . esc_html($c->subject) . '</h3>';
-            echo '<p>État : <strong>' . esc_html($c->status) . '</strong> · ' . esc_html(implode(' · ', $stats)) . '</p>';
+            foreach ($counts as $row) {
+                $label = isset($queue_labels[$row->status]) ? $queue_labels[$row->status] : 'autre état';
+                $stats[] = $label . ' : ' . (int) $row->total;
+            }
+            $campaign_status = isset($campaign_labels[$c->status]) ?
+                $campaign_labels[$c->status] : 'état inconnu';
+            echo '<div class="dendrila-simple-edit-subcard"><h3>' . esc_html($c->subject) . '</h3>';
+            echo '<p>Liste : <strong>' . esc_html($c->list_name ?: 'Liste supprimée') . '</strong></p>';
+            echo '<p>État : <strong>' . esc_html($campaign_status) . '</strong>' .
+                ($stats ? ' · ' . esc_html(implode(' · ', $stats)) : '') . '</p>';
             if (in_array($c->status, array('prepared','paused'), true)) {
                 echo '<p>Un clic sur « Lancer » n’envoie rien immédiatement : les messages seront traités par petits lots planifiés.</p>';
                 self::form('start', 'Lancer ou programmer les envois', array(
                     '<input type="hidden" name="campaign_id" value="' . (int) $c->id . '">',
                     '<label>Envoyer à partir du (facultatif) <input type="datetime-local" name="send_at"></label>',
-                    '<label class="dse-check"><input type="checkbox" name="confirm_send" value="1" required> Je confirme vouloir envoyer cette campagne aux abonnés de la liste.</label>'
+                    '<label class="dendrila-simple-edit-check"><input type="checkbox" name="confirm_send" value="1" required> Je confirme vouloir envoyer cette campagne aux abonnés de la liste.</label>'
                 ));
             } elseif (in_array($c->status, array('sending','scheduled'), true)) {
                 self::form('pause', 'Suspendre les envois', array('<input type="hidden" name="campaign_id" value="' . (int) $c->id . '">'));
@@ -1156,9 +1172,9 @@ final class DSE_Mailing
 
     private static function form($action, $label, $fields)
     {
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" class="dse-mailing-form">';
-        echo '<input type="hidden" name="action" value="dse_ml_' . esc_attr($action) . '">';
-        wp_nonce_field('dse_ml_' . $action);
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" class="dendrila-simple-edit-mailing-form">';
+        echo '<input type="hidden" name="action" value="dendrila_simple_edit_ml_' . esc_attr($action) . '">';
+        wp_nonce_field('dendrila_simple_edit_ml_' . $action);
         foreach ($fields as $field) { echo $field; } // Static, carefully escaped strings.
         echo '<p><button type="submit" class="button button-primary">' . esc_html($label) . '</button></p></form>';
     }

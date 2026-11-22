@@ -36,19 +36,20 @@
         return '';
     }
     function editor(root) {
-        var source = root.querySelector('[data-dse-editor-source]');
+        var source = root.querySelector('[data-dendrila-simple-edit-editor-source]');
         if (!source) {return;}
         var form = root.closest('form');
         if (!form) {return;}
         var allowTitle = root.getAttribute('data-allow-title') !== '0';
-        var addBar = node('div', '', 'dse-block-palette');
+        var styleColor = '';
+        var addBar = node('div', '', 'dendrila-simple-edit-block-palette');
         addBar.setAttribute('aria-label', 'Ajouter un élément');
-        var canvas = node('div', '', 'dse-block-canvas');
-        var empty = node('p', 'Choisissez un élément ci-dessus pour commencer.', 'dse-block-empty');
+        var canvas = node('div', '', 'dendrila-simple-edit-block-canvas');
+        var empty = node('p', 'Choisissez un élément ci-dessus pour commencer.', 'dendrila-simple-edit-block-empty');
         var status = node('p', '', 'screen-reader-text');
         status.setAttribute('role', 'status');
-        var previewPanel = node('section', '', 'dse-live-preview');
-        var previewBody = node('div', '', 'dse-live-preview-body');
+        var previewPanel = node('section', '', 'dendrila-simple-edit-live-preview');
+        var previewBody = node('div', '', 'dendrila-simple-edit-live-preview-body');
         previewPanel.append(node('h4', 'Aperçu du contenu'), previewBody);
         var titleButton = null, moving = null, serial = 0;
         canvas.appendChild(empty);
@@ -67,7 +68,7 @@
         function inputField(parent, text, value, isArea, inputType) {
             var label = node('label', text);
             var el = node(isArea ? 'textarea' : 'input');
-            var id = 'dse-editor-field-' + (++serial);
+            var id = 'dendrila-simple-edit-editor-field-' + (++serial);
             el.id = id; label.htmlFor = id;
             if (isArea) {el.rows = 4;} else {el.type = inputType || 'text';}
             el.value = value || '';
@@ -77,11 +78,11 @@
         function addBlock(type, values, before) {
             if (!types[type] || (type === 'title' && (!allowTitle || blocks().some(function (b) {return b.dataset.block === 'title';})))) {return null;}
             values = values || {};
-            var box = node('article', '', 'dse-newsletter-block');
+            var box = node('article', '', 'dendrila-simple-edit-newsletter-block');
             box.dataset.block = type;
             box.dataset.align = ['left', 'center', 'right'].indexOf(values.align) !== -1 ? values.align : 'left';
-            var bar = node('div', '', 'dse-block-bar');
-            var grip = node('span', '⠿', 'dse-block-grip');
+            var bar = node('div', '', 'dendrila-simple-edit-block-bar');
+            var grip = node('span', '⠿', 'dendrila-simple-edit-block-grip');
             grip.draggable = true;
             grip.setAttribute('aria-hidden', 'true');
             grip.addEventListener('dragstart', function (event) {
@@ -89,7 +90,7 @@
                 event.dataTransfer.setData('text/plain', type);
             });
             grip.addEventListener('dragend', function () {moving = null;});
-            var controls = node('div', '', 'dse-block-controls');
+            var controls = node('div', '', 'dendrila-simple-edit-block-controls');
             var up = control('↑', function () {
                 var sibling = box.previousElementSibling;
                 if (sibling && sibling.dataset.block) {canvas.insertBefore(box, sibling); repaint('Élément remonté.');}
@@ -103,12 +104,14 @@
             controls.append(up, down, control('Retirer', function () {box.remove(); repaint('Élément retiré.');}));
             bar.append(grip, node('strong', types[type].label), controls);
             box.appendChild(bar);
-            var fields = node('div', '', 'dse-block-fields');
+            var fields = node('div', '', 'dendrila-simple-edit-block-fields');
             box.appendChild(fields);
             var value, other;
             if (type === 'image') {
                 value = inputField(fields, 'Adresse de l’image', values.url, false, 'url');
-                other = inputField(fields, 'Description de l’image', values.text, false);
+                other = inputField(fields, 'Texte alternatif (obligatoire)', values.text, false);
+                other.required = true;
+                inputField(fields, 'Description (facultative)', values.description, false);
                 if (window.wp && window.wp.media) {
                     fields.appendChild(control('Choisir dans la médiathèque', function () {
                         var media = window.wp.media({title: 'Choisir une image', library: {type: 'image'}, multiple: false});
@@ -127,22 +130,22 @@
                 value = inputField(fields, 'Contenu', values.text, type === 'text');
                 if (type === 'button' || type === 'link') {other = inputField(fields, 'Adresse du lien', values.url, false, 'url');}
             }
-            box.dataset.color = values.color && (names[values.color] !== undefined || colorValue(values.color)) ? (values.color === 'default' ? 'green' : values.color) : 'green';
-            var colorWrap = node('fieldset', '', 'dse-block-color');
+            box.dataset.color = values.color && (names[values.color] !== undefined || colorValue(values.color)) ? (values.color === 'default' ? 'green' : values.color) : (styleColor || 'green');
+            var colorWrap = node('fieldset', '', 'dendrila-simple-edit-block-color');
             var legend = node('legend', type === 'image' ? 'Couleur du cadre' : 'Couleur du texte ou du bouton');
-            var palette = node('div', '', 'dse-color-palette');
+            var palette = node('div', '', 'dendrila-simple-edit-color-palette');
             colorWrap.append(legend, palette);
-            var pickerLabel = node('label', 'Personnalisée :', 'dse-color-custom-label');
+            var pickerLabel = node('label', 'Personnalisée :', 'dendrila-simple-edit-color-custom-label');
             var picker = node('input');
             picker.type = 'color';
             picker.value = colorValue(box.dataset.color) || '#24543b';
             picker.setAttribute('aria-label', 'Choisir une couleur personnalisée');
             pickerLabel.appendChild(picker);
-            var colorStatus = node('span', '', 'dse-color-label');
+            var colorStatus = node('span', '', 'dendrila-simple-edit-color-label');
             colorStatus.setAttribute('aria-live', 'polite');
             function updateColor() {
                 var chosen = colorValue(box.dataset.color);
-                box.style.setProperty('--dse-block-ink', chosen || '#23462a');
+                box.style.setProperty('--dendrila-simple-edit-block-ink', chosen || '#23462a');
                 colorStatus.textContent = box.dataset.color === 'default' ? 'Couleur automatique' :
                     (colors.find(function (c) {return c.key === box.dataset.color;}) || {}).name || chosen;
                 Array.from(palette.children).forEach(function (b) {
@@ -153,20 +156,20 @@
                 updatePreview();
             }
             colors.forEach(function (c) {
-                var swatch = control('', function () {box.dataset.color = c.key; updateColor();}, 'dse-color-choice');
+                var swatch = control('', function () {box.dataset.color = c.key; updateColor();}, 'dendrila-simple-edit-color-choice');
                 swatch.dataset.value = c.key;
                 swatch.title = c.name;
                 swatch.setAttribute('aria-label', c.name);
                 swatch.setAttribute('aria-pressed', 'false');
-                if (c.value) {swatch.style.backgroundColor = c.value;} else {swatch.classList.add('dse-color-default');}
+                if (c.value) {swatch.style.backgroundColor = c.value;} else {swatch.classList.add('dendrila-simple-edit-color-default');}
                 palette.appendChild(swatch);
             });
             picker.addEventListener('input', function () {box.dataset.color = picker.value; updateColor();});
             colorWrap.append(pickerLabel, colorStatus);
             fields.appendChild(colorWrap);
-            var alignment = node('fieldset', '', 'dse-block-alignment');
+            var alignment = node('fieldset', '', 'dendrila-simple-edit-block-alignment');
             alignment.appendChild(node('legend', 'Alignement de cet élément'));
-            var alignGroup = node('div', '', 'dse-alignment-options');
+            var alignGroup = node('div', '', 'dendrila-simple-edit-alignment-options');
             alignGroup.setAttribute('role', 'group');
             alignGroup.setAttribute('aria-label', 'Alignement : ' + types[type].label);
             ['left', 'center', 'right'].forEach(function (option, index) {
@@ -177,14 +180,14 @@
                         child.setAttribute('aria-pressed', child.dataset.align === option ? 'true' : 'false');
                     });
                     updatePreview();
-                }, 'dse-align-choice');
+                }, 'dendrila-simple-edit-align-choice');
                 choice.dataset.align = option;
                 choice.setAttribute('aria-pressed', option === box.dataset.align ? 'true' : 'false');
                 alignGroup.appendChild(choice);
             });
             alignment.appendChild(alignGroup);
             fields.appendChild(alignment);
-            var preview = node('div', '', 'dse-block-preview');
+            var preview = node('div', '', 'dendrila-simple-edit-block-preview');
             preview.setAttribute('aria-label', 'Aperçu de cet élément');
             fields.appendChild(preview);
             function updatePreview() {
@@ -192,10 +195,10 @@
                 var v = value.value || types[type].hint;
                 var display = type === 'image' ? node('span', 'Aperçu du cadre de l’image') : node('span', v.slice(0, 100));
                 preview.appendChild(display);
-                if (type === 'button') {display.classList.add('dse-preview-button');}
-                if (type === 'heading' || type === 'title') {display.classList.add('dse-preview-heading');}
-                if (type === 'image') {display.classList.add('dse-preview-image');}
-                preview.style.setProperty('--dse-preview-color', colorValue(box.dataset.color) || '#24543b');
+                if (type === 'button') {display.classList.add('dendrila-simple-edit-preview-button');}
+                if (type === 'heading' || type === 'title') {display.classList.add('dendrila-simple-edit-preview-heading');}
+                if (type === 'image') {display.classList.add('dendrila-simple-edit-preview-image');}
+                preview.style.setProperty('--dendrila-simple-edit-preview-color', colorValue(box.dataset.color) || '#24543b');
                 preview.style.textAlign = box.dataset.align;
                 if (previewPanel.isConnected) { refreshPreview(); }
             }
@@ -207,25 +210,25 @@
             return box;
         }
         function initArticleImport() {
-            var wizard = root.querySelector('[data-dse-article-import]');
+            var wizard = root.querySelector('[data-dendrila-simple-edit-article-import]');
             if (!wizard) {return;}
-            var selector = wizard.querySelector('[data-dse-article-select]');
-            var label = wizard.querySelector('[data-dse-article-label]');
-            var insertButton = wizard.querySelector('[data-dse-article-insert]');
-            var preview = wizard.querySelector('[data-dse-article-preview]');
-            var previewTitle = wizard.querySelector('[data-dse-article-preview-title]');
-            var previewText = wizard.querySelector('[data-dse-article-preview-text]');
-            var previewAction = wizard.querySelector('[data-dse-article-preview-action]');
-            var feedback = wizard.querySelector('[data-dse-article-feedback]');
+            var selector = wizard.querySelector('[data-dendrila-simple-edit-article-select]');
+            var label = wizard.querySelector('[data-dendrila-simple-edit-article-label]');
+            var insertButton = wizard.querySelector('[data-dendrila-simple-edit-article-insert]');
+            var preview = wizard.querySelector('[data-dendrila-simple-edit-article-preview]');
+            var previewTitle = wizard.querySelector('[data-dendrila-simple-edit-article-preview-title]');
+            var previewText = wizard.querySelector('[data-dendrila-simple-edit-article-preview-text]');
+            var previewAction = wizard.querySelector('[data-dendrila-simple-edit-article-preview-action]');
+            var feedback = wizard.querySelector('[data-dendrila-simple-edit-article-feedback]');
             var choice = wizard.querySelectorAll('input[type="radio"]');
             if (!selector || !label || !insertButton || !preview || !feedback || !previewTitle ||
                 !previewText || !previewAction || !choice.length) {return;}
             function selectedArticle() {
                 var option = selector.options[selector.selectedIndex];
                 if (!option || !option.value) {return null;}
-                var title = option.getAttribute('data-dse-article-title') || '';
-                var paragraph = option.getAttribute('data-dse-article-paragraph') || '';
-                var url = option.getAttribute('data-dse-article-url') || '';
+                var title = option.getAttribute('data-dendrila-simple-edit-article-title') || '';
+                var paragraph = option.getAttribute('data-dendrila-simple-edit-article-paragraph') || '';
+                var url = option.getAttribute('data-dendrila-simple-edit-article-url') || '';
                 if (!title.trim() || !paragraph.trim() || !/^https?:\/\/[^ ]+$/i.test(url)) {
                     return null;
                 }
@@ -248,7 +251,7 @@
                     previewText.textContent = article.paragraph;
                     previewAction.textContent = linkLabel();
                     previewAction.className = linkType() === 'button' ?
-                        'dse-example-action' : 'dse-example-link-text';
+                        'dendrila-simple-edit-example-action' : 'dendrila-simple-edit-example-link-text';
                 }
                 feedback.textContent = '';
             }
@@ -271,7 +274,7 @@
                 }
                 repaint('Article inséré dans la newsletter.');
                 feedback.textContent = 'Article ajouté. Vous pouvez maintenant modifier chaque élément dans la newsletter, sans changer l’article original.';
-                var input = heading.querySelector('.dse-block-fields input');
+                var input = heading.querySelector('.dendrila-simple-edit-block-fields input');
                 if (input) {input.focus();}
             });
             wizard.hidden = false;
@@ -289,30 +292,30 @@
                     var input = result.querySelector('input,textarea');
                     if (input) {input.focus();}
                 }
-            }, 'dse-add-block');
+            }, 'dendrila-simple-edit-add-block');
             b.dataset.add = type;
             b.draggable = true;
             b.addEventListener('dragstart', function (event) {moving = type; event.dataTransfer.setData('text/plain', type);});
             b.addEventListener('dragend', function () {moving = null;});
             b.setAttribute('aria-label', 'Ajouter : ' + types[type].label);
             // A miniature of the actual output is clearer than 'Aa' or technical heading codes.
-            var visual = node('span', '', 'dse-add-block-icon dse-example-' + type);
+            var visual = node('span', '', 'dendrila-simple-edit-add-block-icon dendrila-simple-edit-example-' + type);
             visual.setAttribute('aria-hidden', 'true');
             if (type === 'title') {
-                visual.appendChild(node('span', 'Grand titre', 'dse-example-main-title'));
+                visual.appendChild(node('span', 'Grand titre', 'dendrila-simple-edit-example-main-title'));
             } else if (type === 'heading') {
-                visual.appendChild(node('span', 'Titre de section', 'dse-example-section-title'));
-                visual.appendChild(node('span', '', 'dse-example-rule'));
+                visual.appendChild(node('span', 'Titre de section', 'dendrila-simple-edit-example-section-title'));
+                visual.appendChild(node('span', '', 'dendrila-simple-edit-example-rule'));
             } else if (type === 'text') {
-                visual.appendChild(node('span', '', 'dse-example-lines'));
+                visual.appendChild(node('span', '', 'dendrila-simple-edit-example-lines'));
             } else if (type === 'image') {
-                var landscape = node('span', '', 'dse-example-landscape');
-                landscape.appendChild(node('span', '', 'dse-example-sun'));
+                var landscape = node('span', '', 'dendrila-simple-edit-example-landscape');
+                landscape.appendChild(node('span', '', 'dendrila-simple-edit-example-sun'));
                 visual.appendChild(landscape);
             } else if (type === 'button') {
-                visual.appendChild(node('span', 'Découvrir', 'dse-example-action'));
+                visual.appendChild(node('span', 'Découvrir', 'dendrila-simple-edit-example-action'));
             } else if (type === 'link') {
-                visual.appendChild(node('span', 'En savoir plus', 'dse-example-link-text'));
+                visual.appendChild(node('span', 'En savoir plus', 'dendrila-simple-edit-example-link-text'));
             }
             b.append(visual, node('strong', types[type].label), node('small', types[type].hint));
             if (type === 'title') {titleButton = b;}
@@ -334,8 +337,8 @@
         var incompatible = Array.from(holder.content.childNodes).some(function (child) {
             if (child.nodeType === 3) {return false;}
             if (child.nodeType !== 1) {return true;}
-            if (child.hasAttribute('data-dse-block')) {
-                var kind = child.getAttribute('data-dse-block');
+            if (child.hasAttribute('data-dendrila-simple-edit-block')) {
+                var kind = child.getAttribute('data-dendrila-simple-edit-block');
                 var expected = {title: 'H1', heading: 'H2', text: 'P', image: 'IMG', button: 'A', link: 'A'};
                 var inner = child.firstElementChild;
                 return !inner || child.children.length !== 1 || expected[kind] !== inner.tagName ||
@@ -362,7 +365,7 @@
         }
         Array.from(holder.content.childNodes).forEach(function (child) {
             if (child.nodeType === 3 && !child.textContent.trim()) {return;}
-            var kind = child.nodeType === 1 ? child.getAttribute('data-dse-block') : null;
+            var kind = child.nodeType === 1 ? child.getAttribute('data-dendrila-simple-edit-block') : null;
             if (kind && types[kind]) {
                 flushLegacy();
                 var inner = child.firstElementChild;
@@ -374,38 +377,38 @@
                     body = inner.textContent || '';
                 }
                 addBlock(kind, {text: kind === 'image' ? inner.getAttribute('alt') : body,
-                    url: inner.getAttribute(kind === 'image' ? 'src' : 'href'), color: inner.getAttribute('data-dse-color') || 'green',
-                    align: child.getAttribute('data-dse-align') || inner.getAttribute('data-dse-align') || 'left'});
+                    description: inner.title, url: inner.getAttribute(kind === 'image' ? 'src' : 'href'), color: inner.getAttribute('data-dendrila-simple-edit-color') || 'green',
+                    align: child.getAttribute('data-dendrila-simple-edit-align') || inner.getAttribute('data-dendrila-simple-edit-align') || 'left'});
             } else if (child.nodeType === 1 && /^(P|H1|H2|IMG)$/.test(child.tagName)) {
                 flushLegacy();
                 var kind2 = child.tagName === 'H1' ? 'title' : child.tagName === 'H2' ? 'heading' : child.tagName === 'IMG' ? 'image' : 'text';
                 if (kind2 === 'title' && !allowTitle) {kind2 = 'heading';}
                 child.querySelectorAll('br').forEach(function (br) {br.replaceWith(document.createTextNode('\n'));});
                 addBlock(kind2, {text: child.tagName === 'IMG' ? child.getAttribute('alt') : child.textContent,
-                    url: child.tagName === 'IMG' ? child.getAttribute('src') : '', color: child.getAttribute('data-dse-color') || 'green',
-                    align: child.getAttribute('data-dse-align') || 'left'});
+                    url: child.tagName === 'IMG' ? child.getAttribute('src') : '', color: child.getAttribute('data-dendrila-simple-edit-color') || 'green',
+                    align: child.getAttribute('data-dendrila-simple-edit-align') || 'left'});
             } else {legacy.push(child.nodeType === 1 ? child.outerHTML : child.textContent);}
         });
         flushLegacy();
         function compose() {
             return blocks().map(function (item) {
-                var type = item.dataset.block, fields = item.querySelectorAll('.dse-block-fields > input, .dse-block-fields > textarea');
+                var type = item.dataset.block, fields = item.querySelectorAll('.dendrila-simple-edit-block-fields > input, .dendrila-simple-edit-block-fields > textarea');
                 if (!fields.length) {return null;}
                 var content = fields[0].value || '', other = fields[1] ? fields[1].value : '';
-                var wrap = node('div');wrap.dataset.dseBlock = type;
-                wrap.dataset.dseAlign = item.dataset.align || 'left';
+                var wrap = node('div');wrap.dataset.dendrilaSimpleEditBlock = type;
+                wrap.dataset.dendrilaSimpleEditAlign = item.dataset.align || 'left';
                 var tag = {title: 'h1', heading: 'h2', text: 'p', image: 'img', button: 'a', link: 'a'}[type];
                 var inner = node(tag, type === 'image' ? '' : content);
                 if (type === 'text') {
                     inner.replaceChildren();
                     content.split('\n').forEach(function (line, idx) {if (idx) {inner.appendChild(node('br'));}inner.appendChild(document.createTextNode(line));});
-                } else if (type === 'image') {inner.setAttribute('src', content);inner.alt = other;}
+                } else if (type === 'image') {inner.setAttribute('src', content);inner.alt = other; if (fields[2].value) inner.title = fields[2].value;}
                 else if (type === 'link' || type === 'button') {
                     inner.setAttribute('href', other);
-                    if (type === 'button') {inner.className = 'dse-newsletter-cta';}
+                    if (type === 'button') {inner.className = 'dendrila-simple-edit-newsletter-cta';}
                 }
-                if (item.dataset.color !== 'default') {inner.dataset.dseColor = item.dataset.color;}
-                inner.dataset.dseAlign = item.dataset.align || 'left';
+                if (item.dataset.color !== 'default') {inner.dataset.dendrilaSimpleEditColor = item.dataset.color;}
+                inner.dataset.dendrilaSimpleEditAlign = item.dataset.align || 'left';
                 wrap.appendChild(inner);
                 return wrap;
             }).filter(Boolean);
@@ -415,14 +418,14 @@
             var fragment = document.createDocumentFragment();
             compose().forEach(function (wrap) {
                 var content = wrap.firstElementChild;
-                var align = ['left','center','right'].indexOf(wrap.dataset.dseAlign) !== -1 ? wrap.dataset.dseAlign : 'left';
+                var align = ['left','center','right'].indexOf(wrap.dataset.dendrilaSimpleEditAlign) !== -1 ? wrap.dataset.dendrilaSimpleEditAlign : 'left';
                 wrap.style.textAlign = align;
                 if (content.tagName === 'IMG') {
                     content.style.marginLeft = align === 'right' || align === 'center' ? 'auto' : '0';
                     content.style.marginRight = align === 'left' || align === 'center' ? 'auto' : '0';
                 }
-                var color = colorValue(content.dataset.dseColor);
-                if (content.classList.contains('dse-newsletter-cta')) {
+                var color = colorValue(content.dataset.dendrilaSimpleEditColor);
+                if (content.classList.contains('dendrila-simple-edit-newsletter-cta')) {
                     var background = color || '#24543b';
                     var probe = background.slice(1);
                     if (probe.length === 3) { probe = probe.split('').map(function (c) { return c + c; }).join(''); }
@@ -436,7 +439,7 @@
                     var url = content.getAttribute('src');
                     if (!/^https?:\/\//i.test(url)) { return; }
                     content.referrerPolicy = 'no-referrer';
-                    if (color) { content.style.borderColor = color; content.classList.add('dse-preview-image-frame'); }
+                    if (color) { content.style.borderColor = color; content.classList.add('dendrila-simple-edit-preview-image-frame'); }
                 } else if (color) {
                     content.style.color = color;
                 }
@@ -454,15 +457,32 @@
         source.hidden = true;
         var label = root.querySelector('label[for="' + source.id + '"]');
         if (label) {label.hidden = true;}
-        root.append(node('h4', 'Ajouter un élément', 'dse-builder-heading'), addBar, canvas, status, previewPanel);
+        if (root.closest('.dendrila-simple-edit-newsletter-item, .dendrila-simple-edit-newsletter-new')) {
+            var styleLabel = node('label', 'Palette de la newsletter ');
+            var styles = node('select');
+            [['','Choisir un style'],['green','Jardin'],['blue','Océan'],['plum','Prune']].forEach(function (pair) {
+                styles.add(new Option(pair[1],pair[0]));
+            });
+            styles.addEventListener('change', function () {
+                styleColor = styles.value;
+                if (!styleColor) return;
+                blocks().forEach(function (block) {
+                    var shade = block.dataset.block === 'text' ? 'slate' : styleColor;
+                    block.querySelector('[data-value="' + shade + '"]').click();
+                });
+            });
+            styleLabel.appendChild(styles);
+            root.appendChild(styleLabel);
+        }
+        root.append(node('h4', 'Ajouter un élément', 'dendrila-simple-edit-builder-heading'), addBar, canvas, status, previewPanel);
         // Move the assistant beneath the six insertion tiles; native <details> keeps it
         // collapsed by default, with keyboard and screen-reader support.
-        var articleImport = root.querySelector('[data-dse-article-import]');
+        var articleImport = root.querySelector('[data-dendrila-simple-edit-article-import]');
         if (articleImport) { root.insertBefore(articleImport, canvas); }
         initArticleImport();
         repaint();
     }
-    function init() {document.querySelectorAll('[data-dse-block-editor]').forEach(editor);}
+    function init() {document.querySelectorAll('[data-dendrila-simple-edit-block-editor]').forEach(editor);}
     if (document.readyState === 'loading') {document.addEventListener('DOMContentLoaded', init, {once: true});}
     else {init();}
 }());

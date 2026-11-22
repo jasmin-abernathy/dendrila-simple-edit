@@ -53,12 +53,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist/dendrila-simple-edit
-          cp dendrila-simple-edit.php readme.txt dist/dendrila-simple-edit/
-          cp -R includes assets dist/dendrila-simple-edit/
-          (cd dist && zip -qr ../dendrila-simple-edit-0.2.0.zip dendrila-simple-edit)
-          unzip -t dendrila-simple-edit-0.2.0.zip
-          test "$(unzip -Z1 dendrila-simple-edit-0.2.0.zip | grep -c '^dendrila-simple-edit/dendrila-simple-edit.php$')" -eq 1
-          if unzip -Z1 dendrila-simple-edit-0.2.0.zip | grep -E '(^|/)(tests|docs|\.git|\.github)/'; then
+          cp dendrila-simple-edit.php readme.txt LICENSE.txt dist/dendrila-simple-edit/
+          cp -R includes assets languages dist/dendrila-simple-edit/
+          (cd dist && zip -qr ../dendrila-simple-edit-0.0.1.zip dendrila-simple-edit)
+          unzip -t dendrila-simple-edit-0.0.1.zip
+          test "$(unzip -Z1 dendrila-simple-edit-0.0.1.zip | grep -c '^dendrila-simple-edit/dendrila-simple-edit.php$')" -eq 1
+          if unzip -Z1 dendrila-simple-edit-0.0.1.zip | grep -E '(^|/)(tests|docs|\.git|\.github)/'; then
             echo 'Unexpected development files in the installable archive' >&2
             exit 1
           fi
@@ -66,6 +66,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dendrila-simple-edit-installation
-          path: dendrila-simple-edit-0.2.0.zip
+          path: dendrila-simple-edit-0.0.1.zip
           if-no-files-found: error
           retention-days: 14

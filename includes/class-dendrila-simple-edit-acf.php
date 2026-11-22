@@ -6,16 +6,16 @@
  */
 if (!defined('ABSPATH')) { exit; }
 
-final class DSE_ACF
+final class Dendrila_Simple_Edit_ACF
 {
-    const OPTION = 'dse_acf_mappings';
+    const OPTION = 'dendrila_simple_edit_acf_mappings';
     const TYPES = array('text', 'textarea', 'email', 'url');
 
     public static function boot()
     {
-        add_action('admin_post_dse_acf_add', array(__CLASS__, 'add'));
-        add_action('admin_post_dse_acf_save', array(__CLASS__, 'save'));
-        add_action('admin_post_dse_acf_remove', array(__CLASS__, 'remove'));
+        add_action('admin_post_dendrila_simple_edit_acf_add', array(__CLASS__, 'add'));
+        add_action('admin_post_dendrila_simple_edit_acf_save', array(__CLASS__, 'save'));
+        add_action('admin_post_dendrila_simple_edit_acf_remove', array(__CLASS__, 'remove'));
     }
 
     public static function available()
@@ -129,7 +129,7 @@ final class DSE_ACF
 
     private static function editable()
     {
-        return DSE_Plugin::can_edit();
+        return Dendrila_Simple_Edit_Plugin::can_edit();
     }
 
     public static function add()
@@ -137,9 +137,9 @@ final class DSE_ACF
         if (!current_user_can('manage_options')) {
             wp_die('Configuration réservée à l’administration.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_acf_add');
-        $raw_post = isset($_POST['dse_post_id']) ? wp_unslash($_POST['dse_post_id']) : '';
-        $key = isset($_POST['dse_acf_key']) ? wp_unslash($_POST['dse_acf_key']) : '';
+        check_admin_referer('dendrila_simple_edit_acf_add');
+        $raw_post = isset($_POST['dendrila_simple_edit_post_id']) ? wp_unslash($_POST['dendrila_simple_edit_post_id']) : '';
+        $key = isset($_POST['dendrila_simple_edit_acf_key']) ? wp_unslash($_POST['dendrila_simple_edit_acf_key']) : '';
         if (!is_string($raw_post) || !ctype_digit($raw_post) || !is_string($key)) {
             wp_die('Identifiant ou clé ACF incorrect.', 'Requête incorrecte', array('response' => 400));
         }
@@ -171,8 +171,8 @@ final class DSE_ACF
         if (!current_user_can('manage_options')) {
             wp_die('Configuration réservée à l’administration.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_acf_remove');
-        $id = isset($_POST['dse_mapping']) ? wp_unslash($_POST['dse_mapping']) : null;
+        check_admin_referer('dendrila_simple_edit_acf_remove');
+        $id = isset($_POST['dendrila_simple_edit_mapping']) ? wp_unslash($_POST['dendrila_simple_edit_mapping']) : null;
         $all = self::mappings();
         if (!is_string($id) || !preg_match('/^acf_[a-f0-9]{16}$/', $id) ||
             !isset($all[$id])) {
@@ -227,10 +227,10 @@ final class DSE_ACF
         if (!self::editable()) {
             wp_die('Vous ne pouvez pas modifier ce champ.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_acf_save');
-        $id = isset($_POST['dse_mapping']) ? wp_unslash($_POST['dse_mapping']) : null;
-        $expected = isset($_POST['dse_acf_version']) ? wp_unslash($_POST['dse_acf_version']) : null;
-        $input = isset($_POST['dse_acf_value']) ? $_POST['dse_acf_value'] : null;
+        check_admin_referer('dendrila_simple_edit_acf_save');
+        $id = isset($_POST['dendrila_simple_edit_mapping']) ? wp_unslash($_POST['dendrila_simple_edit_mapping']) : null;
+        $expected = isset($_POST['dendrila_simple_edit_acf_version']) ? wp_unslash($_POST['dendrila_simple_edit_acf_version']) : null;
+        $input = isset($_POST['dendrila_simple_edit_acf_value']) ? $_POST['dendrila_simple_edit_acf_value'] : null;
         if (!is_string($id) || !is_string($expected) ||
             preg_match('/^[a-f0-9]{64}$/', $expected) !== 1) {
             wp_die('Requête incorrecte.', 'Requête incorrecte', array('response' => 400));
@@ -239,8 +239,8 @@ final class DSE_ACF
         $post_id = (int) ($all[$id]['post_id'] ?? 0);
         $field_key = $all[$id]['field_key'] ?? '';
         if ($id === '' && current_user_can('manage_options')) {
-            $post_id = absint($_POST['dse_post_id'] ?? 0);
-            $field_key = isset($_POST['dse_acf_key']) ? wp_unslash($_POST['dse_acf_key']) : '';
+            $post_id = absint($_POST['dendrila_simple_edit_post_id'] ?? 0);
+            $field_key = isset($_POST['dendrila_simple_edit_acf_key']) ? wp_unslash($_POST['dendrila_simple_edit_acf_key']) : '';
         }
         $resolved = $id === '' && current_user_can('edit_post', $post_id) ?
             self::resolve($post_id, $field_key) : self::mapped($id);
@@ -270,16 +270,16 @@ final class DSE_ACF
             self::redirect('acf_error', $post_id);
         }
         clean_post_cache($post_id);
-        do_action('dse_acf_field_updated', $post_id, $resolved['field']['key']);
+        do_action('dendrila_simple_edit_acf_field_updated', $post_id, $resolved['field']['key']);
         self::redirect('acf_saved', $post_id);
     }
 
     private static function redirect($notice, $post_id = 0)
     {
         $tab = in_array($notice, array('acf_added', 'acf_removed', 'acf_duplicate'), true) ? 'reglages' : 'contenus';
-        $args = array('dse_notice' => $notice, 'dse_tab' => $tab);
-        if ($post_id) { $args['dse_acf_post'] = $post_id; }
-        wp_safe_redirect(add_query_arg($args, admin_url('admin.php?page=dendrila-simple-edit')) . '#dse-acf-content');
+        $args = array('dendrila_simple_edit_notice' => $notice, 'dendrila_simple_edit_tab' => $tab);
+        if ($post_id) { $args['dendrila_simple_edit_acf_post'] = $post_id; }
+        wp_safe_redirect(add_query_arg($args, admin_url('admin.php?page=dendrila-simple-edit')) . '#dendrila-simple-edit-acf-content');
         exit;
     }
 
@@ -287,54 +287,66 @@ final class DSE_ACF
     {
         if (!current_user_can('manage_options') || !preg_match('/^acf_[a-f0-9]{16}$/', (string) $id)) { return; }
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        echo '<input type="hidden" name="action" value="dse_acf_remove">';
-        echo '<input type="hidden" name="dse_mapping" value="' . esc_attr($id) . '">';
-        wp_nonce_field('dse_acf_remove');
+        echo '<input type="hidden" name="action" value="dendrila_simple_edit_acf_remove">';
+        echo '<input type="hidden" name="dendrila_simple_edit_mapping" value="' . esc_attr($id) . '">';
+        wp_nonce_field('dendrila_simple_edit_acf_remove');
         echo '<button class="button button-secondary" type="submit">Retirer l’accès à ce champ</button></form>';
     }
 
     private static function edit_field($id, $post_id, $field, $value)
     {
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        echo '<input type="hidden" name="action" value="dse_acf_save">';
-        echo '<input type="hidden" name="dse_mapping" value="' . esc_attr($id) . '">';
-        echo '<input type="hidden" name="dse_acf_version" value="' . esc_attr(self::version($value)) . '">';
+        echo '<input type="hidden" name="action" value="dendrila_simple_edit_acf_save">';
+        echo '<input type="hidden" name="dendrila_simple_edit_mapping" value="' . esc_attr($id) . '">';
+        echo '<input type="hidden" name="dendrila_simple_edit_acf_version" value="' . esc_attr(self::version($value)) . '">';
         if ($id === '') {
-            echo '<input type="hidden" name="dse_post_id" value="' . esc_attr($post_id) . '">';
-            echo '<input type="hidden" name="dse_acf_key" value="' . esc_attr($field['key']) . '">';
+            echo '<input type="hidden" name="dendrila_simple_edit_post_id" value="' . esc_attr($post_id) . '">';
+            echo '<input type="hidden" name="dendrila_simple_edit_acf_key" value="' . esc_attr($field['key']) . '">';
         }
-        wp_nonce_field('dse_acf_save');
-        $element_id = 'dse-acf-' . md5($post_id . ':' . $field['key']);
+        wp_nonce_field('dendrila_simple_edit_acf_save');
+        $element_id = 'dendrila-simple-edit-acf-' . md5($post_id . ':' . $field['key']);
         echo '<label for="' . esc_attr($element_id) . '">' .
             esc_html($field['label'] ?? $field['name']) . '</label>';
         if (!empty($field['instructions']) && is_string($field['instructions'])) {
             echo '<p class="description">' . esc_html($field['instructions']) . '</p>';
         }
         if ($field['type'] === 'textarea') {
-            echo '<textarea id="' . esc_attr($element_id) . '" name="dse_acf_value" rows="4">' .
+            echo '<textarea id="' . esc_attr($element_id) . '" name="dendrila_simple_edit_acf_value" rows="4">' .
                 esc_textarea($value) . '</textarea>';
         } else {
             $type = in_array($field['type'], array('email', 'url'), true) ? $field['type'] : 'text';
             echo '<input id="' . esc_attr($element_id) . '" type="' . esc_attr($type) .
-                '" name="dse_acf_value" value="' . esc_attr($value) . '">';
+                '" name="dendrila_simple_edit_acf_value" value="' . esc_attr($value) . '">';
         }
         echo '<p><button type="submit" class="button button-primary">Enregistrer ce texte</button></p></form>';
+    }
+
+    public static function render_fields_for($post_id)
+    {
+        if (!Dendrila_Simple_Edit_Plugin::can_edit() || !self::available()) { return; }
+        foreach (self::mappings() as $id=>$mapping) {
+            if ((int)($mapping['post_id'] ?? 0) !== (int)$post_id) { continue; }
+            $resolved = self::mapped($id);
+            if (!$resolved) { continue; }
+            $value = self::raw_value($resolved,$post_id);
+            if ($value !== false) { self::edit_field($id,$post_id,$resolved['field'],$value); }
+        }
     }
 
     public static function render($permissions = false)
     {
         $admin = current_user_can('manage_options');
-        if (!DSE_Plugin::can_access() || ($permissions && !$admin)) { return; }
+        if (!Dendrila_Simple_Edit_Plugin::can_access() || ($permissions && !$admin)) { return; }
         if (!self::available() && !$permissions) { return; }
 
         $tab = $permissions ? 'reglages' : 'contenus';
-        echo '<section id="dse-acf-content" class="dse-card">';
+        echo '<section id="dendrila-simple-edit-acf-content" class="dendrila-simple-edit-card">';
         echo '<h2>' . ($permissions ? 'Autoriser les informations complémentaires' : 'Informations complémentaires') . '</h2>';
         if (!$permissions) {
-            echo '<p class="description">Vous pouvez modifier ici des informations enregistrées en plus du texte principal. Elles n’apparaissent sur le site que si la page ou le thème les affiche. Pour modifier directement une page ou un article, ouvrez la rubrique <a href="' . esc_url(admin_url('admin.php?page=dendrila-simple-edit&dse_tab=pages')) . '">Pages et articles</a>.</p>';
+            echo '<p class="description">Vous pouvez modifier ici des informations enregistrées en plus du texte principal. Elles n’apparaissent sur le site que si la page ou le thème les affiche. Pour modifier directement une page ou un article, ouvrez la rubrique <a href="' . esc_url(admin_url('admin.php?page=dendrila-simple-edit&dendrila_simple_edit_tab=pages')) . '">Pages et articles</a>.</p>';
         }
-        $selected_post = isset($_GET['dse_acf_post']) && is_string($_GET['dse_acf_post']) ?
-            absint(wp_unslash($_GET['dse_acf_post'])) : 0;
+        $selected_post = isset($_GET['dendrila_simple_edit_acf_post']) && is_string($_GET['dendrila_simple_edit_acf_post']) ?
+            absint(wp_unslash($_GET['dendrila_simple_edit_acf_post'])) : 0;
         $mappings = self::mappings();
         $mapped_fields = array();
         $posts = array();
@@ -363,22 +375,22 @@ final class DSE_ACF
             echo '<p>Aucun contenu à afficher.</p></section>';
             return;
         }
-        echo '<form method="get" action="' . esc_url(admin_url('admin.php') . '#dse-acf-content') . '">';
+        echo '<form method="get" action="' . esc_url(admin_url('admin.php') . '#dendrila-simple-edit-acf-content') . '">';
         echo '<input type="hidden" name="page" value="dendrila-simple-edit">';
-        echo '<input type="hidden" name="dse_tab" value="' . esc_attr($tab) . '">';
-        echo '<div class="dse-field"><label for="dse-acf-content-select">Choisir un contenu</label>';
-        echo '<select id="dse-acf-content-select" name="dse_acf_post" required><option value="">Choisir un contenu</option>';
+        echo '<input type="hidden" name="dendrila_simple_edit_tab" value="' . esc_attr($tab) . '">';
+        echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-acf-content-select">Choisir un contenu</label>';
+        echo '<select id="dendrila-simple-edit-acf-content-select" name="dendrila_simple_edit_acf_post" required><option value="">Choisir un contenu</option>';
         foreach ($posts as $post) {
             $type = get_post_type_object($post->post_type);
             echo '<option value="' . esc_attr($post->ID) . '"' . selected($selected_post, $post->ID, false) . '>' .
                 esc_html(($type->labels->singular_name ?? $post->post_type) . ' · ' . get_the_title($post)) . '</option>';
         }
-        echo '</select></div><p><button data-dse-acf-open class="button" type="submit">Voir les informations</button></p></form>';
+        echo '</select></div><p><button data-dendrila-simple-edit-acf-open class="button" type="submit">Voir les informations</button></p></form>';
         if (isset($posts[$selected_post])) {
             $post = $posts[$selected_post];
             echo '<h3>' . esc_html(get_the_title($post)) . '</h3>';
             echo '<p><a href="' . esc_url(get_permalink($post)) . '">Voir sur le site</a></p>';
-            $notice = isset($_GET['dse_notice']) && is_string($_GET['dse_notice']) ? sanitize_key(wp_unslash($_GET['dse_notice'])) : '';
+            $notice = isset($_GET['dendrila_simple_edit_notice']) && is_string($_GET['dendrila_simple_edit_notice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_notice'])) : '';
             if (!$permissions) {
                 $feedback = array(
                     'acf_saved' => array('success', 'Enregistré dans WordPress : votre nouvelle valeur a bien été conservée.'),
@@ -387,7 +399,7 @@ final class DSE_ACF
                     'acf_error' => array('error', 'L’enregistrement n’a pas pu être confirmé. Réessayez.'),
                 );
                 if (isset($feedback[$notice])) {
-                    echo '<div class="notice notice-' . esc_attr($feedback[$notice][0]) . ' dse-acf-feedback" role="status"><p>' . esc_html($feedback[$notice][1]) . '</p></div>';
+                    echo '<div class="notice notice-' . esc_attr($feedback[$notice][0]) . ' dendrila-simple-edit-acf-feedback" role="status"><p>' . esc_html($feedback[$notice][1]) . '</p></div>';
                 }
             }
             $fields = $admin ? self::discover($selected_post) : array();
@@ -399,17 +411,17 @@ final class DSE_ACF
             elseif (!$permissions) { echo '<p class="description">' . count($fields) . (count($fields) === 1 ? ' information modifiable' : ' informations modifiables') . ' pour ce contenu.</p>'; }
             foreach ($fields as $key => $field) {
                 $id = $mapped_fields[$selected_post][$key] ?? '';
-                echo '<div class="dse-field">';
+                echo '<div class="dendrila-simple-edit-field">';
                 if ($permissions) {
                     echo '<strong>' . esc_html($field['label'] ?? $field['name']) . '</strong>';
                     if ($id !== '') {
                         self::render_remove($id);
                     } else {
                         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-                        echo '<input type="hidden" name="action" value="dse_acf_add">';
-                        echo '<input type="hidden" name="dse_post_id" value="' . esc_attr($selected_post) . '">';
-                        echo '<input type="hidden" name="dse_acf_key" value="' . esc_attr($key) . '">';
-                        wp_nonce_field('dse_acf_add');
+                        echo '<input type="hidden" name="action" value="dendrila_simple_edit_acf_add">';
+                        echo '<input type="hidden" name="dendrila_simple_edit_post_id" value="' . esc_attr($selected_post) . '">';
+                        echo '<input type="hidden" name="dendrila_simple_edit_acf_key" value="' . esc_attr($key) . '">';
+                        wp_nonce_field('dendrila_simple_edit_acf_add');
                         echo '<button class="button" type="submit">Donner accès à ce champ</button></form>';
                     }
                 } else {

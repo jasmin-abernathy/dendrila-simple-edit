@@ -1,0 +1,137 @@
+# Translations template for Dendrila Simple Edit.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the Dendrila Simple
+# Edit project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Dendrila Simple Edit 0.0.1\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-22 11:36+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Accueil"
+msgstr ""
+
+msgid "Aide"
+msgstr ""
+
+msgid "Articles"
+msgstr ""
+
+msgid "Autorisations"
+msgstr ""
+
+msgid "Boutique"
+msgstr ""
+
+msgid "Changez l’ordre des liens, sans toucher à leur destination."
+msgstr ""
+
+msgid "Choisir ce que chacun peut modifier"
+msgstr ""
+
+msgid ""
+"Choisissez la page à modifier et personnalisez son titre, ses textes et "
+"ses images."
+msgstr ""
+
+msgid ""
+"Choisissez les outils et les images accessibles aux comptes ayant le rôle"
+" « Édition simple »."
+msgstr ""
+
+msgid "Choisissez un article autorisé et modifiez son titre et son contenu."
+msgstr ""
+
+msgid "Comprendre comment ça marche"
+msgstr ""
+
+msgid ""
+"Consultez les changements précédents et les pages qui utilisent vos "
+"textes."
+msgstr ""
+
+msgid "Contenus en attente de validation"
+msgstr ""
+
+msgid "Historique"
+msgstr ""
+
+msgid "Menu principal"
+msgstr ""
+
+msgid ""
+"Mettez à jour uniquement les informations de produits qui vous ont été "
+"confiées."
+msgstr ""
+
+msgid "Modifier les produits"
+msgstr ""
+
+msgid "Modifier mon site"
+msgstr ""
+
+msgid "Modifier un article"
+msgstr ""
+
+msgid "Modifier un événement"
+msgstr ""
+
+msgid "Modifier une page"
+msgstr ""
+
+msgid ""
+"Modifiez le titre, la description, les dates, les horaires et le lieu des"
+" événements autorisés."
+msgstr ""
+
+msgid "Newsletters"
+msgstr ""
+
+msgid "Pages"
+msgstr ""
+
+msgid "Préparer un envoi"
+msgstr ""
+
+msgid "Préparer une newsletter"
+msgstr ""
+
+msgid ""
+"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez "
+"vos destinataires et lancez votre campagne."
+msgstr ""
+
+msgid "Que voulez-vous faire ?"
+msgstr ""
+
+msgid "Quelques repères pour modifier le site sans risque."
+msgstr ""
+
+msgid "Retrouver une ancienne version"
+msgstr ""
+
+msgid "Réorganiser le menu principal"
+msgstr ""
+
+msgid "Soumettre à validation"
+msgstr ""
+
+msgid "Validations"
+msgstr ""
+
+msgid "Vérifiez les propositions avant qu’elles ne soient mises en ligne."
+msgstr ""
+
+msgid "Événements"
+msgstr ""
+

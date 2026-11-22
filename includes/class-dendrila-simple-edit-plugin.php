@@ -10,14 +10,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-final class DSE_Plugin
+final class Dendrila_Simple_Edit_Plugin
 {
     const ROLE = 'dendrila_simple_editor';
     const LEGACY_ROLE = 'dendrila_site_manager';
-    const ROLE_SCHEMA_OPTION = 'dse_simple_editor_role_v1';
-    const STATE_OPTION = 'dse_state';
-    const ENABLED_OPTION = 'dse_enabled_fields';
-    const CUSTOM_OPTION = 'dse_custom_fields';
+    const ROLE_SCHEMA_OPTION = 'dendrila_simple_edit_simple_editor_role_v1';
+    const STATE_OPTION = 'dendrila_simple_edit_state';
+    const ENABLED_OPTION = 'dendrila_simple_edit_enabled_fields';
+    const CUSTOM_OPTION = 'dendrila_simple_edit_custom_fields';
 
     public static function definitions()
     {
@@ -84,8 +84,8 @@ final class DSE_Plugin
         add_option(self::STATE_OPTION, self::empty_state(), '', false);
         add_option(self::ENABLED_OPTION, array(), '', false);
         add_option(self::CUSTOM_OPTION, array(), '', false);
-        add_option(DSE_Media::OPTION, array(), '', false);
-        add_option(DSE_Media::ALL_OPTION, '0', '', false);
+        add_option(Dendrila_Simple_Edit_Media::OPTION, array(), '', false);
+        add_option(Dendrila_Simple_Edit_Media::ALL_OPTION, '0', '', false);
     }
 
     /**
@@ -97,8 +97,8 @@ final class DSE_Plugin
         if (get_option(self::ROLE_SCHEMA_OPTION, false) === '1') { return; }
         // No edit_posts, edit_pages, edit_others_posts, manage_options or delete_posts.
         // upload_files is needed for the native WordPress media uploader.
-        $caps = array('read' => true, 'dse_access' => true,
-            'dse_edit' => true, 'dse_publish' => true, 'upload_files' => true);
+        $caps = array('read' => true, 'dendrila_simple_edit_access' => true,
+            'dendrila_simple_edit_edit' => true, 'dendrila_simple_edit_publish' => true, 'upload_files' => true);
         add_role(self::ROLE, 'Édition simple', $caps);
         $role = get_role(self::ROLE);
         if (!$role) { return; }
@@ -139,7 +139,7 @@ final class DSE_Plugin
     {
         return $user instanceof WP_User &&
             in_array(self::ROLE, (array) $user->roles, true) &&
-            user_can($user, 'dse_access') && !user_can($user, 'manage_options');
+            user_can($user, 'dendrila_simple_edit_access') && !user_can($user, 'manage_options');
     }
 
     /** Always land on Simple Edit after a normal WordPress login. */
@@ -203,31 +203,32 @@ final class DSE_Plugin
         add_action('adminmenu', array(__CLASS__, 'limit_admin_menu'), 999);
         add_action('admin_init', array(__CLASS__, 'restrict_admin_pages'), 99);
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_assets'));
-        add_action('admin_post_dse_save', array(__CLASS__, 'save'));
-        add_action('admin_post_dse_restore', array(__CLASS__, 'restore'));
-        add_action('admin_post_dse_configure', array(__CLASS__, 'configure'));
-        add_action('admin_post_dse_add_field', array(__CLASS__, 'add_field'));
-        add_shortcode('dendrila_simple_edit', array(__CLASS__, 'shortcode'));
-        DSE_ACF::boot();
-        DSE_Media::boot();
-        DSE_Modules::boot();
-        DSE_Newsletters::boot();
-        DSE_Post_Editor::boot();
-        DSE_Navigation::boot();
-        DSE_Event_Editor::boot();
-        DSE_Mailing::boot();
-        DSE_Woo::boot();
+        add_action('admin_post_dendrila_simple_edit_save', array(__CLASS__, 'save'));
+        add_action('admin_post_dendrila_simple_edit_restore', array(__CLASS__, 'restore'));
+        add_action('admin_post_dendrila_simple_edit_configure', array(__CLASS__, 'configure'));
+        add_action('admin_post_dendrila_simple_edit_add_field', array(__CLASS__, 'add_field'));
+        add_shortcode('dse_text', array(__CLASS__, 'shortcode'));
+        Dendrila_Simple_Edit_Approvals::boot();
+        Dendrila_Simple_Edit_ACF::boot();
+        Dendrila_Simple_Edit_Media::boot();
+        Dendrila_Simple_Edit_Modules::boot();
+        Dendrila_Simple_Edit_Newsletters::boot();
+        Dendrila_Simple_Edit_Post_Editor::boot();
+        Dendrila_Simple_Edit_Navigation::boot();
+        Dendrila_Simple_Edit_Event_Editor::boot();
+        Dendrila_Simple_Edit_Mailing::boot();
+        Dendrila_Simple_Edit_Woo::boot();
     }
 
     public static function can_access()
     {
-        return current_user_can('manage_options') || current_user_can('dse_access');
+        return current_user_can('manage_options') || current_user_can('dendrila_simple_edit_access') || Dendrila_Simple_Edit_Approvals::is_reviewer();
     }
 
     public static function can_edit()
     {
         return current_user_can('manage_options') ||
-            (current_user_can('dse_access') && current_user_can('dse_edit') && current_user_can('dse_publish'));
+            (current_user_can('dendrila_simple_edit_access') && current_user_can('dendrila_simple_edit_edit') && current_user_can('dendrila_simple_edit_publish'));
     }
 
     public static function enabled_fields()
@@ -257,12 +258,12 @@ final class DSE_Plugin
             return;
         }
         add_menu_page(
-            'Modifier mon site',
-            'Modifier mon site',
+            __('Modifier mon site', 'dendrila-simple-edit'),
+            __('Modifier mon site', 'dendrila-simple-edit'),
             'read',
             'dendrila-simple-edit',
             array(__CLASS__, 'render'),
-            'dashicons-edit-page',
+            plugins_url('assets/icon-128x128.png', DENDRILA_SIMPLE_EDIT_PLUGIN_FILE),
             3
         );
     }
@@ -273,10 +274,10 @@ final class DSE_Plugin
             return;
         }
         wp_enqueue_style(
-            'dse-admin',
-            plugins_url('assets/admin.css', DSE_PLUGIN_FILE),
+            'dendrila-simple-edit-admin',
+            plugins_url('assets/admin.css', DENDRILA_SIMPLE_EDIT_PLUGIN_FILE),
             array(),
-            DSE_VERSION . "." . filemtime(dirname(DSE_PLUGIN_FILE) . "/assets/admin.css")
+            DENDRILA_SIMPLE_EDIT_VERSION . "." . filemtime(dirname(DENDRILA_SIMPLE_EDIT_PLUGIN_FILE) . "/assets/admin.css")
         );
         $script_dependencies = array();
         $tab = self::active_tab();
@@ -292,14 +293,14 @@ final class DSE_Plugin
         }
         if (in_array($tab, array('newsletters', 'pages', 'articles', 'evenements'), true)) {
             wp_enqueue_media();
-            wp_enqueue_script('dse-block-editor', plugins_url('assets/block-editor.js', DSE_PLUGIN_FILE),
-                array('media-views'), DSE_VERSION . '.' . filemtime(dirname(DSE_PLUGIN_FILE) . '/assets/block-editor.js'), true);
+            wp_enqueue_script('dendrila-simple-edit-block-editor', plugins_url('assets/block-editor.js', DENDRILA_SIMPLE_EDIT_PLUGIN_FILE),
+                array('media-views'), DENDRILA_SIMPLE_EDIT_VERSION . '.' . filemtime(dirname(DENDRILA_SIMPLE_EDIT_PLUGIN_FILE) . '/assets/block-editor.js'), true);
         }
         wp_enqueue_script(
-            'dse-admin',
-            plugins_url('assets/admin.js', DSE_PLUGIN_FILE),
+            'dendrila-simple-edit-admin',
+            plugins_url('assets/admin.js', DENDRILA_SIMPLE_EDIT_PLUGIN_FILE),
             $script_dependencies,
-            DSE_VERSION . "." . filemtime(dirname(DSE_PLUGIN_FILE) . "/assets/admin.js"),
+            DENDRILA_SIMPLE_EDIT_VERSION . "." . filemtime(dirname(DENDRILA_SIMPLE_EDIT_PLUGIN_FILE) . "/assets/admin.js"),
             true
         );
     }
@@ -312,7 +313,7 @@ final class DSE_Plugin
         }
         $value = wp_unslash($value);
         if ($definitions[$key]['type'] === 'image') {
-            return DSE_Media::sanitize_selection($value);
+            return Dendrila_Simple_Edit_Media::sanitize_selection($value);
         }
         $value = $definitions[$key]['type'] === 'textarea' ?
             sanitize_textarea_field($value) : sanitize_text_field($value);
@@ -353,7 +354,7 @@ final class DSE_Plugin
 
     private static function submitted_revision()
     {
-        $raw = isset($_POST['dse_revision']) ? wp_unslash($_POST['dse_revision']) : null;
+        $raw = isset($_POST['dendrila_simple_edit_revision']) ? wp_unslash($_POST['dendrila_simple_edit_revision']) : null;
         if (!is_string($raw) || !ctype_digit($raw)) {
             wp_die('Version de contenu manquante.', 'Requête incorrecte', array('response' => 400));
         }
@@ -426,8 +427,8 @@ final class DSE_Plugin
                 // image while restoring other still-authorized fields.
                 if ($key === 'photo') {
                     $current_image = isset($old['values']['photo']) ? (string) $old['values']['photo'] : '';
-                    if (($current_image !== '' && !DSE_Media::allowed_image((int) $current_image)) ||
-                        ($previous !== '' && !DSE_Media::allowed_image((int) $previous))) {
+                    if (($current_image !== '' && !Dendrila_Simple_Edit_Media::allowed_image((int) $current_image)) ||
+                        ($previous !== '' && !Dendrila_Simple_Edit_Media::allowed_image((int) $previous))) {
                         continue;
                     }
                 }
@@ -440,7 +441,7 @@ final class DSE_Plugin
                 $changes['photo'] === (isset($old['values']['photo']) ?
                     (string) $old['values']['photo'] : '') &&
                 $changes['photo'] !== '' &&
-                !DSE_Media::allowed_image((int) $changes['photo'])) {
+                !Dendrila_Simple_Edit_Media::allowed_image((int) $changes['photo'])) {
                 unset($changes['photo']);
             }
             if (!$changes) { return 'unchanged'; }
@@ -475,16 +476,16 @@ final class DSE_Plugin
         if ($result === 'saved') {
             // Cache plugins can listen to this event; WP cannot invalidate every
             // reverse proxy / external full-page cache by itself.
-            do_action('dse_fields_updated', $changed_keys, $new['revision']);
+            do_action('dendrila_simple_edit_fields_updated', $changed_keys, $new['revision']);
         }
         return $result;
     }
 
     public static function save()
     {
-        self::require_editor('dse_save');
+        self::require_editor('dendrila_simple_edit_save');
         $expected = self::submitted_revision();
-        $input = isset($_POST['dse_fields']) ? $_POST['dse_fields'] : array();
+        $input = isset($_POST['dendrila_simple_edit_fields']) ? $_POST['dendrila_simple_edit_fields'] : array();
         try {
             $result = self::commit_change($expected, $input);
         } catch (InvalidArgumentException $error) {
@@ -495,9 +496,9 @@ final class DSE_Plugin
 
     public static function restore()
     {
-        self::require_editor('dse_restore');
+        self::require_editor('dendrila_simple_edit_restore');
         $expected = self::submitted_revision();
-        $raw = isset($_POST['dse_restore_revision']) ? wp_unslash($_POST['dse_restore_revision']) : null;
+        $raw = isset($_POST['dendrila_simple_edit_restore_revision']) ? wp_unslash($_POST['dendrila_simple_edit_restore_revision']) : null;
         if (!is_string($raw) || !ctype_digit($raw)) {
             wp_die('Révision incorrecte.', 'Requête incorrecte', array('response' => 400));
         }
@@ -514,8 +515,8 @@ final class DSE_Plugin
         if (!current_user_can('manage_options')) {
             wp_die('Configuration réservée à l’administration.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_configure');
-        $input = isset($_POST['dse_enabled']) ? wp_unslash($_POST['dse_enabled']) : array();
+        check_admin_referer('dendrila_simple_edit_configure');
+        $input = isset($_POST['dendrila_simple_edit_enabled']) ? wp_unslash($_POST['dendrila_simple_edit_enabled']) : array();
         if (!is_array($input)) {
             wp_die('Configuration incorrecte.', 'Requête incorrecte', array('response' => 400));
         }
@@ -534,9 +535,9 @@ final class DSE_Plugin
         if (!current_user_can('manage_options')) {
             wp_die('Configuration réservée à l’administration.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_add_field');
-        $label_input = isset($_POST['dse_label']) ? wp_unslash($_POST['dse_label']) : null;
-        $type_input = isset($_POST['dse_field_type']) ? wp_unslash($_POST['dse_field_type']) : null;
+        check_admin_referer('dendrila_simple_edit_add_field');
+        $label_input = isset($_POST['dendrila_simple_edit_label']) ? wp_unslash($_POST['dendrila_simple_edit_label']) : null;
+        $type_input = isset($_POST['dendrila_simple_edit_field_type']) ? wp_unslash($_POST['dendrila_simple_edit_field_type']) : null;
         if (!is_string($label_input) || !is_string($type_input) ||
             !in_array($type_input, array('text', 'textarea'), true)) {
             wp_die('Zone de contenu incorrecte.', 'Requête incorrecte', array('response' => 400));
@@ -569,14 +570,14 @@ final class DSE_Plugin
             $enabled[] = $slug;
             update_option(self::ENABLED_OPTION, $enabled, false);
         }
-        wp_safe_redirect(add_query_arg(array('dse_notice' => 'field_added', 'dse_created' => $slug),
-            self::tab_link('reglages')) . '#dse-shared-text');
+        wp_safe_redirect(add_query_arg(array('dendrila_simple_edit_notice' => 'field_added', 'dendrila_simple_edit_created' => $slug),
+            self::tab_link('reglages')) . '#dendrila-simple-edit-shared-text');
         exit;
     }
 
     public static function shortcode($atts)
     {
-        $attributes = shortcode_atts(array('field' => ''), $atts, 'dendrila_simple_edit');
+        $attributes = shortcode_atts(array('field' => ''), $atts, 'dse_text');
         $key = $attributes['field'];
         if (!is_string($key) || !array_key_exists($key, self::definitions())) {
             return '';
@@ -585,7 +586,7 @@ final class DSE_Plugin
         $value = isset($state['values'][$key]) && is_string($state['values'][$key]) ?
             $state['values'][$key] : '';
         if ($key === 'photo') {
-            return DSE_Media::render_image($value);
+            return Dendrila_Simple_Edit_Media::render_image($value);
         }
         return nl2br(esc_html($value), false);
     }
@@ -597,8 +598,8 @@ final class DSE_Plugin
             $notice = 'error';
         }
         wp_safe_redirect(add_query_arg(array(
-            'dse_notice' => $notice,
-            'dse_tab' => in_array($notice, array('configured', 'field_added'), true) ? 'reglages' :
+            'dendrila_simple_edit_notice' => $notice,
+            'dendrila_simple_edit_tab' => in_array($notice, array('configured', 'field_added'), true) ? 'reglages' :
                 ($notice === 'restored' ? 'historique' : 'contenus'),
         ), admin_url('admin.php?page=dendrila-simple-edit')));
         exit;
@@ -606,8 +607,8 @@ final class DSE_Plugin
 
     private static function notices()
     {
-        $notice = isset($_GET['dse_notice']) && is_string($_GET['dse_notice']) ?
-            sanitize_key(wp_unslash($_GET['dse_notice'])) : '';
+        $notice = isset($_GET['dendrila_simple_edit_notice']) && is_string($_GET['dendrila_simple_edit_notice']) ?
+            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_notice'])) : '';
         $messages = array(
             'saved' => array('updated', 'Modifications enregistrées. Vérifiez le site public : un cache peut retarder l’affichage.'),
             'unchanged' => array('updated', 'Aucune modification à enregistrer.'),
@@ -644,7 +645,7 @@ final class DSE_Plugin
             return array();
         }
         global $wpdb;
-        $needle = '%' . $wpdb->esc_like('[dendrila_simple_edit') . '%';
+        $needle = '%' . $wpdb->esc_like('[dse_text') . '%';
         $field_needle = '%' . $wpdb->esc_like('field="' . $field . '"') . '%';
         $query = $wpdb->prepare(
             "SELECT ID, post_title FROM {$wpdb->posts}
@@ -665,11 +666,12 @@ final class DSE_Plugin
     private static function module_visible($module)
     {
         if (current_user_can('manage_options')) { return true; }
-        if (!DSE_Modules::enabled($module)) { return false; }
-        $definitions = DSE_Modules::definitions();
+        if ($module === 'newsletters' && Dendrila_Simple_Edit_Approvals::can_approve('newsletter')) { return true; }
+        if (!Dendrila_Simple_Edit_Modules::enabled($module)) { return false; }
+        $definitions = Dendrila_Simple_Edit_Modules::definitions();
         if (!isset($definitions[$module]['actions'])) { return false; }
         foreach (array_keys($definitions[$module]['actions']) as $action) {
-            if (DSE_Modules::allowed($module, $action)) { return true; }
+            if (Dendrila_Simple_Edit_Modules::allowed($module, $action)) { return true; }
         }
         return false;
     }
@@ -677,36 +679,39 @@ final class DSE_Plugin
     /** Simple navigation: each tab is its own URL, so it also works without JavaScript. */
     private static function active_tab()
     {
-        $raw = isset($_GET['dse_tab']) && is_string($_GET['dse_tab']) ?
-            sanitize_key(wp_unslash($_GET['dse_tab'])) : '';
+        $raw = isset($_GET['dendrila_simple_edit_tab']) && is_string($_GET['dendrila_simple_edit_tab']) ?
+            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_tab'])) : '';
         if ($raw === '') {
             // Preserve the right tab after actions performed by older plugin versions.
-            if (isset($_GET['dse_nnotice'])) { $raw = 'newsletters'; }
-            elseif (isset($_GET['dse_pnotice'])) { $raw = 'boutique'; }
-            elseif (isset($_GET['dse_notice']) && is_string($_GET['dse_notice']) &&
-                in_array(sanitize_key(wp_unslash($_GET['dse_notice'])),
+            if (isset($_GET['dendrila_simple_edit_nnotice'])) { $raw = 'newsletters'; }
+            elseif (isset($_GET['dendrila_simple_edit_pnotice'])) { $raw = 'boutique'; }
+            elseif (isset($_GET['dendrila_simple_edit_notice']) && is_string($_GET['dendrila_simple_edit_notice']) &&
+                in_array(sanitize_key(wp_unslash($_GET['dendrila_simple_edit_notice'])),
                     array('configured', 'field_added', 'media_configured', 'module_configured'), true)) {
                 $raw = 'reglages';
-            } else { $raw = isset($_GET['dse_notice']) ? 'pages' : 'accueil'; }
+            } else { $raw = isset($_GET['dendrila_simple_edit_notice']) ? 'pages' : 'accueil'; }
         }
-        if (!in_array($raw, array('accueil', 'contenus', 'pages', 'articles', 'evenements', 'menu', 'newsletters', 'boutique', 'historique', 'reglages', 'aide'), true)) {
+        if (!in_array($raw, array('accueil', 'contenus', 'pages', 'articles', 'evenements', 'menu', 'newsletters', 'boutique', 'historique', 'reglages', 'validations', 'aide'), true)) {
             return 'pages';
         }
         if ($raw === 'contenus' && !current_user_can('manage_options')) { return 'pages'; }
-        if ($raw === 'menu' && !DSE_Navigation::allowed()) { return 'pages'; }
+        if ($raw === 'menu' && !Dendrila_Simple_Edit_Navigation::allowed()) { return 'pages'; }
         if ($raw === 'reglages' && !current_user_can('manage_options')) { return 'pages'; }
+        if ($raw === 'validations' && !Dendrila_Simple_Edit_Approvals::is_reviewer()) { return 'accueil'; }
         if ($raw === 'newsletters' && !self::module_visible('newsletters')) {
             return 'pages';
         }
         if ($raw === 'boutique' && !self::module_visible('products')) {
             return 'pages';
         }
+        if (!self::can_edit() && Dendrila_Simple_Edit_Approvals::is_reviewer() &&
+            !in_array($raw, array('accueil', 'validations', 'newsletters', 'aide'), true)) { return 'validations'; }
         return $raw;
     }
 
     private static function tab_link($tab)
     {
-        return add_query_arg('dse_tab', $tab, admin_url('admin.php?page=dendrila-simple-edit'));
+        return add_query_arg('dendrila_simple_edit_tab', $tab, admin_url('admin.php?page=dendrila-simple-edit'));
     }
 
     public static function render()
@@ -720,35 +725,38 @@ final class DSE_Plugin
         $is_admin = current_user_can('manage_options');
         $tab = self::active_tab();
         $tabs = array(
-            'accueil' => array('label' => 'Accueil', 'icon' => 'dashboard',
-                'title' => 'Que voulez-vous faire ?', 'intro' => ''),
-            'pages' => array('label' => 'Pages', 'icon' => 'admin-page',
-                'title' => 'Modifier une page',
-                'intro' => 'Choisissez la page à modifier et personnalisez son titre, ses textes et ses images.'),
-            'articles' => array('label' => 'Articles', 'icon' => 'admin-post',
-                'title' => 'Modifier un article',
-                'intro' => 'Choisissez un article autorisé et modifiez son titre et son contenu.'),
-            'menu' => array('label' => 'Menu principal', 'icon' => 'menu',
-                'title' => 'Réorganiser le menu principal',
-                'intro' => 'Changez l’ordre des liens, sans toucher à leur destination.'),
-            'evenements' => array('label' => 'Événements', 'icon' => 'calendar-alt',
-                'title' => 'Modifier un événement',
-                'intro' => 'Modifiez le titre, la description, les dates, les horaires et le lieu des événements autorisés.'),
-            'newsletters' => array('label' => 'Newsletters', 'icon' => 'email-alt',
-                'title' => 'Préparer une newsletter',
-                'intro' => 'Préparez vos messages. Seule l’administration peut choisir les abonnés et lancer les envois.'),
-            'boutique' => array('label' => 'Boutique', 'icon' => 'cart',
-                'title' => 'Modifier les produits',
-                'intro' => 'Mettez à jour uniquement les informations de produits qui vous ont été confiées.'),
-            'historique' => array('label' => 'Historique', 'icon' => 'backup',
-                'title' => 'Retrouver une ancienne version',
-                'intro' => 'Consultez les changements précédents et les pages qui utilisent vos textes.'),
-            'reglages' => array('label' => 'Autorisations', 'icon' => 'admin-users',
-                'title' => 'Choisir ce que chacun peut modifier',
-                'intro' => 'Choisissez les outils et les images accessibles aux comptes ayant le rôle « Édition simple ».'),
-            'aide' => array('label' => 'Aide', 'icon' => 'editor-help',
-                'title' => 'Comprendre comment ça marche',
-                'intro' => 'Quelques repères pour modifier le site sans risque.'),
+            'accueil' => array('label' => __('Accueil', 'dendrila-simple-edit'), 'icon' => 'dashboard',
+                'title' => __('Que voulez-vous faire ?', 'dendrila-simple-edit'), 'intro' => ''),
+            'pages' => array('label' => __('Pages', 'dendrila-simple-edit'), 'icon' => 'admin-page',
+                'title' => __('Modifier une page', 'dendrila-simple-edit'),
+                'intro' => __('Choisissez la page à modifier et personnalisez son titre, ses textes et ses images.', 'dendrila-simple-edit')),
+            'articles' => array('label' => __('Articles', 'dendrila-simple-edit'), 'icon' => 'admin-post',
+                'title' => __('Modifier un article', 'dendrila-simple-edit'),
+                'intro' => __('Choisissez un article autorisé et modifiez son titre et son contenu.', 'dendrila-simple-edit')),
+            'menu' => array('label' => __('Menu principal', 'dendrila-simple-edit'), 'icon' => 'menu',
+                'title' => __('Réorganiser le menu principal', 'dendrila-simple-edit'),
+                'intro' => __('Changez l’ordre des liens, sans toucher à leur destination.', 'dendrila-simple-edit')),
+            'evenements' => array('label' => __('Événements', 'dendrila-simple-edit'), 'icon' => 'calendar-alt',
+                'title' => __('Modifier un événement', 'dendrila-simple-edit'),
+                'intro' => __('Modifiez le titre, la description, les dates, les horaires et le lieu des événements autorisés.', 'dendrila-simple-edit')),
+            'newsletters' => array('label' => __('Newsletters', 'dendrila-simple-edit'), 'icon' => 'email-alt',
+                'title' => __('Préparer une newsletter', 'dendrila-simple-edit'),
+                'intro' => __('Préparez vos messages et, si vous disposez du droit d’envoi, choisissez vos destinataires et lancez votre campagne.', 'dendrila-simple-edit')),
+            'boutique' => array('label' => __('Boutique', 'dendrila-simple-edit'), 'icon' => 'cart',
+                'title' => __('Modifier les produits', 'dendrila-simple-edit'),
+                'intro' => __('Mettez à jour uniquement les informations de produits qui vous ont été confiées.', 'dendrila-simple-edit')),
+            'historique' => array('label' => __('Historique', 'dendrila-simple-edit'), 'icon' => 'backup',
+                'title' => __('Retrouver une ancienne version', 'dendrila-simple-edit'),
+                'intro' => __('Consultez les changements précédents et les pages qui utilisent vos textes.', 'dendrila-simple-edit')),
+            'reglages' => array('label' => __('Autorisations', 'dendrila-simple-edit'), 'icon' => 'admin-users',
+                'title' => __('Choisir ce que chacun peut modifier', 'dendrila-simple-edit'),
+                'intro' => __('Choisissez les outils et les images accessibles aux comptes ayant le rôle « Édition simple ».', 'dendrila-simple-edit')),
+            'validations' => array('label' => __('Validations', 'dendrila-simple-edit'), 'icon' => 'yes-alt',
+                'title' => __('Contenus en attente de validation', 'dendrila-simple-edit'),
+                'intro' => __('Vérifiez les propositions avant qu’elles ne soient mises en ligne.', 'dendrila-simple-edit')),
+            'aide' => array('label' => __('Aide', 'dendrila-simple-edit'), 'icon' => 'editor-help',
+                'title' => __('Comprendre comment ça marche', 'dendrila-simple-edit'),
+                'intro' => __('Quelques repères pour modifier le site sans risque.', 'dendrila-simple-edit')),
             // A legacy admin-only screen keeps older shared texts and ACF forms
             // functional without showing a redundant editor in the main navigation.
             'contenus' => array('label' => 'Textes partagés', 'icon' => 'edit-page',
@@ -756,84 +764,91 @@ final class DSE_Plugin
                 'intro' => 'Réglages avancés des anciens textes partagés et champs ACF.'),
         );
         if (!$is_admin) { unset($tabs['reglages'], $tabs['contenus']); }
-        if (!DSE_Navigation::allowed()) { unset($tabs['menu']); }
+        if (!Dendrila_Simple_Edit_Approvals::is_reviewer()) { unset($tabs['validations']); }
+        if (!self::can_edit() && Dendrila_Simple_Edit_Approvals::is_reviewer()) {
+            foreach (array('pages', 'articles', 'menu', 'evenements', 'boutique', 'historique') as $hidden) { unset($tabs[$hidden]); }
+        }
+        if (!Dendrila_Simple_Edit_Navigation::allowed()) { unset($tabs['menu']); }
         if (!self::module_visible('newsletters')) { unset($tabs['newsletters']); }
         if (!self::module_visible('products')) { unset($tabs['boutique']); }
 
-        echo '<div class="wrap dse-wrap"><header class="dse-intro">';
-        echo '<div class="dse-brand"><span class="dashicons dashicons-admin-site-alt3" aria-hidden="true"></span> Dendrila Simple Edit <span class="dse-version">' . esc_html(DSE_VERSION) . '</span></div>';
-        echo '<h1>Modifier mon site</h1></header>';
+        echo '<div class="wrap dendrila-simple-edit-wrap"><header class="dendrila-simple-edit-intro">';
+        echo '<div class="dendrila-simple-edit-brand"><img src="' . esc_url(plugins_url('assets/icon-128x128.png', DENDRILA_SIMPLE_EDIT_PLUGIN_FILE)) . '" width="30" height="30" alt="" aria-hidden="true"> Dendrila Simple Edit <span class="dendrila-simple-edit-version">' . esc_html(DENDRILA_SIMPLE_EDIT_VERSION) . '</span></div>';
+        echo '<h1>' . esc_html__('Modifier mon site', 'dendrila-simple-edit') . '</h1></header>';
         self::notices();
-        echo '<nav class="dse-nav-tabs" aria-label="Rubriques de Modifier mon site">';
+        echo '<nav class="dendrila-simple-edit-nav-tabs" aria-label="Rubriques de Modifier mon site">';
         foreach ($tabs as $key => $item) {
             if ($key === 'contenus') { continue; }
-            echo '<a class="dse-tab' . ($tab === $key ? ' is-active' : '') . '" href="' .
+            echo '<a class="dendrila-simple-edit-tab' . ($tab === $key ? ' is-active' : '') . '" href="' .
                 esc_url(self::tab_link($key)) . '"' . ($tab === $key ? ' aria-current="page"' : '') . '>' .
                 '<span class="dashicons dashicons-' . esc_attr($item['icon']) . '" aria-hidden="true"></span>' .
                 '<span>' . esc_html($item['label']) . '</span></a>';
         }
-        echo '</nav><main id="dse-tab-content" class="dse-tab-content" tabindex="-1">';
-        echo '<header class="dse-tab-heading"><h2>' . esc_html($tabs[$tab]['title']) . '</h2>';
+        echo '</nav><main id="dendrila-simple-edit-tab-content" class="dendrila-simple-edit-tab-content" tabindex="-1">';
+        echo '<header class="dendrila-simple-edit-tab-heading"><h2>' . esc_html($tabs[$tab]['title']) . '</h2>';
         if ($tabs[$tab]['intro'] !== '') { echo '<p>' . esc_html($tabs[$tab]['intro']) . '</p>'; }
         echo '</header>';
-        echo '<div class="dse-panel-grid dse-panel-' . esc_attr($tab) . '">';
+        echo '<div class="dendrila-simple-edit-panel-grid dendrila-simple-edit-panel-' . esc_attr($tab) . '">';
         if ($tab === 'accueil') {
             $actions = array(
-                array('pages', 'Modifier une page', 'Changer le titre et le contenu d’une page.'),
-                array('articles', 'Modifier un article', 'Changer le titre et le contenu d’un article.'),
-                array('evenements', 'Modifier un événement', 'Mettre à jour le titre, les horaires, le lieu et la description.'),
+                array('pages', __('Modifier une page', 'dendrila-simple-edit'), 'Changer le titre et le contenu d’une page.'),
+                array('articles', __('Modifier un article', 'dendrila-simple-edit'), 'Changer le titre et le contenu d’un article.'),
+                array('evenements', __('Modifier un événement', 'dendrila-simple-edit'), 'Mettre à jour le titre, les horaires, le lieu et la description.'),
                 array('menu', 'Réorganiser le menu', 'Changer la position des liens du menu principal.'),
-                array('newsletters', 'Préparer une newsletter', 'Rédiger un message ou reprendre un brouillon.'),
+                array('newsletters', __('Préparer une newsletter', 'dendrila-simple-edit'), 'Rédiger un message ou reprendre un brouillon.'),
                 array('boutique', 'Modifier un produit', 'Mettre à jour les produits de la boutique.'),
-                array('historique', 'Historique', 'Retrouver une version précédente des textes du site.'),
+                array('historique', __('Historique', 'dendrila-simple-edit'), 'Retrouver une version précédente des textes du site.'),
                 array('reglages', 'Gérer les autorisations', 'Choisir ce que l’équipe peut modifier.'),
+                array('validations', 'Valider les contenus', 'Examiner les demandes de l’équipe.'),
             );
-            echo '<ul class="dse-dashboard-actions">';
+            echo '<ul class="dendrila-simple-edit-dashboard-actions">';
             foreach ($actions as list($destination, $label, $description)) {
                 if (!isset($tabs[$destination])) { continue; }
                 echo '<li><a href="' . esc_url(self::tab_link($destination)) . '">' .
                     '<span class="dashicons dashicons-' . esc_attr($tabs[$destination]['icon']) . '" aria-hidden="true"></span>' .
-                    '<span><strong>' . esc_html($label) . '</strong><span class="dse-action-description">' .
+                    '<span><strong>' . esc_html($label) . '</strong><span class="dendrila-simple-edit-action-description">' .
                     esc_html($description) . '</span></span></a></li>';
             }
             echo '</ul>';
+        } elseif ($tab === 'validations') {
+            Dendrila_Simple_Edit_Approvals::render();
         } elseif ($tab === 'pages') {
-            DSE_Post_Editor::render('page');
+            Dendrila_Simple_Edit_Post_Editor::render('page');
         } elseif ($tab === 'articles') {
-            DSE_Post_Editor::render('post');
+            Dendrila_Simple_Edit_Post_Editor::render('post');
         } elseif ($tab === 'evenements') {
-            DSE_Event_Editor::render();
+            Dendrila_Simple_Edit_Event_Editor::render();
         } elseif ($tab === 'menu') {
-            DSE_Navigation::render();
+            Dendrila_Simple_Edit_Navigation::render();
         } elseif ($tab === 'contenus' && $is_admin) {
-            DSE_ACF::render();
+            Dendrila_Simple_Edit_ACF::render();
         if (!$enabled) {
-            echo '<div class="dse-card dse-empty"><h2>Aucun texte général à modifier</h2><p>Les textes supplémentaires, s’ils sont activés, apparaissent plus bas. Pour modifier les coordonnées ou la présentation du site, l’administrateur doit d’abord les autoriser.</p>';
+            echo '<div class="dendrila-simple-edit-card dendrila-simple-edit-empty"><h2>Aucun texte général à modifier</h2><p>Les textes supplémentaires, s’ils sont activés, apparaissent plus bas. Pour modifier les coordonnées ou la présentation du site, l’administrateur doit d’abord les autoriser.</p>';
             if ($is_admin) { echo '<a class="button button-primary" href="' . esc_url(self::tab_link('reglages')) . '">Choisir les textes à modifier</a>'; }
             echo '</div>';
         } elseif (self::can_edit()) {
-            echo '<form class="dse-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-            echo '<input type="hidden" name="action" value="dse_save">';
-            echo '<input type="hidden" name="dse_revision" value="' . esc_attr((string) $state['revision']) . '">';
-            wp_nonce_field('dse_save');
+            echo '<form class="dendrila-simple-edit-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            echo '<input type="hidden" name="action" value="dendrila_simple_edit_save">';
+            echo '<input type="hidden" name="dendrila_simple_edit_revision" value="' . esc_attr((string) $state['revision']) . '">';
+            wp_nonce_field('dendrila_simple_edit_save');
             echo '<h2>Coordonnées et présentation</h2><p>Modifiez ici uniquement les informations affichées sur votre site.</p>';
             foreach ($enabled as $key) {
                 $definition = $definitions[$key];
                 $value = isset($state['values'][$key]) && is_string($state['values'][$key]) ?
                     $state['values'][$key] : '';
-                $id = 'dse-field-' . $key;
-                echo '<div class="dse-field"><label for="' . esc_attr($id) . '">' .
+                $id = 'dendrila-simple-edit-field-' . $key;
+                echo '<div class="dendrila-simple-edit-field"><label for="' . esc_attr($id) . '">' .
                     esc_html($definition['label']) . '</label>';
                 echo '<p class="description" id="' . esc_attr($id . '-help') . '">' .
                     esc_html($definition['help']) . '</p>';
                 if ($definition['type'] === 'image') {
-                    DSE_Media::render_picker($key, $value, $id);
+                    Dendrila_Simple_Edit_Media::render_picker($key, $value, $id);
                 } elseif ($definition['type'] === 'textarea') {
-                    echo '<textarea id="' . esc_attr($id) . '" name="dse_fields[' . esc_attr($key) .
+                    echo '<textarea id="' . esc_attr($id) . '" name="dendrila_simple_edit_fields[' . esc_attr($key) .
                         ']" rows="4" maxlength="' . esc_attr((string) $definition['max']) .
                         '" aria-describedby="' . esc_attr($id . '-help') . '">' . esc_textarea($value) . '</textarea>';
                 } else {
-                    echo '<input id="' . esc_attr($id) . '" name="dse_fields[' . esc_attr($key) .
+                    echo '<input id="' . esc_attr($id) . '" name="dendrila_simple_edit_fields[' . esc_attr($key) .
                         ']" type="' . esc_attr($definition['type']) .
                         '" maxlength="' . esc_attr((string) $definition['max']) .
                         '" aria-describedby="' . esc_attr($id . '-help') . '" value="' .
@@ -843,35 +858,41 @@ final class DSE_Plugin
             }
             echo '<p><button type="submit" class="button button-primary button-hero">Enregistrer mes modifications</button></p></form>';
         } else {
-            echo '<div class="dse-card"><h2>Consultation uniquement</h2><p>Votre compte ne peut pas publier de changements.</p></div>';
+            echo '<div class="dendrila-simple-edit-card"><h2>Consultation uniquement</h2><p>Votre compte ne peut pas publier de changements.</p></div>';
         }
 
 
-            DSE_Media::render_uploads();
+            Dendrila_Simple_Edit_Media::render_uploads();
         } elseif ($tab === 'newsletters') {
-            if (!DSE_Modules::enabled('newsletters')) {
-                echo '<section class="dse-card dse-empty"><h3>Les newsletters ne sont pas encore activées</h3><p>Depuis Autorisations, l’administrateur peut choisir qui peut préparer, modifier ou valider les brouillons.</p>';
+            if (!Dendrila_Simple_Edit_Modules::enabled('newsletters')) {
+                echo '<section class="dendrila-simple-edit-card dendrila-simple-edit-empty"><h3>Les newsletters ne sont pas encore activées</h3><p>Depuis Autorisations, l’administrateur peut choisir qui peut préparer, modifier ou valider les brouillons.</p>';
                 if ($is_admin) { echo '<p><a class="button button-primary" href="' . esc_url(self::tab_link('reglages')) . '">Gérer les accès</a></p>'; }
                 echo '</section>';
             } else {
-                DSE_Newsletters::render();
+                Dendrila_Simple_Edit_Newsletters::render();
             }
         } elseif ($tab === 'boutique') {
-            if (!DSE_Modules::enabled('products')) {
-                echo '<section class="dse-card dse-empty"><h3>La boutique n’est pas encore activée ici</h3><p>Depuis Autorisations, l’administrateur peut donner accès à la gestion des produits.</p>';
+            if (!Dendrila_Simple_Edit_Modules::enabled('products')) {
+                echo '<section class="dendrila-simple-edit-card dendrila-simple-edit-empty"><h3>La boutique n’est pas encore activée ici</h3><p>Depuis Autorisations, l’administrateur peut donner accès à la gestion des produits.</p>';
                 if ($is_admin) { echo '<p><a class="button button-primary" href="' . esc_url(self::tab_link('reglages')) . '">Gérer les accès</a></p>'; }
                 echo '</section>';
             } elseif (!class_exists('WooCommerce')) {
-                echo '<section class="dse-card dse-empty"><h3>WooCommerce n’est pas installé</h3><p>Cette rubrique sera utilisable lorsque la boutique WordPress sera activée.</p></section>';
-            } else { DSE_Woo::render(); }
+                echo '<section class="dendrila-simple-edit-card dendrila-simple-edit-empty"><h3>WooCommerce n’est pas installé</h3><p>Cette rubrique sera utilisable lorsque la boutique WordPress sera activée.</p></section>';
+            } else { Dendrila_Simple_Edit_Woo::render(); }
         } elseif ($tab === 'historique') {
-        echo '<section class="dse-card" aria-labelledby="dse-history-heading"><h2 id="dse-history-heading">Modifications précédentes</h2>';
+        echo '<section class="dendrila-simple-edit-card" aria-labelledby="dendrila-simple-edit-history-heading"><h2 id="dendrila-simple-edit-history-heading">Modifications précédentes</h2>';
+        $recent = get_posts(array('post_type'=>array('page','post'), 'post_status'=>array('publish','draft'),
+            'meta_key'=>'_dendrila_simple_edit_last_edit','orderby'=>'meta_value_num','order'=>'DESC','numberposts'=>15));
+        foreach ($recent as $entry) {
+            if (!$is_admin && !in_array((int)$entry->ID,Dendrila_Simple_Edit_Post_Editor::allowed_ids(),true) && (int)$entry->post_author !== get_current_user_id()) { continue; }
+            echo '<p><strong>'.esc_html($entry->post_title).'</strong> · '.esc_html(wp_date('d/m/Y H:i',(int)get_post_meta($entry->ID,'_dendrila_simple_edit_last_edit',true))).'</p>';
+        }
         echo '<p>Vous pouvez retrouver une ancienne version de vos textes. Les autres contenus du site ne sont pas touchés.</p>';
         $history = array_slice($state['history'], 0, 15);
         if (!$history || !$enabled) {
-            echo '<p>Aucune modification précédente à afficher.</p>';
+            echo '<p>Aucune ancienne version des textes partagés.</p>';
         } else {
-            echo '<ul class="dse-history">';
+            echo '<ul class="dendrila-simple-edit-history">';
             foreach ($history as $entry) {
                 if (!is_array($entry) || !isset($entry['revision'], $entry['timestamp']) ||
                     !is_scalar($entry['revision']) || !is_string($entry['timestamp'])) {
@@ -891,11 +912,11 @@ final class DSE_Plugin
                 echo '</p></div>';
                 if (self::can_edit()) {
                     echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-                    echo '<input type="hidden" name="action" value="dse_restore">';
-                    echo '<input type="hidden" name="dse_revision" value="' . esc_attr((string) $state['revision']) . '">';
-                    echo '<input type="hidden" name="dse_restore_revision" value="' .
+                    echo '<input type="hidden" name="action" value="dendrila_simple_edit_restore">';
+                    echo '<input type="hidden" name="dendrila_simple_edit_revision" value="' . esc_attr((string) $state['revision']) . '">';
+                    echo '<input type="hidden" name="dendrila_simple_edit_restore_revision" value="' .
                         esc_attr((string) $entry['revision']) . '">';
-                    wp_nonce_field('dse_restore');
+                    wp_nonce_field('dendrila_simple_edit_restore');
                     echo '<button class="button" type="submit">Restaurer cette version</button></form>';
                 }
                 echo '</li>';
@@ -903,7 +924,7 @@ final class DSE_Plugin
             echo '</ul>';
         }
         echo '</section>';
-        echo '<section class="dse-card"><h2>Où ces textes sont-ils affichés ?</h2>';
+        echo '<section class="dendrila-simple-edit-card"><h2>Où ces textes sont-ils affichés ?</h2>';
         echo '<p>Une modification ne se voit que là où ce texte est déjà utilisé sur le site.</p>';
         if ($enabled) {
             echo '<ul>';
@@ -911,7 +932,7 @@ final class DSE_Plugin
                 echo '<li><strong>' . esc_html($definitions[$key]['label']) . '</strong>';
                 $locations = self::public_locations($key);
                 if ($locations) {
-                    echo '<span class="dse-usage-label">Pages sur lesquelles ce texte apparaît :</span><ul class="dse-usage">';
+                    echo '<span class="dendrila-simple-edit-usage-label">Pages sur lesquelles ce texte apparaît :</span><ul class="dendrila-simple-edit-usage">';
                     foreach ($locations as $location) {
                         $url = get_permalink((int) $location->ID);
                         if (!$url) {
@@ -931,29 +952,32 @@ final class DSE_Plugin
         echo '</section>';
         } elseif ($tab === 'reglages' && $is_admin) {
         if (current_user_can('manage_options')) {
-            echo '<section class="dse-card"><h2>Qui peut modifier le site ?</h2>';
+            echo '<section class="dendrila-simple-edit-card"><h2>Qui peut modifier le site ?</h2>';
             echo '<p>Attribuez le rôle <strong>Édition simple</strong> aux comptes de votre choix. ' .
                 'Ces personnes verront uniquement cette interface dans leur administration WordPress.</p>';
             echo '<p><a class="button button-secondary" href="' .
                 esc_url(admin_url('users.php')) . '">Gérer les utilisateurs</a></p></section>';
-            echo '<form class="dse-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            echo '<form class="dendrila-simple-edit-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             echo '<h2>Choisir les informations modifiables</h2><p>Cochez ce que les utilisateurs autorisés pourront modifier, sans leur ouvrir les autres réglages WordPress.</p>';
-            echo '<input type="hidden" name="action" value="dse_configure">';
-            wp_nonce_field('dse_configure');
+            echo '<input type="hidden" name="action" value="dendrila_simple_edit_configure">';
+            wp_nonce_field('dendrila_simple_edit_configure');
             foreach ($definitions as $key => $definition) {
-                echo '<label class="dse-check"><input type="checkbox" name="dse_enabled[]" value="' .
+                echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_enabled[]" value="' .
                     esc_attr($key) . '" ' . checked(in_array($key, $enabled, true), true, false) . '> ' .
                     esc_html($definition['label']) . '</label>';
             }
             echo '<p><button class="button button-secondary" type="submit">Enregistrer les accès aux textes</button></p>';
             echo '<p class="description">Pour qu’un texte apparaisse sur le site, son emplacement doit être prévu dans la page ou le modèle. Les codes techniques sont présentés dans l’onglet Aide.</p>';
+            $contact_page = get_posts(array('post_type' => 'page', 'post_status' => array('publish','draft'), 'posts_per_page' => 1, 's' => 'contact'));
+            if ($contact_page) { echo '<p><a class="button" href="' . esc_url(get_edit_post_link($contact_page[0]->ID, '')) . '" target="_blank" rel="noopener noreferrer">Modifier la page Contact (nouvel onglet)</a></p>'; }
+            echo '<p class="description">Vérifiez aussi le pied de page et les autres pages : les coordonnées peuvent y être écrites directement et ne pas dépendre des textes partagés.</p>';
             echo '</form>';
-            $created = isset($_GET['dse_created']) && is_string($_GET['dse_created']) ?
-                sanitize_key(wp_unslash($_GET['dse_created'])) : '';
+            $created = isset($_GET['dendrila_simple_edit_created']) && is_string($_GET['dendrila_simple_edit_created']) ?
+                sanitize_key(wp_unslash($_GET['dendrila_simple_edit_created'])) : '';
             $shared = array_filter($definitions, static function ($key) {
                 return strpos($key, 'zone_') === 0;
             }, ARRAY_FILTER_USE_KEY);
-            echo '<details id="dse-shared-text" class="dse-card dse-advanced"' .
+            echo '<details id="dendrila-simple-edit-shared-text" class="dendrila-simple-edit-card dendrila-simple-edit-advanced"' .
                 (isset($shared[$created]) ? ' open' : '') . '><summary>Textes partagés entre plusieurs pages</summary>';
             echo '<p>Vous voulez afficher la même annonce sur plusieurs pages ? Créez un texte partagé. Son édition reste accessible depuis les réglages avancés.</p>';
             if (isset($shared[$created])) {
@@ -962,42 +986,43 @@ final class DSE_Plugin
             if ($shared) {
                 echo '<p>Dans chaque page concernée, ajoutez un bloc <strong>Code court</strong> et collez le code du texte choisi. Rédigez ensuite le texte dans <strong>Textes et images</strong>.</p>';
                 foreach ($shared as $key => $definition) {
-                    echo '<div class="dse-field"><label for="dse-shared-' . esc_attr($key) . '">' .
-                        esc_html($definition['label']) . ' · code à copier</label><input readonly type="text" id="dse-shared-' .
-                        esc_attr($key) . '" value="' . esc_attr('[dendrila_simple_edit field="' . $key . '"]') . '"></div>';
+                    echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-shared-' . esc_attr($key) . '">' .
+                        esc_html($definition['label']) . ' · code à copier</label><input readonly type="text" id="dendrila-simple-edit-shared-' .
+                        esc_attr($key) . '" value="' . esc_attr('[dse_text field="' . $key . '"]') . '"><button type="button" class="button dendrila-simple-edit-copy" data-dendrila-simple-edit-copy="dendrila-simple-edit-shared-' . esc_attr($key) . '">Copier le code</button></div>';
                 }
                 echo '<p><a href="' . esc_url(self::tab_link('contenus')) . '">Ouvrir les anciens textes</a></p>';
             }
             echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-            echo '<input type="hidden" name="action" value="dse_add_field">';
-            wp_nonce_field('dse_add_field');
-            echo '<div class="dse-field"><label for="dse-label">Nom du texte</label>';
-            echo '<input type="text" id="dse-label" name="dse_label" required maxlength="80" placeholder="Ex. Message de bienvenue"></div>';
-            echo '<div class="dse-field"><label for="dse-type">Format</label>';
-            echo '<select id="dse-type" name="dse_field_type">';
+            echo '<input type="hidden" name="action" value="dendrila_simple_edit_add_field">';
+            wp_nonce_field('dendrila_simple_edit_add_field');
+            echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-label">Nom du texte</label>';
+            echo '<input type="text" id="dendrila-simple-edit-label" name="dendrila_simple_edit_label" required maxlength="80" placeholder="Ex. Message de bienvenue"></div>';
+            echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-type">Format</label>';
+            echo '<select id="dendrila-simple-edit-type" name="dendrila_simple_edit_field_type">';
             echo '<option value="text">Texte court (titre)</option>';
             echo '<option value="textarea">Plusieurs lignes (paragraphe)</option>';
             echo '</select></div>';
             echo '<p><button class="button" type="submit">Créer le texte et obtenir son code</button></p>';
             echo '</form></details>';
         }
-            DSE_ACF::render(true);
-            DSE_Media::render_admin();
-            DSE_Post_Editor::render_admin();
-            DSE_Event_Editor::render_admin();
-            echo '<details class="dse-card dse-advanced"><summary>Anciens textes et champs complémentaires</summary>';
+            Dendrila_Simple_Edit_ACF::render(true);
+            Dendrila_Simple_Edit_Media::render_admin();
+            Dendrila_Simple_Edit_Post_Editor::render_admin();
+            Dendrila_Simple_Edit_Event_Editor::render_admin();
+            echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-advanced"><summary>Anciens textes et champs complémentaires</summary>';
             echo '<p>Ces réglages restent accessibles à l’administrateur pour les sites qui les utilisaient avant la séparation des rubriques.</p>';
             echo '<p><a class="button" href="' . esc_url(self::tab_link('contenus')) . '">Ouvrir les anciens textes</a></p></details>';
-            DSE_Modules::render_admin();
+            Dendrila_Simple_Edit_Modules::render_admin();
+            Dendrila_Simple_Edit_Approvals::render_settings();
         } elseif ($tab === 'aide') {
-            echo '<section class="dse-card"><h3>Comment modifier un contenu ?</h3><ol class="dse-steps"><li>Ouvrez l’onglet Pages, Articles ou Événements.</li><li>Choisissez un contenu autorisé et modifiez son titre et les éléments nécessaires.</li><li>Enregistrez vos modifications.</li></ol><p>Si un texte n’apparaît pas, l’administrateur doit peut-être encore autoriser sa modification.</p></section>';
-            echo '<section class="dse-card"><h3>Ce que Simple Edit ne modifie pas</h3><p>Les menus, les modèles et la disposition de la page restent tels quels. L’idée est de pouvoir changer le contenu sans risquer de casser le design.</p></section>';
+            echo '<section class="dendrila-simple-edit-card"><h3>Comment modifier un contenu ?</h3><ol class="dendrila-simple-edit-steps"><li>Ouvrez l’onglet Pages, Articles ou Événements.</li><li>Choisissez un contenu autorisé et modifiez son titre et les éléments nécessaires.</li><li>Enregistrez vos modifications.</li></ol><p>Si un texte n’apparaît pas, l’administrateur doit peut-être encore autoriser sa modification.</p></section>';
+            echo '<section class="dendrila-simple-edit-card"><h3>Ce que Simple Edit ne modifie pas</h3><p>Les menus, les modèles et la disposition de la page restent tels quels. L’idée est de pouvoir changer le contenu sans risquer de casser le design.</p></section>';
             if ($is_admin) {
-                echo '<details class="dse-card dse-advanced"><summary>Pour les administrateurs : placer un texte sur une page</summary><div class="dse-details-body"><p>Chaque texte peut être inséré à un endroit précis avec un petit code WordPress (appelé « code court »).</p>';
+                echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-advanced"><summary>Pour les administrateurs : placer un texte sur une page</summary><div class="dendrila-simple-edit-details-body"><p>Chaque texte peut être inséré à un endroit précis avec un petit code WordPress (appelé « code court »).</p>';
                 foreach ($enabled as $key) {
-                    echo '<p><strong>' . esc_html($definitions[$key]['label']) . '</strong><code>[dendrila_simple_edit field="' . esc_html($key) . '"]</code></p>';
+                    echo '<p><strong>' . esc_html($definitions[$key]['label']) . '</strong><code id="dendrila-simple-edit-code-' . esc_attr($key) . '">[dse_text field="' . esc_html($key) . '"]</code> <button class="button dendrila-simple-edit-copy" type="button" data-dendrila-simple-edit-copy="dendrila-simple-edit-code-' . esc_attr($key) . '">Copier le code</button></p>';
                 }
-                DSE_Builders::render();
+                Dendrila_Simple_Edit_Builders::render();
                 echo '</div></details>';
             }
         }

@@ -1,0 +1,151 @@
+# French (France) translations for Dendrila Simple Edit.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the Dendrila Simple
+# Edit project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Dendrila Simple Edit 0.0.1\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-22 11:36+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: fr_FR\n"
+"Language-Team: fr_FR <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Accueil"
+msgstr "Accueil"
+
+msgid "Aide"
+msgstr "Aide"
+
+msgid "Articles"
+msgstr "Articles"
+
+msgid "Autorisations"
+msgstr "Autorisations"
+
+msgid "Boutique"
+msgstr "Boutique"
+
+msgid "Changez l’ordre des liens, sans toucher à leur destination."
+msgstr "Changez l’ordre des liens, sans toucher à leur destination."
+
+msgid "Choisir ce que chacun peut modifier"
+msgstr "Choisir ce que chacun peut modifier"
+
+msgid ""
+"Choisissez la page à modifier et personnalisez son titre, ses textes et "
+"ses images."
+msgstr ""
+"Choisissez la page à modifier et personnalisez son titre, ses textes et "
+"ses images."
+
+msgid ""
+"Choisissez les outils et les images accessibles aux comptes ayant le rôle"
+" « Édition simple »."
+msgstr ""
+"Choisissez les outils et les images accessibles aux comptes ayant le rôle"
+" « Édition simple »."
+
+msgid "Choisissez un article autorisé et modifiez son titre et son contenu."
+msgstr "Choisissez un article autorisé et modifiez son titre et son contenu."
+
+msgid "Comprendre comment ça marche"
+msgstr "Comprendre comment ça marche"
+
+msgid ""
+"Consultez les changements précédents et les pages qui utilisent vos "
+"textes."
+msgstr ""
+"Consultez les changements précédents et les pages qui utilisent vos "
+"textes."
+
+msgid "Contenus en attente de validation"
+msgstr "Contenus en attente de validation"
+
+msgid "Historique"
+msgstr "Historique"
+
+msgid "Menu principal"
+msgstr "Menu principal"
+
+msgid ""
+"Mettez à jour uniquement les informations de produits qui vous ont été "
+"confiées."
+msgstr ""
+"Mettez à jour uniquement les informations de produits qui vous ont été "
+"confiées."
+
+msgid "Modifier les produits"
+msgstr "Modifier les produits"
+
+msgid "Modifier mon site"
+msgstr "Modifier mon site"
+
+msgid "Modifier un article"
+msgstr "Modifier un article"
+
+msgid "Modifier un événement"
+msgstr "Modifier un événement"
+
+msgid "Modifier une page"
+msgstr "Modifier une page"
+
+msgid ""
+"Modifiez le titre, la description, les dates, les horaires et le lieu des"
+" événements autorisés."
+msgstr ""
+"Modifiez le titre, la description, les dates, les horaires et le lieu des"
+" événements autorisés."
+
+msgid "Newsletters"
+msgstr "Newsletters"
+
+msgid "Pages"
+msgstr "Pages"
+
+msgid "Préparer un envoi"
+msgstr "Préparer un envoi"
+
+msgid "Préparer une newsletter"
+msgstr "Préparer une newsletter"
+
+msgid ""
+"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez "
+"vos destinataires et lancez votre campagne."
+msgstr ""
+"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez "
+"vos destinataires et lancez votre campagne."
+
+msgid "Que voulez-vous faire ?"
+msgstr "Que voulez-vous faire ?"
+
+msgid "Quelques repères pour modifier le site sans risque."
+msgstr "Quelques repères pour modifier le site sans risque."
+
+msgid "Retrouver une ancienne version"
+msgstr "Retrouver une ancienne version"
+
+msgid "Réorganiser le menu principal"
+msgstr "Réorganiser le menu principal"
+
+msgid "Soumettre à validation"
+msgstr "Soumettre à validation"
+
+msgid "Validations"
+msgstr "Validations"
+
+msgid "Vérifiez les propositions avant qu’elles ne soient mises en ligne."
+msgstr "Vérifiez les propositions avant qu’elles ne soient mises en ligne."
+
+msgid "Événements"
+msgstr "Événements"
+

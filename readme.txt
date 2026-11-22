@@ -1,84 +1,50 @@
 === Dendrila Simple Edit ===
-Contributors: juliane16
-Tags: editor, content, access-control, role, simple-editing
+Tags: editor, permissions, newsletter, content
 Requires at least: 6.5
 Requires PHP: 7.4
 Stable tag: 0.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Éditez des informations explicitement autorisées sans toucher à la mise en page WordPress.
+Proposez un espace d’édition guidée pour les pages, articles, événements, produits et newsletters que vous confiez à votre équipe.
 
 == Description ==
 
-Dendrila Simple Edit propose un espace « Modifier mon site » pour les personnes qui doivent tenir à jour quelques informations sans accéder aux éditeurs techniques.
+L’administrateur configure les contenus accessibles depuis « Modifier mon site » et peut attribuer le rôle « Édition simple ». Les pages et articles compatibles disposent d’un éditeur visuel. Les contenus utilisant une mise en page complexe doivent être modifiés dans leur éditeur d’origine.
 
-Cette première version de travail permet :
-* la création d’un rôle « Édition simple » aux permissions minimales ;
-* le choix des champs délégués par un administrateur ;
-* la création de 20 zones de texte personnalisées au maximum, affichées par shortcode ;
-* une connexion facultative à Advanced Custom Fields (ACF) pour modifier uniquement des champs texte, zone de texte, URL ou e-mail explicitement autorisés par un administrateur ;
-* un diagnostic des widgets Shortcode dans le contenu Elementor publié, sans altérer les structures du constructeur ;
-* le droit d’importer ses images et d’utiliser celles des autres éditeurs simples par défaut (partage désactivable par l’administrateur), plus des images explicitement autorisées ou un accès à toute la médiathèque ;
-* la modification du téléphone, des horaires, de l’adresse et d’un court texte de présentation ;
-* l’insertion volontaire de ces données par les shortcodes prévus ;
-* l’historique limité, la restauration autorisée et le refus d’écrasement de changements concurrents.
+La médiathèque permet de choisir une image visuellement. Les images des utilisateurs du rôle Édition simple sont partagées par défaut entre collègues. L’administrateur peut désactiver le partage, choisir des images individuellement ou ouvrir toute la médiathèque.
 
-Depuis la version 0.2.0 de développement, un administrateur peut activer séparément les modules Newsletters et WooCommerce, puis attribuer des droits précis à chaque compte. Newsletters permet uniquement de préparer, prévisualiser et valider des brouillons privés sans aucun envoi ni accès aux contacts. WooCommerce permet de créer des produits simples en brouillon et de modifier les champs autorisés (contenu, image, catégories, prix, stock) sans accès aux commandes ou paiements. L'édition des produits publiés nécessite une seconde autorisation. La publication de produits et les variantes ne sont pas encore disponibles.
+Les traductions de l’interface principale sont incluses dans languages/ (français et anglais).
 
-Aucune donnée n’est transmise à un service externe par Dendrila Simple Edit. Ce plugin ne remplace pas automatiquement des textes existants et n’édite pas encore les zones Gutenberg, Divi ou Elementor.
+Les intégrations facultatives concernent Advanced Custom Fields pour les champs autorisés, The Events Calendar pour les événements compatibles et WooCommerce pour les produits simples. Les droits sur les produits distinguent notamment le contenu, les images, les catégories, le prix et le stock.
+
+Les modifications peuvent être soumises à validation avant publication, avec des rôles supplémentaires choisis par l’administration.
+
+Le module de newsletters regroupe la rédaction par blocs, les listes, les contacts et les campagnes. Il utilise WP-Cron et la messagerie WordPress. Une extension SMTP configurée sur le site peut prendre en charge le transport des messages.
 
 == Installation ==
 
-Installer sur une instance de test, activer, configurer les champs depuis « Modifier mon site », puis insérer les shortcodes affichés à l’administrateur.
+1. Téléversez l’archive dans Extensions > Ajouter une extension, puis activez Dendrila Simple Edit.
+2. Ouvrez « Modifier mon site » avec un compte administrateur et choisissez les contenus et modules à déléguer.
+3. Attribuez le rôle « Édition simple » à un compte distinct et vérifiez son espace de travail.
+4. Pour tester les newsletters, configurez un transport de capture sur votre site de test avant d’importer des adresses fictives.
 
 == Frequently Asked Questions ==
 
-= Le plugin modifie-t-il automatiquement les pages existantes ? =
-Non. Seuls les emplacements reliés par un shortcode sont mis à jour.
+= Quelles données sont utilisées pour les newsletters ? =
+Le site conserve notamment les adresses, les appartenances aux listes, les statuts d’inscription, les informations de consentement et le suivi des campagnes. Lors d’un envoi, WordPress transmet le message et l’adresse au transport de messagerie configuré par l’exploitant. Le lien personnel de désinscription retire le contact des newsletters du site.
 
-= Le rôle Édition simple permet-il de modifier un thème ? =
-Non, pas avec les seules permissions accordées par ce plugin. Un autre rôle ou plugin peut cependant lui attribuer des droits supplémentaires.
+= Dois-je installer WooCommerce ou une extension SMTP ? =
+WooCommerce sert aux fonctions boutique. Vous pouvez utiliser les autres rubriques indépendamment. Les newsletters appellent wp_mail() et utilisent le transport configuré sur votre installation.
+
+= Comment insérer les informations et les formulaires ? =
+Insérez [dse_text field="phone"] dans un bloc Code court pour un texte partagé, ou [dse_newsletter_inscription liste="1"] pour une liste de newsletter autorisée.
+
+= Puis-je modifier les mises en page Divi ? =
+Cette version protège les contenus reconnus comme utilisant le constructeur. Elle ne propose pas d’édition native des mises en page Divi.
 
 == Changelog ==
 
-= 0.2.1-beta4 (rôle Édition simple et imports d’images) =
-* Nouveau rôle « Édition simple », attribuable depuis Utilisateurs et limité au plugin ; migration des comptes de l’ancien rôle.
-* Accès au plugin juste sous Tableau de bord dans le menu d’administration.
-* Les utilisateurs de ce rôle peuvent importer leurs images sans autorisation préalable et utiliser celles des autres utilisateurs « Édition simple » par défaut. Une case permet de désactiver ce partage.
-* Option administrateur « Accès à toute la médiathèque », désactivée par défaut.
-* Sans accès complet : la bibliothèque est limitée aux images de l’équipe (si le partage est actif), aux images personnelles et aux images explicitement autorisées, avec contrôles côté serveur.
-* Un sélecteur natif permet de choisir une image pour un contenu sans saisir d’identifiants.
-
-
-= 0.2.1-beta3 (médiathèque et autorisations) =
-* Choix multiple directement dans la médiathèque WordPress, avec miniatures, retrait individuel et sélection limitée à 60 images.
-* Les identifiants des médias restent enregistrés dans la même option ; l’édition manuelle est réservée au mode avancé ou à l’absence de JavaScript.
-* Le retrait d’une autorisation ne supprime pas les fichiers ni les images déjà affichées.
-* Libellés de l’onglet « Autorisations » rédigés pour l’administrateur, sans désigner tous les utilisateurs autorisés comme « responsables ».
-
-= 0.2.1-beta2 (allègement de l’en-tête) =
-* Suppression de la phrase introductive redondante sous « Modifier mon site ».
-
-= 0.2.1-beta1 (tests, interface inspirée de Dendrila Privacy) =
-* Onglets adaptés aux petits écrans : textes, newsletters, boutique, historique, autorisations et aide.
-* Présentation simplifiée et codes ACF manuels rangés dans les options avancées.
-* Les onglets non autorisés sont masqués au rôle délégué ; navigation fonctionnelle sans JavaScript.
-* Un champ ACF ne peut plus être autorisé manuellement si son groupe n’est pas applicable au contenu.
-* Tests isolés des onglets, du rôle et des règles de localisation ACF.
-
-
-= 0.2.0 (développement) =
-* Modules optionnels par compte : brouillons de newsletters sans envoi et édition de produits WooCommerce simples à droits réduits.
-
-= 0.1.0 =
-* Premier socle : champs reliés, rôle dédié, historique et vérification des versions.
-
-= 0.0.1 — éditeur commun et mailing (laboratoire uniquement) =
-* Éditeur à blocs visuels pour newsletters et pour pages/articles explicitement autorisés. Le titre principal d'une newsletter ne peut être ajouté qu'une fois.
-* Pastilles de couleurs visibles, couleurs personnalisées contrôlées côté serveur et aperçu par élément. Boutons d'ajout illustrés, utilisables par clic et clavier.
-* Les pages/articles Gutenberg, Divi, les constructeurs et les contenus incompatibles ne sont jamais convertis automatiquement. L'accès aux pages et articles est interdit tant que l'administrateur ne les a pas sélectionnés.
-* Newsletters : brouillons et approbation, listes, import avec consentement déclaré, formulaire public à double confirmation par liste, liens de désinscription, prévisualisation et campagnes préparées sans envoi.
-* Seul un administrateur peut choisir les destinataires, programmer, lancer, suspendre ou tester un envoi. L'envoi passe par wp_mail(), avec le transport FluentSMTP 2.4.5 lorsqu'une connexion est configurée ; aucun mot de passe SMTP n'est conservé par Dendrila.
-* File d'envoi par lots de cinq via WP-Cron. Échec ou interruption : vérification manuelle ; les envois incertains ne sont pas rejoués automatiquement. Un envoi accepté n'est pas une preuve de remise en boîte.
-* VERSION EXPÉRIMENTALE : aucune campagne réelle ni interface de gestion en production n'ont été validées. À tester sur wordpress.lepotager.org avant diffusion publique.
+= 0.0.1 =
+* Espace d’édition guidée, rôle dédié, médiathèque partagée et autorisations de contenu.
+* Modules facultatifs pour les événements, les produits et les newsletters.

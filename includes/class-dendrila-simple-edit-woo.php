@@ -5,7 +5,7 @@
  */
 if (!defined('ABSPATH')) { exit; }
 
-final class DSE_Woo
+final class Dendrila_Simple_Edit_Woo
 {
     private static function fields()
     {
@@ -22,7 +22,7 @@ final class DSE_Woo
 
     public static function boot()
     {
-        add_action('admin_post_dse_product_save', array(__CLASS__, 'save'));
+        add_action('admin_post_dendrila_simple_edit_product_save', array(__CLASS__, 'save'));
     }
 
     public static function available()
@@ -60,20 +60,20 @@ final class DSE_Woo
         $fields = self::fields();
         if (!isset($fields[$key])) { return false; }
         if ($creating && in_array($key, array('name', 'description', 'short_description'), true)) {
-            return DSE_Modules::allowed('products', 'create');
+            return Dendrila_Simple_Edit_Modules::allowed('products', 'create');
         }
-        return DSE_Modules::allowed('products', $fields[$key]);
+        return Dendrila_Simple_Edit_Modules::allowed('products', $fields[$key]);
     }
 
     /** Validate a strictly limited update payload before touching WooCommerce. */
     public static function clean_changes($input, $product = null, $creating = false)
     {
-        if (!self::available() || !is_array($input) || !$input || count($input) > 7 ||
+        if (!self::available() || !is_array($input) || !$input || count($input) > count(self::fields()) ||
             (!$creating && !self::editable_product($product))) {
             throw new InvalidArgumentException('Produit ou formulaire non pris en charge.');
         }
         if (!$creating && $product->get_status() === 'publish' &&
-            !DSE_Modules::allowed('products', 'live')) {
+            !Dendrila_Simple_Edit_Modules::allowed('products', 'live')) {
             throw new InvalidArgumentException('La modification de produits publiés est désactivée.');
         }
         $result = array();
@@ -110,7 +110,7 @@ final class DSE_Woo
             }
             if ($key === 'image_id') {
                 if ($raw !== '0' && (!ctype_digit($raw) || (int) $raw < 1 ||
-                    (!DSE_Media::allowed_image((int) $raw) &&
+                    (!Dendrila_Simple_Edit_Media::allowed_image((int) $raw) &&
                      ($creating || (int) $raw !== (int) $product->get_image_id('edit'))))) {
                     throw new InvalidArgumentException('Image non autorisée.');
                 }
@@ -141,7 +141,8 @@ final class DSE_Woo
                     $result[$key] = (string) $price;
                 }
             } elseif ($key === 'stock_quantity') {
-                if (!$product || !$product->get_manage_stock() || !ctype_digit($raw) ||
+                if ($creating && $raw === '') { continue; }
+                if ((!$creating && (!$product || !$product->get_manage_stock())) || !ctype_digit($raw) ||
                     strlen($raw) > 7 || (int) $raw > 1000000) {
                     throw new InvalidArgumentException('Le stock doit déjà être suivi dans WooCommerce.');
                 }
@@ -217,17 +218,17 @@ final class DSE_Woo
 
     private static function post_id()
     {
-        $id = isset($_POST['dse_pid']) ? wp_unslash($_POST['dse_pid']) : '';
+        $id = isset($_POST['dendrila_simple_edit_pid']) ? wp_unslash($_POST['dendrila_simple_edit_pid']) : '';
         return is_string($id) && ctype_digit($id) ? (int) $id : 0;
     }
 
     public static function save()
     {
-        check_admin_referer('dse_product_save');
+        check_admin_referer('dendrila_simple_edit_product_save');
         $id = self::post_id();
         $creating = $id === 0;
-        if (!self::available() || !DSE_Modules::enabled('products') ||
-            ($creating && !DSE_Modules::allowed('products', 'create'))) {
+        if (!self::available() || !Dendrila_Simple_Edit_Modules::enabled('products') ||
+            ($creating && !Dendrila_Simple_Edit_Modules::allowed('products', 'create'))) {
             wp_die('Module ou création non autorisé.', 'Accès refusé', array('response' => 403));
         }
         $product = $creating ? new WC_Product_Simple() : wc_get_product($id);
@@ -235,13 +236,13 @@ final class DSE_Woo
             wp_die('Seuls les produits simples sont pris en charge.', 'Accès refusé', array('response' => 403));
         }
         if (!$creating) {
-            $expected = isset($_POST['dse_pversion']) ? wp_unslash($_POST['dse_pversion']) : '';
+            $expected = isset($_POST['dendrila_simple_edit_pversion']) ? wp_unslash($_POST['dendrila_simple_edit_pversion']) : '';
             if (!is_string($expected) || !preg_match('/^[0-9a-f]{64}$/', $expected) ||
                 !hash_equals(self::fingerprint($product), $expected)) {
                 self::redirect('conflict');
             }
         }
-        $submitted = isset($_POST['dse_pfields']) ? $_POST['dse_pfields'] : array();
+        $submitted = isset($_POST['dendrila_simple_edit_pfields']) ? $_POST['dendrila_simple_edit_pfields'] : array();
         try {
             $changes = self::clean_changes($submitted, $product, $creating);
         } catch (InvalidArgumentException $error) {
@@ -257,6 +258,7 @@ final class DSE_Woo
             $product = $fresh;
         } else {
             $product->set_status('draft');
+            if (isset($changes['stock_quantity'])) { $product->set_manage_stock(true); }
         }
         if (!$changes) { self::redirect('unchanged'); }
         try {
@@ -266,30 +268,30 @@ final class DSE_Woo
             self::redirect('error');
         }
         if (!$saved_id || !is_int($saved_id)) { self::redirect('error'); }
-        do_action('dse_product_updated', $saved_id, array_keys($changes));
+        do_action('dendrila_simple_edit_product_updated', $saved_id, array_keys($changes));
         self::redirect('saved');
     }
 
     private static function redirect($notice)
     {
-        wp_safe_redirect(add_query_arg(array('dse_pnotice' => $notice, 'dse_tab' => 'boutique'), admin_url('admin.php?page=dendrila-simple-edit')));
+        wp_safe_redirect(add_query_arg(array('dendrila_simple_edit_pnotice' => $notice, 'dendrila_simple_edit_tab' => 'boutique'), admin_url('admin.php?page=dendrila-simple-edit')));
         exit;
     }
 
     public static function render()
     {
-        if (!self::available() || !DSE_Modules::enabled('products')) { return; }
+        if (!self::available() || !Dendrila_Simple_Edit_Modules::enabled('products')) { return; }
         $rights = array();
         foreach (array('create', 'content', 'images', 'categories', 'prices', 'stock', 'live') as $key) {
-            $rights[$key] = DSE_Modules::allowed('products', $key);
+            $rights[$key] = Dendrila_Simple_Edit_Modules::allowed('products', $key);
         }
         if (!in_array(true, $rights, true)) { return; }
-        echo '<section class="dse-card"><h2>Fiches produits</h2>';
+        echo '<section class="dendrila-simple-edit-card"><h2>Fiches produits</h2>';
         echo '<p>Vous pouvez modifier uniquement les informations autorisées. Les nouveaux produits restent en brouillon.</p>';
         $notices = array('saved' => 'Produit enregistré.', 'unchanged' => 'Aucun changement nécessaire.',
             'conflict' => 'Produit modifié entre-temps : rechargez cette page.',
             'error' => 'L’enregistrement du produit a échoué.');
-        $notice = isset($_GET['dse_pnotice']) ? wp_unslash($_GET['dse_pnotice']) : '';
+        $notice = isset($_GET['dendrila_simple_edit_pnotice']) ? wp_unslash($_GET['dendrila_simple_edit_pnotice']) : '';
         if (is_string($notice) && isset($notices[$notice])) {
             echo '<p role="status">' . esc_html($notices[$notice]) . '</p>';
         }
@@ -305,7 +307,7 @@ final class DSE_Woo
             if (!self::editable_product($product)) { continue; }
             $live = $product->get_status() === 'publish';
             if ($live && !$rights['live']) { continue; }
-            echo '<article class="dse-subcard"><h3>' . esc_html($product->get_name()) .
+            echo '<article class="dendrila-simple-edit-subcard"><h3>' . esc_html($product->get_name()) .
                 '</h3><p>' . ($live ? 'Produit publié : changements immédiatement visibles' :
                     'Produit non publié') . '</p>';
             self::form($product, $rights);
@@ -318,28 +320,28 @@ final class DSE_Woo
     {
         $creating = $product === null;
         $id = $creating ? 'new' : (string) $product->get_id();
-        echo '<form class="dse-product-form" method="post" action="' .
+        echo '<form class="dendrila-simple-edit-product-form" method="post" action="' .
             esc_url(admin_url('admin-post.php')) . '">';
         echo '<h3>' . ($creating ? 'Nouveau produit brouillon' : 'Modifier la fiche') . '</h3>';
-        echo '<input type="hidden" name="action" value="dse_product_save">';
+        echo '<input type="hidden" name="action" value="dendrila_simple_edit_product_save">';
         if (!$creating) {
-            echo '<input type="hidden" name="dse_pid" value="' . esc_attr($id) . '">';
-            echo '<input type="hidden" name="dse_pversion" value="' .
+            echo '<input type="hidden" name="dendrila_simple_edit_pid" value="' . esc_attr($id) . '">';
+            echo '<input type="hidden" name="dendrila_simple_edit_pversion" value="' .
                 esc_attr(self::fingerprint($product)) . '">';
         }
-        wp_nonce_field('dse_product_save');
+        wp_nonce_field('dendrila_simple_edit_product_save');
         if ($creating || $rights['content']) {
             $values = array('name' => 'Nom du produit', 'short_description' => 'Résumé',
                 'description' => 'Description');
             foreach ($values as $field => $label) {
                 $value = $creating ? '' : (string) call_user_func(array($product, 'get_' . $field));
-                $target = 'dse-p-' . $field . '-' . $id;
-                echo '<div class="dse-field"><label for="' . esc_attr($target) . '">' .
+                $target = 'dendrila-simple-edit-p-' . $field . '-' . $id;
+                echo '<div class="dendrila-simple-edit-field"><label for="' . esc_attr($target) . '">' .
                     esc_html($label) . '</label>';
                 if ($field === 'name') {
-                    echo '<input id="' . esc_attr($target) . '" type="text" required maxlength="200" name="dse_pfields[name]" value="' . esc_attr($value) . '">';
+                    echo '<input id="' . esc_attr($target) . '" type="text" required maxlength="200" name="dendrila_simple_edit_pfields[name]" value="' . esc_attr($value) . '">';
                 } else {
-                    echo '<textarea id="' . esc_attr($target) . '" rows="4" name="dse_pfields[' .
+                    echo '<textarea id="' . esc_attr($target) . '" rows="4" name="dendrila_simple_edit_pfields[' .
                         esc_attr($field) . ']" maxlength="' .
                         ($field === 'description' ? '12000' : '2400') . '">' .
                         esc_textarea($value) . '</textarea>';
@@ -347,39 +349,39 @@ final class DSE_Woo
                 echo '</div>';
             }
         }
-        if (!$creating && $rights['images']) {
-            $image = (int) $product->get_image_id();
-            $available = DSE_Media::accessible_ids();
+        if ($rights['images']) {
+            $image = $creating ? 0 : (int) $product->get_image_id();
+            $available = Dendrila_Simple_Edit_Media::accessible_ids();
             if ($image && !in_array($image, $available, true)) { $available[] = $image; }
-            echo '<div class="dse-field dse-photo-editor" data-dse-photo-picker><label for="dse-p-image-' . esc_attr($id) .
-                '">Image du produit</label><select id="dse-p-image-' . esc_attr($id) .
-                '" name="dse_pfields[image_id]" data-dse-photo-select>';
+            echo '<div class="dendrila-simple-edit-field dendrila-simple-edit-photo-editor" data-dendrila-simple-edit-photo-picker><label for="dendrila-simple-edit-p-image-' . esc_attr($id) .
+                '">Image du produit</label><select id="dendrila-simple-edit-p-image-' . esc_attr($id) .
+                '" name="dendrila_simple_edit_pfields[image_id]" data-dendrila-simple-edit-photo-select>';
             echo '<option value="0" ' . selected($image, 0, false) . '>Aucune image</option>';
             foreach ($available as $attachment_id) {
                 echo '<option value="' . esc_attr((string) $attachment_id) . '" ' .
                     selected($image, $attachment_id, false) . '>' .
                     esc_html(get_the_title($attachment_id)) . '</option>';
             }
-            echo '</select><div class="dse-photo-picker-actions">';
-            echo '<button class="button button-secondary" type="button" data-dse-photo-open hidden>' .
+            echo '</select><div class="dendrila-simple-edit-photo-picker-actions">';
+            echo '<button class="button button-secondary" type="button" data-dendrila-simple-edit-photo-open hidden>' .
                 'Choisir ou importer une image</button>';
-            echo '<button class="button button-link-delete" type="button" data-dse-photo-clear hidden>' .
+            echo '<button class="button button-link-delete" type="button" data-dendrila-simple-edit-photo-clear hidden>' .
                 'Retirer cette image</button></div>';
-            echo '<div class="dse-image-preview" data-dse-photo-preview>';
+            echo '<div class="dendrila-simple-edit-image-preview" data-dendrila-simple-edit-photo-preview>';
             if ($image && wp_attachment_is_image($image)) {
                 echo wp_get_attachment_image($image, 'thumbnail', false, array('loading' => 'lazy'));
             }
             echo '</div></div>';
         }
-        if (!$creating && $rights['categories']) {
+        if ($rights['categories']) {
             $terms = get_terms(array('taxonomy' => 'product_cat', 'hide_empty' => false, 'number' => 51));
             if (!is_wp_error($terms) && is_array($terms) && count($terms) <= 50) {
-                echo '<fieldset class="dse-permissions"><legend>Catégories existantes</legend>';
-                echo '<input type="hidden" name="dse_pfields[category_ids][]" value="">';
+                echo '<fieldset class="dendrila-simple-edit-permissions"><legend>Catégories existantes</legend>';
+                echo '<input type="hidden" name="dendrila_simple_edit_pfields[category_ids][]" value="">';
                 foreach ($terms as $term) {
-                    echo '<label class="dse-check"><input type="checkbox" name="dse_pfields[category_ids][]" value="' .
+                    echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_pfields[category_ids][]" value="' .
                         esc_attr((string) $term->term_id) . '" ' .
-                        checked(in_array((int) $term->term_id, $product->get_category_ids('edit'), true), true, false) .
+                        checked(!$creating && in_array((int) $term->term_id, $product->get_category_ids('edit'), true), true, false) .
                         '> ' . esc_html($term->name) . '</label>';
                 }
                 echo '</fieldset>';
@@ -387,17 +389,17 @@ final class DSE_Woo
                 echo '<p>Catégories non proposées : inventaire trop important ou indisponible. Utilisez WooCommerce pour éviter de retirer des catégories non affichées.</p>';
             }
         }
-        if (!$creating && $rights['prices']) {
-            echo '<div class="dse-field"><label for="dse-p-price-' . esc_attr($id) .
-                '">Prix du produit (devise de la boutique)</label><input id="dse-p-price-' .
-                esc_attr($id) . '" type="text" inputmode="decimal" name="dse_pfields[regular_price]" value="' .
-                esc_attr((string) $product->get_regular_price('edit')) . '"></div>';
+        if ($rights['prices']) {
+            echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-p-price-' . esc_attr($id) .
+                '">Prix du produit (devise de la boutique)</label><input id="dendrila-simple-edit-p-price-' .
+                esc_attr($id) . '" type="text" inputmode="decimal" name="dendrila_simple_edit_pfields[regular_price]" value="' .
+                esc_attr($creating ? '' : (string) $product->get_regular_price('edit')) . '"></div>';
         }
-        if (!$creating && $rights['stock'] && $product->get_manage_stock()) {
-            echo '<div class="dse-field"><label for="dse-p-stock-' . esc_attr($id) .
-                '">Quantité en stock</label><input id="dse-p-stock-' .
-                esc_attr($id) . '" type="number" min="0" max="1000000" name="dse_pfields[stock_quantity]" value="' .
-                esc_attr((string) $product->get_stock_quantity('edit')) . '"></div>';
+        if ($rights['stock'] && ($creating || $product->get_manage_stock())) {
+            echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-p-stock-' . esc_attr($id) .
+                '">Quantité en stock</label><input id="dendrila-simple-edit-p-stock-' .
+                esc_attr($id) . '" type="number" min="0" max="1000000" name="dendrila_simple_edit_pfields[stock_quantity]" value="' .
+                esc_attr($creating ? '' : (string) $product->get_stock_quantity('edit')) . '"></div>';
         } elseif (!$creating && $rights['stock']) {
             echo '<p>Le suivi des stocks est désactivé pour ce produit dans WooCommerce.</p>';
         }

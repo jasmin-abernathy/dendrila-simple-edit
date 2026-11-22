@@ -2,17 +2,17 @@
 /** Delegated ordering of an existing primary WordPress navigation menu. */
 if (!defined('ABSPATH')) { exit; }
 
-final class DSE_Navigation
+final class Dendrila_Simple_Edit_Navigation
 {
     public static function boot()
     {
-        add_action('admin_post_dse_nav_reorder', array(__CLASS__, 'save'));
+        add_action('admin_post_dendrila_simple_edit_nav_reorder', array(__CLASS__, 'save'));
     }
 
     public static function allowed()
     {
         return current_user_can('manage_options') ||
-            (DSE_Plugin::can_access() && DSE_Modules::allowed('editorial', 'reorder_menu'));
+            (Dendrila_Simple_Edit_Plugin::can_access() && Dendrila_Simple_Edit_Modules::allowed('editorial', 'reorder_menu'));
     }
 
     /** Find one unambiguous existing navigation; never create/change menus implicitly. */
@@ -89,7 +89,7 @@ final class DSE_Navigation
     private static function redirect($notice)
     {
         wp_safe_redirect(add_query_arg(array('page' => 'dendrila-simple-edit',
-            'dse_tab' => 'menu', 'dse_nav_notice' => $notice), admin_url('admin.php')));
+            'dendrila_simple_edit_tab' => 'menu', 'dendrila_simple_edit_nav_notice' => $notice), admin_url('admin.php')));
         exit;
     }
 
@@ -98,10 +98,10 @@ final class DSE_Navigation
         if (!self::allowed()) {
             wp_die('Réorganisation du menu non autorisée.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_nav_reorder');
+        check_admin_referer('dendrila_simple_edit_nav_reorder');
         $menu = self::detect();
-        $raw = isset($_POST['dse_nav_ids']) ? wp_unslash($_POST['dse_nav_ids']) : null;
-        $expected = isset($_POST['dse_nav_version']) ? wp_unslash($_POST['dse_nav_version']) : null;
+        $raw = isset($_POST['dendrila_simple_edit_nav_ids']) ? wp_unslash($_POST['dendrila_simple_edit_nav_ids']) : null;
+        $expected = isset($_POST['dendrila_simple_edit_nav_version']) ? wp_unslash($_POST['dendrila_simple_edit_nav_version']) : null;
         if (!$menu || !is_array($raw) || !is_string($expected) || !preg_match('/^[a-f0-9]{64}$/', $expected) ||
             count($raw) !== count($menu['items']) || count($raw) > 100) {
             wp_die('Liste invalide.', 'Requête incorrecte', array('response' => 400));
@@ -148,8 +148,8 @@ final class DSE_Navigation
         if (!self::allowed()) {
             wp_die('Accès refusé.', 'Accès refusé', array('response' => 403));
         }
-        $notice = isset($_GET['dse_nav_notice']) && is_string($_GET['dse_nav_notice']) ?
-            sanitize_key(wp_unslash($_GET['dse_nav_notice'])) : '';
+        $notice = isset($_GET['dendrila_simple_edit_nav_notice']) && is_string($_GET['dendrila_simple_edit_nav_notice']) ?
+            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_nav_notice'])) : '';
         $messages = array(
             'saved' => 'Le nouvel ordre du menu a été enregistré.',
             'unchanged' => 'Aucune modification à enregistrer.',
@@ -159,7 +159,7 @@ final class DSE_Navigation
         if (isset($messages[$notice])) {
             echo '<p class="notice notice-info" role="status">' . esc_html($messages[$notice]) . '</p>';
         }
-        echo '<section class="dse-card"><h2>Ordre des liens du menu principal</h2>';
+        echo '<section class="dendrila-simple-edit-card"><h2>Ordre des liens du menu principal</h2>';
         $menu = self::detect();
         if (!$menu) {
             echo '<p>Le site ne possède pas un menu principal que Simple Edit peut réorganiser sans risque. ';
@@ -176,17 +176,17 @@ final class DSE_Navigation
             echo '<p>Il faut au moins deux liens pour modifier leur ordre.</p></section>';
             return;
         }
-        echo '<form class="dse-nav-reorder" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        echo '<input type="hidden" name="action" value="dse_nav_reorder">';
-        echo '<input type="hidden" name="dse_nav_version" value="' .
+        echo '<form class="dendrila-simple-edit-nav-reorder" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="dendrila_simple_edit_nav_reorder">';
+        echo '<input type="hidden" name="dendrila_simple_edit_nav_version" value="' .
             esc_attr(self::fingerprint($menu)) . '">';
-        wp_nonce_field('dse_nav_reorder');
-        echo '<ol class="dse-nav-sort-list" data-dse-nav-sort>';
+        wp_nonce_field('dendrila_simple_edit_nav_reorder');
+        echo '<ol class="dendrila-simple-edit-nav-sort-list" data-dendrila-simple-edit-nav-sort>';
         foreach ($menu['items'] as $entry) {
-            echo '<li class="dse-nav-sort-item"><input type="hidden" name="dse_nav_ids[]" value="' .
-                (int) $entry['id'] . '"><span class="dse-nav-sort-label">' .
+            echo '<li class="dendrila-simple-edit-nav-sort-item"><input type="hidden" name="dendrila_simple_edit_nav_ids[]" value="' .
+                (int) $entry['id'] . '"><span class="dendrila-simple-edit-nav-sort-label">' .
                 esc_html($entry['label']) . '</span>';
-            echo '<button type="button" class="dse-nav-drag-handle" data-dse-nav-handle ' .
+            echo '<button type="button" class="dendrila-simple-edit-nav-drag-handle" data-dendrila-simple-edit-nav-handle ' .
                 'aria-label="' . esc_attr('Déplacer : ' . $entry['label'] .
                     '. Faites glisser ou utilisez les flèches haut et bas du clavier.') .
                 '" aria-keyshortcuts="ArrowUp ArrowDown" title="Maintenir et faire glisser">' .
@@ -196,7 +196,7 @@ final class DSE_Navigation
         echo '</ol><p class="description">Maintenez la poignée de déplacement, puis faites glisser le lien où vous le souhaitez. ';
         echo 'Au clavier, utilisez les flèches haut et bas sur la poignée. ';
         echo 'L’ordre reste inchangé sur le site tant que vous ne l’avez pas enregistré.</p>';
-        echo '<p role="status" class="dse-nav-sort-status" data-dse-nav-status></p>';
+        echo '<p role="status" class="dendrila-simple-edit-nav-sort-status" data-dendrila-simple-edit-nav-status></p>';
         echo '<p><button type="submit" class="button button-primary">Enregistrer l’ordre du menu</button></p></form>';
         echo '</section>';
     }

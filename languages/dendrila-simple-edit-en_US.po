@@ -1,0 +1,143 @@
+# English (United States) translations for Dendrila Simple Edit.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the Dendrila Simple
+# Edit project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Dendrila Simple Edit 0.0.1\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-11-22 11:36+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en_US\n"
+"Language-Team: en_US <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+msgid "Accueil"
+msgstr "Home"
+
+msgid "Aide"
+msgstr "Help"
+
+msgid "Articles"
+msgstr "Articles"
+
+msgid "Autorisations"
+msgstr "Permissions"
+
+msgid "Boutique"
+msgstr "Shop"
+
+msgid "Changez l’ordre des liens, sans toucher à leur destination."
+msgstr "Change the link order without changing where they lead."
+
+msgid "Choisir ce que chacun peut modifier"
+msgstr "Choose who can edit what"
+
+msgid ""
+"Choisissez la page à modifier et personnalisez son titre, ses textes et "
+"ses images."
+msgstr "Choose the page to edit, and update its title, text and images."
+
+msgid ""
+"Choisissez les outils et les images accessibles aux comptes ayant le rôle"
+" « Édition simple »."
+msgstr "Select tools and images available to users with the Simple Edit role."
+
+msgid "Choisissez un article autorisé et modifiez son titre et son contenu."
+msgstr "Choose an authorized post, and update its title and content."
+
+msgid "Comprendre comment ça marche"
+msgstr "How it works"
+
+msgid ""
+"Consultez les changements précédents et les pages qui utilisent vos "
+"textes."
+msgstr "Review earlier changes and the pages using your text."
+
+msgid "Contenus en attente de validation"
+msgstr "Content awaiting approval"
+
+msgid "Historique"
+msgstr "History"
+
+msgid "Menu principal"
+msgstr "Main menu"
+
+msgid ""
+"Mettez à jour uniquement les informations de produits qui vous ont été "
+"confiées."
+msgstr "Update only the product information assigned to you."
+
+msgid "Modifier les produits"
+msgstr "Edit products"
+
+msgid "Modifier mon site"
+msgstr "Edit my site"
+
+msgid "Modifier un article"
+msgstr "Edit an article"
+
+msgid "Modifier un événement"
+msgstr "Edit an event"
+
+msgid "Modifier une page"
+msgstr "Edit a page"
+
+msgid ""
+"Modifiez le titre, la description, les dates, les horaires et le lieu des"
+" événements autorisés."
+msgstr ""
+"Update the title, description, dates, time and location of permitted "
+"events."
+
+msgid "Newsletters"
+msgstr "Newsletters"
+
+msgid "Pages"
+msgstr "Pages"
+
+msgid "Préparer un envoi"
+msgstr "Prepare a send"
+
+msgid "Préparer une newsletter"
+msgstr "Prepare a newsletter"
+
+msgid ""
+"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez "
+"vos destinataires et lancez votre campagne."
+msgstr ""
+"Write your messages. If you have sending permission, select recipients "
+"and start a campaign."
+
+msgid "Que voulez-vous faire ?"
+msgstr "What would you like to do?"
+
+msgid "Quelques repères pour modifier le site sans risque."
+msgstr "Guidance for editing the site safely."
+
+msgid "Retrouver une ancienne version"
+msgstr "Restore an earlier version"
+
+msgid "Réorganiser le menu principal"
+msgstr "Reorder the main menu"
+
+msgid "Soumettre à validation"
+msgstr "Submit for approval"
+
+msgid "Validations"
+msgstr "Approvals"
+
+msgid "Vérifiez les propositions avant qu’elles ne soient mises en ligne."
+msgstr "Review changes before they go live."
+
+msgid "Événements"
+msgstr "Events"
+

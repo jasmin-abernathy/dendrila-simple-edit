@@ -5,7 +5,7 @@
  */
 if (!defined('ABSPATH')) { exit; }
 
-final class DSE_Builders
+final class Dendrila_Simple_Edit_Builders
 {
     /**
      * Elementor's dedicated Shortcode widget uses settings.shortcode.
@@ -13,7 +13,7 @@ final class DSE_Builders
      */
     public static function elementor_shortcode_locations($field)
     {
-        if (!is_string($field) || !in_array($field, DSE_Plugin::enabled_fields(), true)) {
+        if (!is_string($field) || !in_array($field, Dendrila_Simple_Edit_Plugin::enabled_fields(), true)) {
             return array();
         }
         global $wpdb;
@@ -27,7 +27,7 @@ final class DSE_Builders
                AND pm.meta_key = '_elementor_data'
                AND pm.meta_value LIKE %s
              ORDER BY p.post_title ASC LIMIT 50",
-            '%' . $wpdb->esc_like('dendrila_simple_edit') . '%'
+            '%' . $wpdb->esc_like('dse_text') . '%'
         );
         $rows = $wpdb->get_results($query);
         if (!is_array($rows)) { return array(); }
@@ -79,20 +79,20 @@ final class DSE_Builders
     {
         if (!is_string($text) || !is_string($field)) { return false; }
         // A single, standalone canonical shortcode. No arbitrary PHP/HTML.
-        return trim($text) === '[dendrila_simple_edit field="' . $field . '"]';
+        return trim($text) === '[dse_text field="' . $field . '"]';
     }
 
     public static function render()
     {
-        if (!DSE_Plugin::can_access()) { return; }
-        echo '<section class="dse-card"><h2>Constructeurs de pages</h2>';
+        if (!Dendrila_Simple_Edit_Plugin::can_access()) { return; }
+        echo '<section class="dendrila-simple-edit-card"><h2>Constructeurs de pages</h2>';
         echo '<p>Les textes sont reliés par shortcode. Le plugin ne réécrit pas la structure des constructeurs.</p>';
         echo '<p><strong>Elementor :</strong> placez le code dans un widget Shortcode dédié. Il apparaîtra dans les emplacements repérés ci-dessous.</p>';
         echo '<p><strong>Divi 4 et Divi 5 :</strong> utilisez un module acceptant les shortcodes et vérifiez son rendu en aperçu public. Ne remplacez pas les sections ou les attributs du constructeur.</p>';
-        foreach (DSE_Plugin::enabled_fields() as $field) {
+        foreach (Dendrila_Simple_Edit_Plugin::enabled_fields() as $field) {
             $locations = self::elementor_shortcode_locations($field);
             if (!$locations) { continue; }
-            $definitions = DSE_Plugin::definitions();
+            $definitions = Dendrila_Simple_Edit_Plugin::definitions();
             echo '<h3>' . esc_html($definitions[$field]['label']) . '</h3>';
             echo '<p>Widgets Elementor Shortcode détectés dans ces pages publiées (rendu public à confirmer) :</p><ul>';
             foreach ($locations as $location) {

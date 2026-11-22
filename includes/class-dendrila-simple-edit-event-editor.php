@@ -2,14 +2,15 @@
 /** Explicitly delegated editing of published The Events Calendar events. */
 if (!defined('ABSPATH')) { exit; }
 
-final class DSE_Event_Editor
+final class Dendrila_Simple_Edit_Event_Editor
 {
-    const OPTION = 'dse_visual_editable_events';
+    const OPTION = 'dendrila_simple_edit_visual_editable_events';
 
     public static function boot()
     {
-        add_action('admin_post_dse_event_permissions', array(__CLASS__, 'configure'));
-        add_action('admin_post_dse_event_save', array(__CLASS__, 'save'));
+        add_action('admin_post_dendrila_simple_edit_event_permissions', array(__CLASS__, 'configure'));
+        add_action('admin_post_dendrila_simple_edit_event_save', array(__CLASS__, 'save'));
+        add_action('admin_post_dendrila_simple_edit_event_create_venue', array(__CLASS__, 'create_venue'));
         add_filter('the_content', array(__CLASS__, 'frontend_colors'), 20);
     }
 
@@ -18,7 +19,7 @@ final class DSE_Event_Editor
         if (!is_singular('tribe_events') || !in_the_loop() || !is_main_query()) { return $html; }
         $post = get_post(get_the_ID());
         if (!$post || !self::eligible((int) $post->ID)) { return $html; }
-        return DSE_Block_Editor::frontend_colors($html);
+        return Dendrila_Simple_Edit_Block_Editor::frontend_colors($html);
     }
 
     public static function available()
@@ -37,7 +38,7 @@ final class DSE_Event_Editor
 
     private static function compatible($post)
     {
-        return $post && DSE_Block_Editor::is_safe_for_editor($post->post_content) &&
+        return $post && Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($post->post_content) &&
             get_post_meta($post->ID, '_elementor_edit_mode', true) !== 'builder' &&
             !get_post_meta($post->ID, '_elementor_data', true) &&
             get_post_meta($post->ID, '_et_pb_use_builder', true) !== 'on';
@@ -71,8 +72,8 @@ final class DSE_Event_Editor
     private static function redirect($notice, $id = 0)
     {
         wp_safe_redirect(add_query_arg(array(
-            'page' => 'dendrila-simple-edit', 'dse_tab' => 'evenements',
-            'dse_enotice' => $notice, 'dse_eid' => (int) $id
+            'page' => 'dendrila-simple-edit', 'dendrila_simple_edit_tab' => 'evenements',
+            'dendrila_simple_edit_enotice' => $notice, 'dendrila_simple_edit_eid' => (int) $id
         ), admin_url('admin.php')));
         exit;
     }
@@ -82,8 +83,8 @@ final class DSE_Event_Editor
         if (!current_user_can('manage_options')) {
             wp_die('Réservé à l’administration.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_event_permissions');
-        $submitted = isset($_POST['dse_event_ids']) ? wp_unslash($_POST['dse_event_ids']) : array();
+        check_admin_referer('dendrila_simple_edit_event_permissions');
+        $submitted = isset($_POST['dendrila_simple_edit_event_ids']) ? wp_unslash($_POST['dendrila_simple_edit_event_ids']) : array();
         if (!is_array($submitted) || count($submitted) > 100) {
             wp_die('Sélection invalide.', 'Requête incorrecte', array('response' => 400));
         }
@@ -106,21 +107,21 @@ final class DSE_Event_Editor
 
     public static function save()
     {
-        if (!DSE_Plugin::can_edit()) {
+        if (!Dendrila_Simple_Edit_Plugin::can_edit()) {
             wp_die('Vous ne pouvez pas modifier cet événement.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer('dse_event_save');
-        $id = isset($_POST['dse_eid']) && ctype_digit((string) $_POST['dse_eid']) ? (int) $_POST['dse_eid'] : 0;
+        check_admin_referer('dendrila_simple_edit_event_save');
+        $id = isset($_POST['dendrila_simple_edit_eid']) && ctype_digit((string) $_POST['dendrila_simple_edit_eid']) ? (int) $_POST['dendrila_simple_edit_eid'] : 0;
         $post = self::eligible($id);
         if (!$post) { self::redirect('forbidden'); }
         // A full-day event must not silently turn into a timed event.
         if (self::date_meta($id, '_EventAllDay') === 'yes') { self::redirect('all_day', $id); }
-        $expected = isset($_POST['dse_eversion']) ? wp_unslash($_POST['dse_eversion']) : null;
-        $title = isset($_POST['dse_etitle']) ? wp_unslash($_POST['dse_etitle']) : null;
-        $body = isset($_POST['dse_ebody']) ? wp_unslash($_POST['dse_ebody']) : null;
-        $start_raw = isset($_POST['dse_estart']) ? wp_unslash($_POST['dse_estart']) : null;
-        $end_raw = isset($_POST['dse_eend']) ? wp_unslash($_POST['dse_eend']) : null;
-        $venue_raw = isset($_POST['dse_evenue']) ? wp_unslash($_POST['dse_evenue']) : null;
+        $expected = isset($_POST['dendrila_simple_edit_eversion']) ? wp_unslash($_POST['dendrila_simple_edit_eversion']) : null;
+        $title = isset($_POST['dendrila_simple_edit_etitle']) ? wp_unslash($_POST['dendrila_simple_edit_etitle']) : null;
+        $body = isset($_POST['dendrila_simple_edit_ebody']) ? wp_unslash($_POST['dendrila_simple_edit_ebody']) : null;
+        $start_raw = isset($_POST['dendrila_simple_edit_estart']) ? wp_unslash($_POST['dendrila_simple_edit_estart']) : null;
+        $end_raw = isset($_POST['dendrila_simple_edit_eend']) ? wp_unslash($_POST['dendrila_simple_edit_eend']) : null;
+        $venue_raw = isset($_POST['dendrila_simple_edit_evenue']) ? wp_unslash($_POST['dendrila_simple_edit_evenue']) : null;
         if (!is_string($expected) || !preg_match('/^[a-f0-9]{64}$/', $expected) ||
             !is_string($title) || strlen($title) > 800 ||
             !is_string($body) || strlen($body) > 100000 ||
@@ -132,8 +133,8 @@ final class DSE_Event_Editor
         if ($title === '' || (function_exists('mb_strlen') ? mb_strlen($title, 'UTF-8') : strlen($title)) > 180) {
             wp_die('Titre manquant ou trop long.', 'Requête incorrecte', array('response' => 400));
         }
-        $clean = DSE_Block_Editor::clean($body);
-        if (!DSE_Block_Editor::is_safe_for_editor($clean)) {
+        $clean = Dendrila_Simple_Edit_Block_Editor::clean($body);
+        if (!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($clean)) {
             wp_die('Contenu incompatible avec cet éditeur.', 'Requête incorrecte', array('response' => 400));
         }
         $timezone_label = self::date_meta($id, '_EventTimezone');
@@ -144,7 +145,7 @@ final class DSE_Event_Editor
         if (!$start || !$end || $end->getTimestamp() <= $start->getTimestamp()) {
             self::redirect('bad_dates', $id);
         }
-        // Location is chosen from existing, public venues only. No delegated venue creation or editing.
+        // Location must be an existing, published TEC venue; creation is handled separately above.
         $venue_id = (int) $venue_raw;
         if ($venue_id && (get_post_type($venue_id) !== 'tribe_venue' ||
             get_post_status($venue_id) !== 'publish' || post_password_required($venue_id))) {
@@ -177,10 +178,51 @@ final class DSE_Event_Editor
         self::redirect('saved', $id);
     }
 
+
+    public static function create_venue()
+    {
+        if (!Dendrila_Simple_Edit_Plugin::can_edit() || !self::available() || !function_exists('tribe_venues')) {
+            wp_die('Création de lieu non autorisée.', 'Accès refusé', array('response' => 403));
+        }
+        check_admin_referer('dendrila_simple_edit_event_create_venue');
+        $id = isset($_POST['dendrila_simple_edit_eid']) ? absint(wp_unslash($_POST['dendrila_simple_edit_eid'])) : 0;
+        $post = self::eligible($id);
+        if (!$post) { self::redirect('forbidden'); }
+        $expected = isset($_POST['dendrila_simple_edit_eversion']) ? wp_unslash($_POST['dendrila_simple_edit_eversion']) : '';
+        if (!is_string($expected) || !hash_equals(self::fingerprint($post), $expected)) {
+            self::redirect('conflict', $id);
+        }
+        $fields = array('venue'=>'name', 'address'=>'address', 'city'=>'city', 'zip'=>'zip', 'country'=>'country', 'phone'=>'phone');
+        $venue = array('status' => 'publish', 'show_map' => false, 'show_map_link' => false);
+        foreach ($fields as $key => $param) {
+            $raw = isset($_POST['dendrila_simple_edit_venue_' . $param]) ? wp_unslash($_POST['dendrila_simple_edit_venue_' . $param]) : '';
+            if (!is_string($raw) || strlen($raw) > 480) {
+                wp_die('Champ du lieu invalide.', 'Requête incorrecte', array('response' => 400));
+            }
+            $venue[$key] = sanitize_text_field($raw);
+        }
+        if ($venue['venue'] === '' || strlen($venue['venue']) > 180) {
+            wp_die('Indiquez le nom du lieu.', 'Requête incorrecte', array('response' => 400));
+        }
+        // TEC's ORM applies its own venue metadata and hooks.
+        try { $created = tribe_venues()->set_args($venue)->create(); }
+        catch (Throwable $error) { self::redirect('venue_error', $id); }
+        if (is_wp_error($created) || !$created) { self::redirect('venue_error', $id); }
+        $new_id = is_object($created) && isset($created->ID) ? (int) $created->ID : (int) $created;
+        if ($new_id <= 0 || get_post_type($new_id) !== 'tribe_venue') {
+            self::redirect('venue_error', $id);
+        }
+        wp_safe_redirect(add_query_arg(array('page' => 'dendrila-simple-edit',
+            'dendrila_simple_edit_tab' => 'evenements', 'dendrila_simple_edit_eid' => $id,
+            'dendrila_simple_edit_enotice' => 'venue_created',
+            'dendrila_simple_edit_new_venue' => $new_id), admin_url('admin.php')));
+        exit;
+    }
+
     public static function render_admin()
     {
         if (!current_user_can('manage_options')) { return; }
-        echo '<section class="dse-card"><h2>Événements autorisés</h2>';
+        echo '<section class="dendrila-simple-edit-card"><h2>Événements autorisés</h2>';
         if (!self::available()) {
             echo '<p>Activez The Events Calendar pour utiliser cette rubrique.</p></section>';
             return;
@@ -190,11 +232,11 @@ final class DSE_Event_Editor
             'posts_per_page' => 100, 'orderby' => 'modified', 'order' => 'DESC'));
         echo '<p>Choisissez les événements que les comptes Édition simple pourront modifier. Les modèles complexes restent protégés.</p>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        echo '<input type="hidden" name="action" value="dse_event_permissions">';
-        wp_nonce_field('dse_event_permissions');
+        echo '<input type="hidden" name="action" value="dendrila_simple_edit_event_permissions">';
+        wp_nonce_field('dendrila_simple_edit_event_permissions');
         foreach ($posts as $post) {
             if (!self::eligible($post->ID, false)) { continue; }
-            echo '<label class="dse-check"><input type="checkbox" name="dse_event_ids[]" value="' . (int) $post->ID . '" ' .
+            echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_event_ids[]" value="' . (int) $post->ID . '" ' .
                 checked(in_array((int) $post->ID, $ids, true), true, false) . '> ' .
                 esc_html($post->post_title) . '</label>';
         }
@@ -204,69 +246,92 @@ final class DSE_Event_Editor
     public static function render()
     {
         if (!self::available()) {
-            echo '<section class="dse-card"><h3>Calendrier indisponible</h3><p>Activez The Events Calendar.</p></section>';
+            echo '<section class="dendrila-simple-edit-card"><h3>Calendrier indisponible</h3><p>Activez The Events Calendar.</p></section>';
             return;
         }
         $ids = self::allowed_ids();
-        $selected = isset($_GET['dse_eid']) ? absint($_GET['dse_eid']) : 0;
+        $selected = isset($_GET['dendrila_simple_edit_eid']) ? absint($_GET['dendrila_simple_edit_eid']) : 0;
         $notices = array('saved' => 'Événement enregistré.', 'permissions' => 'Autorisations mises à jour.',
             'conflict' => 'Cet événement a changé : rechargez avant de recommencer.',
             'forbidden' => 'Événement non autorisé.', 'bad_dates' => 'Vérifiez les dates et les horaires.',
             'bad_venue' => 'Lieu non autorisé.', 'all_day' => 'Cet événement sur toute la journée doit être modifié dans The Events Calendar.',
-            'error' => 'Enregistrement non confirmé.');
-        $notice = isset($_GET['dse_enotice']) ? sanitize_key(wp_unslash($_GET['dse_enotice'])) : '';
+            'error' => 'Enregistrement non confirmé.',
+            'venue_created' => 'Lieu créé. Vérifiez sa sélection, puis enregistrez l’événement pour l’associer.',
+            'venue_error' => 'Le lieu n’a pas pu être créé.');
+        $notice = isset($_GET['dendrila_simple_edit_enotice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_enotice'])) : '';
         if (isset($notices[$notice])) { echo '<p class="notice notice-info" role="status">' . esc_html($notices[$notice]) . '</p>'; }
-        echo '<section class="dse-card"><h2>Choisir un événement</h2><div class="dse-post-choice">';
+        echo '<section class="dendrila-simple-edit-card"><h2>Choisir un événement</h2><div class="dendrila-simple-edit-post-choice">';
         $found = 0;
         foreach ($ids as $id) {
             $post = self::eligible($id);
             if (!$post) { continue; }
             $found++;
             echo '<a class="button ' . ($selected === $id ? 'button-primary' : 'button-secondary') . '" href="' .
-                esc_url(add_query_arg(array('page' => 'dendrila-simple-edit', 'dse_tab' => 'evenements',
-                    'dse_eid' => $id), admin_url('admin.php'))) . '">' . esc_html($post->post_title) . '</a> ';
+                esc_url(add_query_arg(array('page' => 'dendrila-simple-edit', 'dendrila_simple_edit_tab' => 'evenements',
+                    'dendrila_simple_edit_eid' => $id), admin_url('admin.php'))) . '">' . esc_html($post->post_title) . '</a> ';
         }
         if (!$found) { echo '<p>Aucun événement autorisé. L’administrateur peut en choisir dans Autorisations.</p>'; }
         echo '</div></section>';
         $post = $selected ? self::eligible($selected) : false;
         if (!$post) { return; }
         if (self::date_meta($post->ID, '_EventAllDay') === 'yes') {
-            echo '<section class="dse-card"><p>Les événements sur toute la journée restent à modifier dans The Events Calendar pour préserver leurs dates.</p></section>';
+            echo '<section class="dendrila-simple-edit-card"><p>Les événements sur toute la journée restent à modifier dans The Events Calendar pour préserver leurs dates.</p></section>';
             return;
         }
         $tz = self::date_meta($post->ID, '_EventTimezone');
         $start = str_replace(' ', 'T', substr(self::date_meta($post->ID, '_EventStartDate'), 0, 16));
         $end = str_replace(' ', 'T', substr(self::date_meta($post->ID, '_EventEndDate'), 0, 16));
         $current_venue = (int) tribe_get_venue_id($post->ID);
-        echo '<form class="dse-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        $new_venue = isset($_GET['dendrila_simple_edit_new_venue']) ? absint($_GET['dendrila_simple_edit_new_venue']) : 0;
+        if ($new_venue && get_post_type($new_venue) === 'tribe_venue' && get_post_status($new_venue) === 'publish') {
+            $current_venue = $new_venue;
+        }
+        echo '<form class="dendrila-simple-edit-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         echo '<h2>Modifier cet événement</h2>';
-        echo '<input type="hidden" name="action" value="dse_event_save">';
-        echo '<input type="hidden" name="dse_eid" value="' . (int) $post->ID . '">';
-        echo '<input type="hidden" name="dse_eversion" value="' . esc_attr(self::fingerprint($post)) . '">';
-        wp_nonce_field('dse_event_save');
-        echo '<div class="dse-field"><label for="dse-event-title">Titre de l’événement</label>';
-        echo '<input type="text" id="dse-event-title" name="dse_etitle" required maxlength="180" value="' .
+        echo '<input type="hidden" name="action" value="dendrila_simple_edit_event_save">';
+        echo '<input type="hidden" name="dendrila_simple_edit_eid" value="' . (int) $post->ID . '">';
+        echo '<input type="hidden" name="dendrila_simple_edit_eversion" value="' . esc_attr(self::fingerprint($post)) . '">';
+        wp_nonce_field('dendrila_simple_edit_event_save');
+        echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-event-title">Titre de l’événement</label>';
+        echo '<input type="text" id="dendrila-simple-edit-event-title" name="dendrila_simple_edit_etitle" required maxlength="180" value="' .
             esc_attr($post->post_title) . '"></div>';
-        echo '<div class="dse-field"><label for="dse-event-start">Début</label>';
-        echo '<input type="datetime-local" id="dse-event-start" name="dse_estart" required value="' .
+        echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-event-start">Début</label>';
+        echo '<input type="datetime-local" id="dendrila-simple-edit-event-start" name="dendrila_simple_edit_estart" required value="' .
             esc_attr($start) . '"></div>';
-        echo '<div class="dse-field"><label for="dse-event-end">Fin</label>';
-        echo '<input type="datetime-local" id="dse-event-end" name="dse_eend" required value="' .
+        echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-event-end">Fin</label>';
+        echo '<input type="datetime-local" id="dendrila-simple-edit-event-end" name="dendrila_simple_edit_eend" required value="' .
             esc_attr($end) . '"></div>';
         echo '<p class="description">Fuseau horaire : ' . esc_html($tz ?: wp_timezone_string()) . '. Les événements sur toute la journée ne sont pas encore pris en charge par cet éditeur.</p>';
         $venues = get_posts(array('post_type' => 'tribe_venue', 'post_status' => 'publish',
             'posts_per_page' => 100, 'orderby' => 'title', 'order' => 'ASC'));
-        echo '<div class="dse-field"><label for="dse-event-venue">Lieu existant</label>';
-        echo '<select id="dse-event-venue" name="dse_evenue"><option value="0">Aucun lieu / conserver le lieu actuel</option>';
+        if ($new_venue && !in_array($new_venue, array_map(static function ($venue) {
+            return (int)$venue->ID;
+        }, $venues), true)) { $venues[] = get_post($new_venue); }
+        echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-event-venue">Lieu existant</label>';
+        echo '<select id="dendrila-simple-edit-event-venue" name="dendrila_simple_edit_evenue"><option value="0">Aucun lieu / conserver le lieu actuel</option>';
         foreach ($venues as $venue) {
             echo '<option value="' . (int) $venue->ID . '" ' .
                 selected($current_venue, $venue->ID, false) . '>' . esc_html($venue->post_title) . '</option>';
         }
-        echo '</select><p class="description">Les lieux sont créés et gérés dans The Events Calendar par l’administrateur.</p></div>';
-        echo '<div class="dse-block-editor" data-dse-block-editor data-allow-title="0">';
-        echo '<label for="dse-event-body">Description</label>';
-        echo '<textarea id="dse-event-body" data-dse-editor-source name="dse_ebody" rows="10">' .
+        echo '</select><p class="description">Sélectionnez un lieu existant, ou créez-en un nouveau ci-dessous.</p></div>';
+        echo '<div class="dendrila-simple-edit-block-editor" data-dendrila-simple-edit-block-editor data-allow-title="0">';
+        echo '<label for="dendrila-simple-edit-event-body">Description</label>';
+        echo '<textarea id="dendrila-simple-edit-event-body" data-dendrila-simple-edit-editor-source name="dendrila_simple_edit_ebody" rows="10">' .
             esc_textarea($post->post_content) . '</textarea></div>';
         echo '<p><button class="button button-primary" type="submit">Enregistrer l’événement</button></p></form>';
+        Dendrila_Simple_Edit_ACF::render_fields_for($post->ID);
+        echo '<details class="dendrila-simple-edit-card"><summary>Créer un lieu pour cet événement</summary>' .
+            '<p>Ajoutez le lieu, puis choisissez-le dans le formulaire de l’événement. Aucun lieu n’est créé pendant la simple saisie.</p>' .
+            '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        echo '<input type="hidden" name="action" value="dendrila_simple_edit_event_create_venue">';
+        echo '<input type="hidden" name="dendrila_simple_edit_eid" value="' . (int) $post->ID . '">';
+        echo '<input type="hidden" name="dendrila_simple_edit_eversion" value="' . esc_attr(self::fingerprint($post)) . '">';
+        wp_nonce_field('dendrila_simple_edit_event_create_venue');
+        foreach (array('name'=>'Nom du lieu *', 'address'=>'Adresse', 'city'=>'Ville', 'zip'=>'Code postal', 'country'=>'Pays', 'phone'=>'Téléphone') as $key => $label) {
+            echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-venue-' . esc_attr($key) . '">' . esc_html($label) . '</label>';
+            echo '<input type="text" id="dendrila-simple-edit-venue-' . esc_attr($key) . '" name="dendrila_simple_edit_venue_' . esc_attr($key) . '" maxlength="180"' .
+                ($key === 'name' ? ' required' : '') . '></div>';
+        }
+        echo '<p><button class="button button-secondary" type="submit">Créer ce lieu</button></p></form></details>';
     }
 }
