@@ -138,8 +138,8 @@ final class Dendrila_Simple_Edit_ACF
             wp_die('Configuration réservée à l’administration.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_acf_add');
-        $raw_post = isset($_POST['dendrila_simple_edit_post_id']) ? wp_unslash($_POST['dendrila_simple_edit_post_id']) : '';
-        $key = isset($_POST['dendrila_simple_edit_acf_key']) ? wp_unslash($_POST['dendrila_simple_edit_acf_key']) : '';
+        $raw_post = isset($_POST['dendrila_simple_edit_post_id']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_post_id'])) : '';
+        $key = isset($_POST['dendrila_simple_edit_acf_key']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_acf_key'])) : '';
         if (!is_string($raw_post) || !ctype_digit($raw_post) || !is_string($key)) {
             wp_die('Identifiant ou clé ACF incorrect.', 'Requête incorrecte', array('response' => 400));
         }
@@ -172,7 +172,7 @@ final class Dendrila_Simple_Edit_ACF
             wp_die('Configuration réservée à l’administration.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_acf_remove');
-        $id = isset($_POST['dendrila_simple_edit_mapping']) ? wp_unslash($_POST['dendrila_simple_edit_mapping']) : null;
+        $id = isset($_POST['dendrila_simple_edit_mapping']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_mapping'])) : null;
         $all = self::mappings();
         if (!is_string($id) || !preg_match('/^acf_[a-f0-9]{16}$/', $id) ||
             !isset($all[$id])) {
@@ -198,7 +198,6 @@ final class Dendrila_Simple_Edit_ACF
     private static function sanitize($field, $input)
     {
         if (!is_string($input)) { return false; }
-        $input = wp_unslash($input);
         $kind = $field['type'];
         if ($kind === 'textarea') {
             $out = sanitize_textarea_field($input);
@@ -208,7 +207,7 @@ final class Dendrila_Simple_Edit_ACF
         } elseif ($kind === 'url') {
             $out = esc_url_raw($input, array('https', 'http'));
             if ($out !== '' && (!filter_var($out, FILTER_VALIDATE_URL) ||
-                !in_array(strtolower((string) parse_url($out, PHP_URL_SCHEME)), array('http', 'https'), true))) {
+                !in_array(strtolower((string) wp_parse_url($out, PHP_URL_SCHEME)), array('http', 'https'), true))) {
                 return false;
             }
         } else {
@@ -228,9 +227,9 @@ final class Dendrila_Simple_Edit_ACF
             wp_die('Vous ne pouvez pas modifier ce champ.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_acf_save');
-        $id = isset($_POST['dendrila_simple_edit_mapping']) ? wp_unslash($_POST['dendrila_simple_edit_mapping']) : null;
-        $expected = isset($_POST['dendrila_simple_edit_acf_version']) ? wp_unslash($_POST['dendrila_simple_edit_acf_version']) : null;
-        $input = isset($_POST['dendrila_simple_edit_acf_value']) ? $_POST['dendrila_simple_edit_acf_value'] : null;
+        $id = isset($_POST['dendrila_simple_edit_mapping']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_mapping'])) : null;
+        $expected = isset($_POST['dendrila_simple_edit_acf_version']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_acf_version'])) : null;
+        $input = isset($_POST['dendrila_simple_edit_acf_value']) ? sanitize_textarea_field(wp_unslash($_POST['dendrila_simple_edit_acf_value'])) : null;
         if (!is_string($id) || !is_string($expected) ||
             preg_match('/^[a-f0-9]{64}$/', $expected) !== 1) {
             wp_die('Requête incorrecte.', 'Requête incorrecte', array('response' => 400));
@@ -240,7 +239,7 @@ final class Dendrila_Simple_Edit_ACF
         $field_key = $all[$id]['field_key'] ?? '';
         if ($id === '' && current_user_can('manage_options')) {
             $post_id = absint($_POST['dendrila_simple_edit_post_id'] ?? 0);
-            $field_key = isset($_POST['dendrila_simple_edit_acf_key']) ? wp_unslash($_POST['dendrila_simple_edit_acf_key']) : '';
+            $field_key = isset($_POST['dendrila_simple_edit_acf_key']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_acf_key'])) : '';
         }
         $resolved = $id === '' && current_user_can('edit_post', $post_id) ?
             self::resolve($post_id, $field_key) : self::mapped($id);
@@ -319,18 +318,6 @@ final class Dendrila_Simple_Edit_ACF
                 '" name="dendrila_simple_edit_acf_value" value="' . esc_attr($value) . '">';
         }
         echo '<p><button type="submit" class="button button-primary">Enregistrer ce texte</button></p></form>';
-    }
-
-    public static function render_fields_for($post_id)
-    {
-        if (!Dendrila_Simple_Edit_Plugin::can_edit() || !self::available()) { return; }
-        foreach (self::mappings() as $id=>$mapping) {
-            if ((int)($mapping['post_id'] ?? 0) !== (int)$post_id) { continue; }
-            $resolved = self::mapped($id);
-            if (!$resolved) { continue; }
-            $value = self::raw_value($resolved,$post_id);
-            if ($value !== false) { self::edit_field($id,$post_id,$resolved['field'],$value); }
-        }
     }
 
     public static function render($permissions = false)

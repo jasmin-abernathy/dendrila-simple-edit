@@ -11,6 +11,10 @@ $GLOBALS['dendrila_simple_edit_options'] = array(
 );
 $GLOBALS['dendrila_simple_edit_caps'] = array('read', 'dendrila_simple_edit_access', 'dendrila_simple_edit_edit', 'dendrila_simple_edit_publish');
 
+function __($value, $domain = null) { return $value; }
+function esc_html__($value, $domain = null) { return $value; }
+function user_can($id, $cap) { return current_user_can($cap); }
+function get_userdata($id) { return (object) array('ID' => (int) $id, 'roles' => array('dendrila_simple_editor')); }
 function get_option($key, $fallback = null) { return isset($GLOBALS['dendrila_simple_edit_options'][$key]) ? $GLOBALS['dendrila_simple_edit_options'][$key] : $fallback; }
 function current_user_can($cap) { return in_array($cap, $GLOBALS['dendrila_simple_edit_caps'], true); }
 function wp_unslash($input) { return is_string($input) ? stripslashes($input) : $input; }
@@ -43,6 +47,8 @@ class Dendrila_Simple_Edit_Test_DB {
 $wpdb = new Dendrila_Simple_Edit_Test_DB();
 
 require_once dirname(__DIR__) . '/includes/class-dendrila-simple-edit-approvals.php';
+require_once dirname(__DIR__) . '/includes/class-dendrila-simple-edit-setup.php';
+require_once dirname(__DIR__) . '/includes/class-dendrila-simple-edit-modules.php';
 require dirname(__DIR__) . '/includes/class-dendrila-simple-edit-plugin.php';
 function expect($condition, $message) {
     if (!$condition) { fwrite(STDERR, "FAIL: {$message}\n"); exit(1); }

@@ -21,7 +21,7 @@ final class Dendrila_Simple_Edit_Approvals
 
     public static function required($kind)
     {
-        if (!in_array($kind, array('page', 'post', 'newsletter'), true)) { return false; }
+        if (!in_array($kind, array('page', 'post', 'newsletter', 'product'), true)) { return false; }
         $settings = self::settings();
         return !empty($settings['require_' . $kind]);
     }
@@ -41,7 +41,7 @@ final class Dendrila_Simple_Edit_Approvals
 
     public static function is_reviewer()
     {
-        foreach (array('page', 'post', 'newsletter') as $kind) {
+        foreach (array('page', 'post', 'newsletter', 'product') as $kind) {
             if (self::can_approve($kind)) { return true; }
         }
         return false;
@@ -54,7 +54,7 @@ final class Dendrila_Simple_Edit_Approvals
         }
         check_admin_referer('dendrila_simple_edit_approval_configure');
         $submitted = isset($_POST['dendrila_simple_edit_approval_roles']) ?
-            wp_unslash($_POST['dendrila_simple_edit_approval_roles']) : array();
+            map_deep(wp_unslash($_POST['dendrila_simple_edit_approval_roles']), 'sanitize_text_field') : array();
         if (!is_array($submitted) || count($submitted) > 50) {
             wp_die('Rôles invalides.', 'Requête incorrecte', array('response' => 400));
         }
@@ -67,7 +67,7 @@ final class Dendrila_Simple_Edit_Approvals
             $roles[] = $role;
         }
         $settings = array('roles' => array_values(array_unique($roles)));
-        foreach (array('page', 'post', 'newsletter') as $kind) {
+        foreach (array('page', 'post', 'newsletter', 'product') as $kind) {
             $settings['require_' . $kind] =
                 isset($_POST['dendrila_simple_edit_approval_' . $kind]) &&
                 $_POST['dendrila_simple_edit_approval_' . $kind] === '1';
@@ -88,17 +88,17 @@ final class Dendrila_Simple_Edit_Approvals
         $status = $target_status === 'publish' ? 'publish' : $post->post_status;
         if (!in_array($status, array('draft','publish'), true)) { return false; }
         $proposal = array(
-            'image' => $image,
             'origin' => Dendrila_Simple_Edit_Post_Editor::fingerprint($post),
             'title' => $title,
             'body' => $body,
             'target_status' => $status,
+            'image' => $post->post_type === 'post' && is_array($image) ? $image : null,
             'user' => get_current_user_id(),
             'created_at' => current_time('mysql', true),
         );
         $existing = get_post_meta($post->ID, self::PENDING, true);
         if ($existing === $proposal) { return true; }
-        return (bool) update_post_meta($post->ID, self::PENDING, wp_slash($proposal));
+        return (bool) update_post_meta($post->ID, self::PENDING, $proposal);
     }
 
     public static function decide()
@@ -107,13 +107,12 @@ final class Dendrila_Simple_Edit_Approvals
             wp_die('Contenu manquant.', 'Requête incorrecte', array('response' => 400));
         }
         $id = absint(wp_unslash($_POST['dendrila_simple_edit_approval_post']));
-        
+        check_admin_referer('dendrila_simple_edit_approve_content_' . $id);
         $post = get_post($id);
         if (!$post || !self::can_approve($post->post_type)) {
             wp_die('Validation non autorisée.', 'Accès refusé', array('response' => 403));
         }
         $proposal = get_post_meta($id, self::PENDING, true);
-        check_admin_referer('dendrila_simple_edit_approve_content_' . $id . '_' . hash('sha256', serialize($proposal)));
         if (!is_array($proposal) || !isset($proposal['origin'], $proposal['title'], $proposal['body'], $proposal['target_status']) ||
             !is_string($proposal['origin']) || !hash_equals(
                 Dendrila_Simple_Edit_Post_Editor::fingerprint($post), $proposal['origin'])) {
@@ -130,15 +129,25 @@ final class Dendrila_Simple_Edit_Approvals
                 !Dendrila_Simple_Edit_Post_Editor::is_layout_safe($post)) {
                 self::redirect('invalid');
             }
+            if ($post->post_type === 'post' && isset($proposal['image']) && is_array($proposal['image'])) {
+                $image = $proposal['image'];
+                if (!isset($image['id'], $image['alt'], $image['description']) ||
+                    ($image['id'] && (!wp_attachment_is_image((int)$image['id']) || !$image['alt'] ||
+                        ((int)$image['id'] !== (int)get_post_thumbnail_id($post) && !Dendrila_Simple_Edit_Media::allowed_image((int)$image['id']))))) {
+                    self::redirect('invalid');
+                }
+            }
             $done = wp_update_post(array('ID' => $id,
                 'post_title' => wp_slash($proposal['title']),
                 'post_content' => wp_slash($proposal['body']),
                 'post_status' => $proposal['target_status']), true);
             if (is_wp_error($done) || !$done) { self::redirect('error'); }
-            Dendrila_Simple_Edit_Post_Editor::apply_illustration($id,$proposal['image'] ?? null);
-            update_post_meta($id,'_dendrila_simple_edit_last_edit',time());
+            if ($post->post_type === 'post' && isset($proposal['image']) && is_array($proposal['image'])) {
+                Dendrila_Simple_Edit_Post_Editor::apply_illustration($id, $proposal['image']);
+            }
+            update_post_meta($id, '_dendrila_simple_edit_last_edit', time());
         }
-        delete_post_meta($id, self::PENDING, $proposal);
+        delete_post_meta($id, self::PENDING);
         self::redirect($decision === 'approve' ? 'approved' : 'rejected');
     }
 
@@ -206,7 +215,7 @@ final class Dendrila_Simple_Edit_Approvals
             echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             echo '<input type="hidden" name="action" value="dendrila_simple_edit_approve_content">';
             echo '<input type="hidden" name="dendrila_simple_edit_approval_post" value="' . (int) $post->ID . '">';
-            wp_nonce_field('dendrila_simple_edit_approve_content_' . $post->ID . '_' . hash('sha256', serialize($pending)));
+            wp_nonce_field('dendrila_simple_edit_approve_content_' . $post->ID);
             echo '<button type="submit" name="dendrila_simple_edit_approval_decision" value="approve" class="button button-primary">Valider et appliquer</button> ';
             echo '<button type="submit" name="dendrila_simple_edit_approval_decision" value="reject" class="button">Refuser</button></form></article>';
         }

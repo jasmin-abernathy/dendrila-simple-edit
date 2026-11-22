@@ -84,7 +84,7 @@ final class Dendrila_Simple_Edit_Event_Editor
             wp_die('Réservé à l’administration.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_event_permissions');
-        $submitted = isset($_POST['dendrila_simple_edit_event_ids']) ? wp_unslash($_POST['dendrila_simple_edit_event_ids']) : array();
+        $submitted = isset($_POST['dendrila_simple_edit_event_ids']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_event_ids']), 'sanitize_text_field') : array();
         if (!is_array($submitted) || count($submitted) > 100) {
             wp_die('Sélection invalide.', 'Requête incorrecte', array('response' => 400));
         }
@@ -111,17 +111,18 @@ final class Dendrila_Simple_Edit_Event_Editor
             wp_die('Vous ne pouvez pas modifier cet événement.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_event_save');
-        $id = isset($_POST['dendrila_simple_edit_eid']) && ctype_digit((string) $_POST['dendrila_simple_edit_eid']) ? (int) $_POST['dendrila_simple_edit_eid'] : 0;
+        $raw_id = isset($_POST['dendrila_simple_edit_eid']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_eid'])) : '';
+        $id = ctype_digit($raw_id) ? (int) $raw_id : 0;
         $post = self::eligible($id);
         if (!$post) { self::redirect('forbidden'); }
         // A full-day event must not silently turn into a timed event.
         if (self::date_meta($id, '_EventAllDay') === 'yes') { self::redirect('all_day', $id); }
-        $expected = isset($_POST['dendrila_simple_edit_eversion']) ? wp_unslash($_POST['dendrila_simple_edit_eversion']) : null;
-        $title = isset($_POST['dendrila_simple_edit_etitle']) ? wp_unslash($_POST['dendrila_simple_edit_etitle']) : null;
-        $body = isset($_POST['dendrila_simple_edit_ebody']) ? wp_unslash($_POST['dendrila_simple_edit_ebody']) : null;
-        $start_raw = isset($_POST['dendrila_simple_edit_estart']) ? wp_unslash($_POST['dendrila_simple_edit_estart']) : null;
-        $end_raw = isset($_POST['dendrila_simple_edit_eend']) ? wp_unslash($_POST['dendrila_simple_edit_eend']) : null;
-        $venue_raw = isset($_POST['dendrila_simple_edit_evenue']) ? wp_unslash($_POST['dendrila_simple_edit_evenue']) : null;
+        $expected = isset($_POST['dendrila_simple_edit_eversion']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_eversion'])) : null;
+        $title = isset($_POST['dendrila_simple_edit_etitle']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_etitle'])) : null;
+        $body = isset($_POST['dendrila_simple_edit_ebody']) ? wp_kses(wp_unslash($_POST['dendrila_simple_edit_ebody']), Dendrila_Simple_Edit_Block_Editor::allowed_tags(), array('http', 'https', 'mailto')) : null;
+        $start_raw = isset($_POST['dendrila_simple_edit_estart']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_estart'])) : null;
+        $end_raw = isset($_POST['dendrila_simple_edit_eend']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_eend'])) : null;
+        $venue_raw = isset($_POST['dendrila_simple_edit_evenue']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_evenue'])) : null;
         if (!is_string($expected) || !preg_match('/^[a-f0-9]{64}$/', $expected) ||
             !is_string($title) || strlen($title) > 800 ||
             !is_string($body) || strlen($body) > 100000 ||
@@ -188,14 +189,14 @@ final class Dendrila_Simple_Edit_Event_Editor
         $id = isset($_POST['dendrila_simple_edit_eid']) ? absint(wp_unslash($_POST['dendrila_simple_edit_eid'])) : 0;
         $post = self::eligible($id);
         if (!$post) { self::redirect('forbidden'); }
-        $expected = isset($_POST['dendrila_simple_edit_eversion']) ? wp_unslash($_POST['dendrila_simple_edit_eversion']) : '';
+        $expected = isset($_POST['dendrila_simple_edit_eversion']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_eversion'])) : '';
         if (!is_string($expected) || !hash_equals(self::fingerprint($post), $expected)) {
             self::redirect('conflict', $id);
         }
         $fields = array('venue'=>'name', 'address'=>'address', 'city'=>'city', 'zip'=>'zip', 'country'=>'country', 'phone'=>'phone');
         $venue = array('status' => 'publish', 'show_map' => false, 'show_map_link' => false);
         foreach ($fields as $key => $param) {
-            $raw = isset($_POST['dendrila_simple_edit_venue_' . $param]) ? wp_unslash($_POST['dendrila_simple_edit_venue_' . $param]) : '';
+            $raw = isset($_POST['dendrila_simple_edit_venue_' . $param]) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_venue_' . $param])) : '';
             if (!is_string($raw) || strlen($raw) > 480) {
                 wp_die('Champ du lieu invalide.', 'Requête incorrecte', array('response' => 400));
             }
@@ -319,7 +320,6 @@ final class Dendrila_Simple_Edit_Event_Editor
         echo '<textarea id="dendrila-simple-edit-event-body" data-dendrila-simple-edit-editor-source name="dendrila_simple_edit_ebody" rows="10">' .
             esc_textarea($post->post_content) . '</textarea></div>';
         echo '<p><button class="button button-primary" type="submit">Enregistrer l’événement</button></p></form>';
-        Dendrila_Simple_Edit_ACF::render_fields_for($post->ID);
         echo '<details class="dendrila-simple-edit-card"><summary>Créer un lieu pour cet événement</summary>' .
             '<p>Ajoutez le lieu, puis choisissez-le dans le formulaire de l’événement. Aucun lieu n’est créé pendant la simple saisie.</p>' .
             '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';

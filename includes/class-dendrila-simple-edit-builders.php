@@ -18,18 +18,17 @@ final class Dendrila_Simple_Edit_Builders
         }
         global $wpdb;
         $results = array();
-        $query = $wpdb->prepare(
+        $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT p.ID, p.post_title, pm.meta_value
-             FROM {$wpdb->postmeta} pm
-             INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+             FROM %i pm
+             INNER JOIN %i p ON pm.post_id = p.ID
              WHERE p.post_status = 'publish'
                AND p.post_type IN ('page', 'post')
                AND pm.meta_key = '_elementor_data'
                AND pm.meta_value LIKE %s
              ORDER BY p.post_title ASC LIMIT 50",
-            '%' . $wpdb->esc_like('dse_text') . '%'
-        );
-        $rows = $wpdb->get_results($query);
+            $wpdb->postmeta, $wpdb->posts, '%' . $wpdb->esc_like('dse_text') . '%'
+        ));
         if (!is_array($rows)) { return array(); }
         foreach ($rows as $row) {
             if (!isset($row->ID, $row->meta_value) || !is_string($row->meta_value) ||

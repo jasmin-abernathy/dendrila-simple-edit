@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) { exit; }
 
 final class Dendrila_Simple_Edit_Mailing
 {
-    const DB_VERSION = '4';
+    const DB_VERSION = '5';
     const DB_OPTION = 'dendrila_simple_edit_mailing_schema_version';
     const CRON_HOOK = 'dendrila_simple_edit_mailing_dispatch';
     const BATCH_SIZE = 5;
@@ -103,6 +103,8 @@ final class Dendrila_Simple_Edit_Mailing
             UNIQUE KEY unique_delivery (campaign_id,contact_id),
             KEY next_delivery (campaign_id,status)
         ) $charset;");
+        // Never declare schema ready until legacy unsubscribe history has migrated.
+        if (!Dendrila_Simple_Edit_Suppressions::migrate()) { return; }
         update_option(self::DB_OPTION, self::DB_VERSION, false);
     }
 
@@ -132,12 +134,18 @@ final class Dendrila_Simple_Edit_Mailing
         }
     }
 
-    public static function transport_ready()
+    /** Mailing depends on FluentSMTP, but the other editing modules do not. */
+    public static function fluent_smtp_active()
     {
         if (!function_exists('is_plugin_active')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
         }
-        if (!is_plugin_active('fluent-smtp/fluent-smtp.php')) { return false; }
+        return is_plugin_active('fluent-smtp/fluent-smtp.php');
+    }
+
+    public static function transport_ready()
+    {
+        if (!self::fluent_smtp_active()) { return false; }
         // FluentSMTP 2.4.5 stores configured connections in this setting.
         // The application never reads or stores SMTP passwords.
         $settings = get_option('fluentmail-settings', array());
@@ -156,7 +164,7 @@ final class Dendrila_Simple_Edit_Mailing
 
     private static function input($key)
     {
-        $v = isset($_POST[$key]) ? wp_unslash($_POST[$key]) : '';
+        $v = isset($_POST[$key]) ? sanitize_textarea_field(wp_unslash($_POST[$key])) : '';
         return is_string($v) ? trim($v) : '';
     }
 
@@ -188,14 +196,14 @@ final class Dendrila_Simple_Edit_Mailing
         global $wpdb;
         $table = self::table('lists');
         if (current_user_can('manage_options')) {
-            return $wpdb->get_results("SELECT id,name,owner_user_id FROM $table ORDER BY name ASC");
+            return $wpdb->get_results($wpdb->prepare('SELECT id,name,owner_user_id FROM %i ORDER BY name ASC', $table));
         }
         // Assigned lists can be used by send-only accounts without exposing others.
         if (!Dendrila_Simple_Edit_Newsletters::can_send() &&
             !Dendrila_Simple_Edit_Modules::allowed('newsletters', 'manage_lists')) { return array(); }
         return $wpdb->get_results($wpdb->prepare(
-            "SELECT id,name,owner_user_id FROM $table WHERE owner_user_id=%d ORDER BY name ASC",
-            get_current_user_id()));
+            'SELECT id,name,owner_user_id FROM %i WHERE owner_user_id=%d ORDER BY name ASC',
+            $table, get_current_user_id()));
     }
 
     private static function owns_list($id)
@@ -204,8 +212,8 @@ final class Dendrila_Simple_Edit_Mailing
         if (current_user_can('manage_options')) { return self::list_exists($id); }
         global $wpdb;
         return (bool)$wpdb->get_var($wpdb->prepare(
-            'SELECT id FROM '.self::table('lists').' WHERE id=%d AND owner_user_id=%d',
-            $id,get_current_user_id()));
+            'SELECT id FROM %i WHERE id=%d AND owner_user_id=%d',
+            self::table('lists'), $id,get_current_user_id()));
     }
 
     private static function can_manage_lists()
@@ -260,7 +268,7 @@ final class Dendrila_Simple_Edit_Mailing
     {
         global $wpdb;
         return $id > 0 && (bool) $wpdb->get_var($wpdb->prepare(
-            'SELECT id FROM ' . self::table('lists') . ' WHERE id=%d', $id));
+            'SELECT id FROM %i WHERE id=%d', self::table('lists'), $id));
     }
 
     private static function upsert_contact($email, $list_id, $verified, $origin, $self_subscribed = false)
@@ -268,8 +276,10 @@ final class Dendrila_Simple_Edit_Mailing
         global $wpdb;
         $table = self::table('contacts');
         $email = strtolower(sanitize_email($email));
+        if (!Dendrila_Simple_Edit_Suppressions::ready()) { return false; }
         if (!is_email($email)) { return false; }
-        $contact = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE email=%s", $email));
+        if ($verified && Dendrila_Simple_Edit_Suppressions::is_blocked($email)) { return false; }
+        $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE email=%s', $table, $email));
         $now = current_time('mysql', true);
         if (!$contact) {
             $wpdb->insert($table, array('email' => $email,
@@ -299,7 +309,7 @@ final class Dendrila_Simple_Edit_Mailing
         }
         $members = self::table('members');
         $membership = $wpdb->get_row($wpdb->prepare(
-            "SELECT id,status FROM $members WHERE list_id=%d AND contact_id=%d", $list_id, $cid));
+            'SELECT id,status FROM %i WHERE list_id=%d AND contact_id=%d', $members, $list_id, $cid));
         if (!$membership) {
             $wpdb->insert($members, array('list_id' => $list_id, 'contact_id' => $cid,
                 'status' => $verified && $contact && $contact->status === 'unsubscribed' ? 'unsubscribed' :
@@ -336,12 +346,13 @@ final class Dendrila_Simple_Edit_Mailing
             $sanitized = strtolower(sanitize_email($email));
             if (!is_email($sanitized)) { continue; }
             $existing = $wpdb->get_row($wpdb->prepare(
-                'SELECT id,status FROM '.self::table('contacts').' WHERE email=%s', $sanitized));
+                'SELECT id,status FROM %i WHERE email=%s', self::table('contacts'), $sanitized));
             $membership_status = $existing ? $wpdb->get_var($wpdb->prepare(
-                'SELECT status FROM '.self::table('members').
-                ' WHERE contact_id=%d AND list_id=%d', (int)$existing->id,$list_id)) : null;
-            if ($existing && ($existing->status === 'unsubscribed' ||
-                $membership_status === 'unsubscribed')) {
+                'SELECT status FROM %i WHERE contact_id=%d AND list_id=%d',
+                self::table('members'), (int)$existing->id,$list_id)) : null;
+            if (Dendrila_Simple_Edit_Suppressions::is_blocked($sanitized) ||
+                ($existing && ($existing->status === 'unsubscribed' ||
+                $membership_status === 'unsubscribed'))) {
                 $skipped++;
                 continue;
             }
@@ -360,9 +371,9 @@ final class Dendrila_Simple_Edit_Mailing
         $table = self::table('contacts');
         $members = self::table('members');
         $contact = $id ? $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table WHERE id=%d", $id)) : false;
+            'SELECT * FROM %i WHERE id=%d', $table, $id)) : false;
         $membership = $contact ? $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $members WHERE contact_id=%d AND list_id=%d", $id, $list_id)) : false;
+            'SELECT * FROM %i WHERE contact_id=%d AND list_id=%d', $members, $id, $list_id)) : false;
         if (!$contact || !$membership || !self::list_exists($list_id)) {
             self::redirect('invalid_contact');
         }
@@ -384,14 +395,14 @@ final class Dendrila_Simple_Edit_Mailing
             }
             if (!self::transport_ready()) { self::redirect('smtp_missing'); }
             if ($wpdb->get_var($wpdb->prepare(
-                "SELECT id FROM $table WHERE email=%s", $email))) {
+                'SELECT id FROM %i WHERE email=%s', $table, $email))) {
                 self::redirect('duplicate_email');
             }
             $new_id = self::upsert_contact($email, $list_id, false, '', true);
             if (!$new_id) { self::redirect('error'); }
             $wpdb->update($table, array('display_name'=>$display_name), array('id'=>$new_id));
             $new_contact = $wpdb->get_row($wpdb->prepare(
-                "SELECT * FROM $table WHERE id=%d", $new_id));
+                'SELECT * FROM %i WHERE id=%d', $table, $new_id));
             $url = self::recipient_url($new_contact, 'confirm', $list_id);
             $accepted = wp_mail($email, 'Confirmez votre adresse pour la newsletter',
                 "Vous avez demandé à confirmer votre nouvelle adresse pour la newsletter.\n" .
@@ -401,7 +412,7 @@ final class Dendrila_Simple_Edit_Mailing
             $wpdb->update($members, array('status'=>'unsubscribed'),
                 array('contact_id'=>$id, 'list_id'=>$list_id));
             $other = (int)$wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $members WHERE contact_id=%d AND status='confirmed'", $id));
+                "SELECT COUNT(*) FROM %i WHERE contact_id=%d AND status='confirmed'", $members, $id));
             if (!$other) {
                 $wpdb->update($table, array('status'=>'unsubscribed'), array('id'=>$id));
             }
@@ -426,9 +437,9 @@ final class Dendrila_Simple_Edit_Mailing
         $members = self::table('members');
         $invites = self::table('reinvites');
         $contact = $cid ? $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $contacts WHERE id=%d", $cid)) : false;
+            'SELECT * FROM %i WHERE id=%d', $contacts, $cid)) : false;
         $member = $contact ? $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $members WHERE contact_id=%d AND list_id=%d", $cid,$lid)) : false;
+            'SELECT * FROM %i WHERE contact_id=%d AND list_id=%d', $members, $cid,$lid)) : false;
         if (!$contact || !$member || !self::list_exists($lid)) {
             self::redirect('invalid_contact');
         }
@@ -443,9 +454,7 @@ final class Dendrila_Simple_Edit_Mailing
         }
         if (!self::transport_ready()) { self::redirect('smtp_missing'); }
         $recent = (int) $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM $invites WHERE contact_id=%d
-             AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)",
-             $cid));
+            'SELECT COUNT(*) FROM %i WHERE contact_id=%d AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)', $invites, $cid));
         if ($recent) { self::redirect('invite_rate_limited'); }
         $raw_token = bin2hex(random_bytes(32));
         $created = current_time('mysql', true);
@@ -458,7 +467,7 @@ final class Dendrila_Simple_Edit_Mailing
         $url = add_query_arg(array('action'=>'dendrila_simple_edit_ml_reconfirm','rid'=>$id,
             'token'=>$raw_token), admin_url('admin-post.php'));
         $list_name = (string) $wpdb->get_var($wpdb->prepare(
-            'SELECT name FROM ' . self::table('lists') . ' WHERE id=%d', $lid));
+            'SELECT name FROM %i WHERE id=%d', self::table('lists'), $lid));
         $accepted = wp_mail($contact->email, 'Invitation à renouveler votre abonnement',
             "Vous avez accepté de recevoir une invitation pour vous réabonner à la liste « " .
             $list_name . " ».\n\nSi vous souhaitez recevoir de nouveau ces newsletters, " .
@@ -476,13 +485,13 @@ final class Dendrila_Simple_Edit_Mailing
     public static function reconfirm()
     {
         global $wpdb;
-        $rid = isset($_REQUEST['rid']) && ctype_digit((string)$_REQUEST['rid']) ?
-            (int)$_REQUEST['rid'] : 0;
+        $raw_rid = isset($_REQUEST['rid']) ? sanitize_text_field(wp_unslash($_REQUEST['rid'])) : '';
+        $rid = ctype_digit((string) $raw_rid) ? (int) $raw_rid : 0;
         $token = isset($_REQUEST['token']) && is_string($_REQUEST['token']) ?
-            wp_unslash($_REQUEST['token']) : '';
+            sanitize_text_field(wp_unslash($_REQUEST['token'])) : '';
         $table = self::table('reinvites');
         $invite = $rid ? $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table WHERE id=%d", $rid)) : false;
+            'SELECT * FROM %i WHERE id=%d', $table, $rid)) : false;
         if (!$invite || !preg_match('/^[a-f0-9]{64}$/',$token) ||
             !hash_equals($invite->token_hash,hash('sha256',$token)) ||
             $invite->confirmed_at !== null ||
@@ -491,20 +500,20 @@ final class Dendrila_Simple_Edit_Mailing
                 array('response'=>400));
         }
         $contact = $wpdb->get_row($wpdb->prepare(
-            'SELECT * FROM '.self::table('contacts').' WHERE id=%d', (int)$invite->contact_id));
+            'SELECT * FROM %i WHERE id=%d', self::table('contacts'), (int)$invite->contact_id));
         $member = $wpdb->get_row($wpdb->prepare(
-            'SELECT * FROM '.self::table('members').' WHERE contact_id=%d AND list_id=%d',
-            (int)$invite->contact_id, (int)$invite->list_id));
+            'SELECT * FROM %i WHERE contact_id=%d AND list_id=%d',
+            self::table('members'), (int)$invite->contact_id, (int)$invite->list_id));
         if (!$contact || !$member) {
             wp_die('Cet abonnement n’est plus disponible.', 'Abonnement',
                 array('response'=>400));
         }
-        if (strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')) !== 'POST') {
+        if (strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'] ?? 'GET'))) !== 'POST') {
             header('Cache-Control: no-store, private');
             echo '<!doctype html><html lang="fr"><meta charset="utf-8"><title>Réabonnement</title>';
             echo '<body style="max-width:540px;margin:3em auto;padding:1em;font:17px/1.5 system-ui,sans-serif">';
             echo '<h1>Confirmer mon réabonnement</h1>';
-            echo '<p>Souhaitez-vous recevoir à nouveau les newsletters de cette liste ?</p>';
+            echo '<p>' . esc_html__('Souhaitez-vous recevoir à nouveau les newsletters de cette liste ?', 'dendrila-simple-edit') . '</p>';
             echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
             echo '<input type="hidden" name="action" value="dendrila_simple_edit_ml_reconfirm">';
             echo '<input type="hidden" name="rid" value="'.(int)$rid.'">';
@@ -514,18 +523,21 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<button type="submit">Confirmer mon abonnement</button></form></body></html>';
             exit;
         }
-        if (!isset($_POST['confirm_optin']) || $_POST['confirm_optin'] !== 'yes') {
+        if (!isset($_POST['confirm_optin']) || sanitize_text_field(wp_unslash($_POST['confirm_optin'])) !== 'yes') {
             wp_die('Vous devez accepter explicitement le réabonnement.',
                 'Confirmation nécessaire',array('response'=>400));
         }
         $now = current_time('mysql',true);
         $updated = $wpdb->query($wpdb->prepare(
-            "UPDATE $table SET confirmed_at=%s WHERE id=%d AND confirmed_at IS NULL
-             AND expires_at > UTC_TIMESTAMP()", $now,$rid));
+            'UPDATE %i SET confirmed_at=%s WHERE id=%d AND confirmed_at IS NULL AND expires_at > UTC_TIMESTAMP()', $table, $now,$rid));
         if ($updated !== 1) {
             wp_die('Ce lien a déjà été utilisé.', 'Confirmation',array('response'=>400));
         }
         $members = self::table('members');
+        if (!Dendrila_Simple_Edit_Suppressions::ready() ||
+            !Dendrila_Simple_Edit_Suppressions::reconsent($contact->email)) {
+            wp_die('Réabonnement bloqué : historique non migré.', 'Réabonnement',array('response'=>503));
+        }
         $wpdb->update($members,array('status'=>'confirmed',
             'consent_source'=>'Réabonnement volontaire confirmé via lien',
             'consent_at'=>$now),
@@ -586,11 +598,11 @@ final class Dendrila_Simple_Edit_Mailing
                 'Accès refusé',array('response'=>403));
         }
         if (!self::list_exists($list_id)) { self::redirect('empty_list'); }
-        $contacts = $wpdb->get_col($wpdb->prepare('SELECT c.id FROM ' . self::table('contacts') . ' c ' .
-            'INNER JOIN ' . self::table('members') . ' m ON m.contact_id=c.id ' .
-            'WHERE m.list_id=%d AND c.status=%s AND m.status=%s ORDER BY c.id ASC', $list_id, 'confirmed', 'confirmed'));
+        $contacts = $wpdb->get_col($wpdb->prepare('SELECT c.id FROM %i c INNER JOIN %i m ON m.contact_id=c.id WHERE m.list_id=%d AND c.status=%s AND m.status=%s ORDER BY c.id ASC',
+            self::table('contacts'), self::table('members'), $list_id, 'confirmed', 'confirmed'));
         if (!$contacts) { self::redirect('empty_list'); }
-        $html = Dendrila_Simple_Edit_Block_Editor::document($post->post_content);
+        $html = Dendrila_Simple_Edit_Block_Editor::document($post->post_content,
+            Dendrila_Simple_Edit_Newsletter_Templates::for_post($post));
         $ok = $wpdb->insert(self::table('campaigns'), array(
             'newsletter_id' => $post->ID, 'list_id' => $list_id,
             'subject' => $post->post_title, 'html_body' => $html, 'status' => 'prepared',
@@ -612,7 +624,7 @@ final class Dendrila_Simple_Edit_Mailing
         global $wpdb;
         $id = self::id('campaign_id');
         $table = self::table('campaigns');
-        $campaign = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id=%d", $id));
+        $campaign = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', $table, $id));
         if (!$campaign || !self::can_manage_campaign($campaign)) {
             wp_die('Vous ne pouvez pas lancer cette campagne.', 'Accès refusé', array('response' => 403));
         }
@@ -620,6 +632,7 @@ final class Dendrila_Simple_Edit_Mailing
             self::redirect('not_ready');
         }
         $when = self::input('send_at');
+        if (!Dendrila_Simple_Edit_Suppressions::ready()) { self::redirect('not_ready'); }
         $timestamp = time() + 15;
         if ($when !== '') {
             $date = DateTimeImmutable::createFromFormat('!Y-m-d\\TH:i', $when, wp_timezone());
@@ -644,12 +657,11 @@ final class Dendrila_Simple_Edit_Mailing
         global $wpdb;
         $id = self::id('campaign_id');
         $table = self::table('campaigns');
-        $campaign = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id=%d", $id));
+        $campaign = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', $table, $id));
         if (!self::can_manage_campaign($campaign)) {
             wp_die('Vous ne pouvez pas suspendre cette campagne.', 'Accès refusé', array('response' => 403));
         }
-        $wpdb->query($wpdb->prepare('UPDATE ' . $table .
-            " SET status='paused' WHERE id=%d AND status IN ('sending','scheduled')", $id));
+        $wpdb->query($wpdb->prepare("UPDATE %i SET status='paused' WHERE id=%d AND status IN ('sending','scheduled')", $table, $id));
         self::redirect('paused');
     }
 
@@ -674,11 +686,13 @@ final class Dendrila_Simple_Edit_Mailing
     private static function contact_from_token($action)
     {
         global $wpdb;
-        $cid = isset($_REQUEST['cid']) && ctype_digit((string) $_REQUEST['cid']) ? (int) $_REQUEST['cid'] : 0;
-        $token = isset($_REQUEST['token']) && is_string($_REQUEST['token']) ? $_REQUEST['token'] : '';
-        $lid = isset($_REQUEST['lid']) && ctype_digit((string) $_REQUEST['lid']) ? (int) $_REQUEST['lid'] : 0;
+        $raw_cid = isset($_REQUEST['cid']) ? sanitize_text_field(wp_unslash($_REQUEST['cid'])) : '';
+        $raw_lid = isset($_REQUEST['lid']) ? sanitize_text_field(wp_unslash($_REQUEST['lid'])) : '';
+        $cid = ctype_digit((string) $raw_cid) ? (int) $raw_cid : 0;
+        $token = isset($_REQUEST['token']) ? sanitize_text_field(wp_unslash($_REQUEST['token'])) : '';
+        $lid = ctype_digit((string) $raw_lid) ? (int) $raw_lid : 0;
         if (!$cid || !preg_match('/^[a-f0-9]{64}$/', $token) || ($action === 'confirm' && !$lid)) { return false; }
-        $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . self::table('contacts') . ' WHERE id=%d', $cid));
+        $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', self::table('contacts'), $cid));
         if (!$contact || ($action === 'confirm' &&
             !get_transient('dendrila_simple_edit_ml_confirmation_' . (int) $cid . '_' . (int) $lid)) ||
             !hash_equals(self::token($contact, $action, $lid), $token)) { return false; }
@@ -690,17 +704,20 @@ final class Dendrila_Simple_Edit_Mailing
     {
         $contact = self::contact_from_token('unsubscribe');
         if (!$contact) { wp_die('Ce lien ne peut pas être utilisé.', 'Lien invalide', array('response' => 400)); }
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $url = esc_url(admin_url('admin-post.php'));
+        if ((!isset($_SERVER['REQUEST_METHOD']) || sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) !== 'POST')) {
+            $url = admin_url('admin-post.php');
             echo '<!doctype html><html lang="fr"><meta charset="utf-8"><title>Se désinscrire</title><body style="max-width:500px;margin:4em auto;font:16px Arial,sans-serif">';
             echo '<h1>Se désinscrire</h1><p>Ne plus recevoir les newsletters de ce site ?</p>';
-            echo '<form method="post" action="' . $url . '"><input type="hidden" name="action" value="dendrila_simple_edit_ml_unsubscribe">';
+            echo '<form method="post" action="' . esc_url($url) . '"><input type="hidden" name="action" value="dendrila_simple_edit_ml_unsubscribe">';
             echo '<input type="hidden" name="cid" value="' . (int) $contact->id . '">';
             echo '<input type="hidden" name="token" value="' . esc_attr(self::token($contact, 'unsubscribe')) . '">';
             echo '<button type="submit">Confirmer ma désinscription</button></form></body></html>';
             exit;
         }
         global $wpdb;
+        if (!Dendrila_Simple_Edit_Suppressions::record($contact->email, 'désinscription e-mail')) {
+            wp_die('Désinscription non enregistrée. Contactez le gestionnaire du site.', 'Erreur',array('response'=>503));
+        }
         $wpdb->update(self::table('contacts'), array('status' => 'unsubscribed'), array('id' => (int) $contact->id));
         $wpdb->update(self::table('members'), array('status' => 'unsubscribed'), array('contact_id' => (int) $contact->id));
         wp_die('Votre désinscription a bien été enregistrée.', 'Désinscription', array('response' => 200));
@@ -714,12 +731,15 @@ final class Dendrila_Simple_Edit_Mailing
         }
         global $wpdb;
         $members = self::table('members');
-        $status = $wpdb->get_var($wpdb->prepare('SELECT status FROM ' . $members .
-            ' WHERE contact_id=%d AND list_id=%d', $contact->id, $contact->requested_list));
+        $status = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE contact_id=%d AND list_id=%d', $members, $contact->id, $contact->requested_list));
         if ($status !== 'pending') {
             wp_die('Lien déjà utilisé ou invalide.', 'Confirmation', array('response' => 400));
         }
         $now = current_time('mysql', true);
+        if (!Dendrila_Simple_Edit_Suppressions::ready() ||
+            !Dendrila_Simple_Edit_Suppressions::reconsent($contact->email)) {
+            wp_die('Migration des désinscriptions incomplète.', 'Inscription indisponible', array('response'=>503));
+        }
         $wpdb->update($members, array('status' => 'confirmed',
             'consent_source' => 'Formulaire avec double confirmation', 'consent_at' => $now),
             array('contact_id' => (int) $contact->id, 'list_id' => (int) $contact->requested_list));
@@ -735,7 +755,8 @@ final class Dendrila_Simple_Edit_Mailing
     {
         $atts = shortcode_atts(array('liste' => 0), $atts, 'dse_newsletter_inscription');
         $id = (int) $atts['liste'];
-        if (!Dendrila_Simple_Edit_Modules::enabled('newsletters') || $id < 1 || !self::list_exists($id)) { return ''; }
+        if (!Dendrila_Simple_Edit_Modules::enabled('newsletters') || !self::transport_ready() ||
+            !Dendrila_Simple_Edit_Suppressions::ready() || $id < 1 || !self::list_exists($id)) { return ''; }
         $action = esc_url(admin_url('admin-post.php'));
         $html = '<form method="post" action="' . $action . '">' .
             '<input type="hidden" name="action" value="dendrila_simple_edit_ml_subscribe">' .
@@ -755,7 +776,7 @@ final class Dendrila_Simple_Edit_Mailing
             self::input('website') !== '' || self::input('consent') !== '1' || !self::transport_ready()) {
             wp_die('Inscription indisponible. Réessayez plus tard.', 'Inscription', array('response' => 400));
         }
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? (string) $_SERVER['REMOTE_ADDR'] : '';
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
         $key = 'dendrila_simple_edit_ml_signup_' . hash_hmac('sha256', $ip, wp_salt('nonce'));
         if (get_transient($key)) { wp_die('Veuillez réessayer dans quelques minutes.', 'Inscription', array('response' => 429)); }
         set_transient($key, 1, 10 * MINUTE_IN_SECONDS);
@@ -764,9 +785,8 @@ final class Dendrila_Simple_Edit_Mailing
             $cid = self::upsert_contact($email, $list_id, false, '', true);
             if ($cid) {
                 global $wpdb;
-                $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . self::table('contacts') . ' WHERE id=%d', $cid));
-                $member_status = $wpdb->get_var($wpdb->prepare('SELECT status FROM ' . self::table('members') .
-                    ' WHERE contact_id=%d AND list_id=%d', $cid, $list_id));
+                $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', self::table('contacts'), $cid));
+                $member_status = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE contact_id=%d AND list_id=%d', self::table('members'), $cid, $list_id));
                 if ($contact && $member_status === 'pending') {
                     $url = self::recipient_url($contact, 'confirm', $list_id);
                     wp_mail($email, 'Confirmez votre inscription à la newsletter',
@@ -775,6 +795,26 @@ final class Dendrila_Simple_Edit_Mailing
             }
         }
         wp_die('Si votre inscription est possible, vous recevrez un e-mail de confirmation.', 'Inscription', array('response' => 200));
+    }
+
+    /** Paid checkout creates a pending opt-in; it never imports a consent as confirmed. */
+    public static function request_checkout_confirmation($email, $list_id)
+    {
+        if (!Dendrila_Simple_Edit_Suppressions::ready() || !self::transport_ready() ||
+            !$list_id || !self::list_exists($list_id)) { return false; }
+        $email = strtolower(sanitize_email($email));
+        if (!is_email($email)) { return false; }
+        $cid = self::upsert_contact($email, $list_id, false, '', true);
+        if (!$cid) { return false; }
+        global $wpdb;
+        $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', self::table('contacts'), $cid));
+        $status = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE contact_id=%d AND list_id=%d', self::table('members'), $cid, $list_id));
+        if ($contact && $status === 'pending') {
+            $link = self::recipient_url($contact, 'confirm', $list_id);
+            return (bool) wp_mail($email, 'Confirmez votre abonnement à la newsletter',
+                'Vous avez demandé à recevoir la newsletter lors de votre commande. Confirmez votre inscription : '.$link);
+        }
+        return $status === 'confirmed' && !Dendrila_Simple_Edit_Suppressions::is_blocked($email);
     }
 
     public static function test()
@@ -797,9 +837,10 @@ final class Dendrila_Simple_Edit_Mailing
         // Remove membership for this list only; don't silently affect other lists.
         $wpdb->update(self::table('members'), array('status' => 'unsubscribed'),
             array('contact_id' => $cid, 'list_id' => $lid));
-        $remaining = (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM ' . self::table('members') .
-            ' WHERE contact_id=%d AND status=%s', $cid, 'confirmed'));
+        $remaining = (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM %i WHERE contact_id=%d AND status=%s', self::table('members'), $cid, 'confirmed'));
         if ($remaining === 0) {
+            $email = $wpdb->get_var($wpdb->prepare('SELECT email FROM %i WHERE id=%d', self::table('contacts'), $cid));
+            if (!$email || !Dendrila_Simple_Edit_Suppressions::record($email, 'retrait manuel')) { self::redirect('error'); }
             $wpdb->update(self::table('contacts'), array('status' => 'unsubscribed'), array('id' => $cid));
         }
         self::redirect('contact_removed');
@@ -832,35 +873,35 @@ final class Dendrila_Simple_Edit_Mailing
     {
         global $wpdb;
         $campaign_id = (int) $campaign_id;
-        if (!$campaign_id || !self::transport_ready()) { return; }
+        if (!$campaign_id || !self::transport_ready() || !Dendrila_Simple_Edit_Suppressions::ready()) { return; }
         $ct = self::table('campaigns');
         $qt = self::table('queue');
         $people = self::table('contacts');
-        $campaign = $wpdb->get_row($wpdb->prepare("SELECT * FROM $ct WHERE id=%d", $campaign_id));
+        $campaign = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', $ct, $campaign_id));
         if (!$campaign || !in_array($campaign->status, array('scheduled', 'sending'), true)) { return; }
         if ($campaign->status === 'scheduled' && strtotime($campaign->send_at . ' UTC') > time()) { return; }
         // Atomic lock protects against concurrent WP Cron requests on busy sites.
-        $claimed = $wpdb->query($wpdb->prepare("UPDATE $ct SET locked_until=DATE_ADD(UTC_TIMESTAMP(), INTERVAL 120 SECOND), status='sending' WHERE id=%d AND (locked_until IS NULL OR locked_until < UTC_TIMESTAMP()) AND status IN ('scheduled','sending')", $campaign_id));
+        $claimed = $wpdb->query($wpdb->prepare("UPDATE %i SET locked_until=DATE_ADD(UTC_TIMESTAMP(), INTERVAL 120 SECOND), status='sending' WHERE id=%d AND (locked_until IS NULL OR locked_until < UTC_TIMESTAMP()) AND status IN ('scheduled','sending')", $ct, $campaign_id));
         if ($claimed !== 1) { return; }
         try {
-            $rows = $wpdb->get_results($wpdb->prepare("SELECT q.id,q.contact_id,c.email,c.status FROM $qt q JOIN $people c ON c.id=q.contact_id WHERE q.campaign_id=%d AND q.status='queued' ORDER BY q.id ASC LIMIT %d", $campaign_id, self::BATCH_SIZE));
+            $rows = $wpdb->get_results($wpdb->prepare("SELECT q.id,q.contact_id,c.email,c.status FROM %i q JOIN %i c ON c.id=q.contact_id WHERE q.campaign_id=%d AND q.status='queued' ORDER BY q.id ASC LIMIT %d", $qt, $people, $campaign_id, self::BATCH_SIZE));
             // Uncertain messages are never resent automatically after a worker crash.
             // A crash may happen after SMTP acceptance and before queue acknowledgement.
-            $wpdb->query("UPDATE $qt SET status='uncertain',error_message='Vérification manuelle requise après interruption' " .
-                "WHERE campaign_id=" . (int) $campaign_id . " AND status='processing' AND " .
-                "processing_started_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 10 MINUTE)");
+            $wpdb->query($wpdb->prepare("UPDATE %i SET status='uncertain',error_message='Vérification manuelle requise après interruption' " .
+                "WHERE campaign_id=%d AND status='processing' AND " .
+                "processing_started_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 10 MINUTE)", $qt, $campaign_id));
             foreach ((array) $rows as $row) {
-                $wpdb->query($wpdb->prepare("UPDATE $qt SET status='processing', processing_started_at=UTC_TIMESTAMP() WHERE id=%d AND status='queued'", (int) $row->id));
+                $wpdb->query($wpdb->prepare("UPDATE %i SET status='processing', processing_started_at=UTC_TIMESTAMP() WHERE id=%d AND status='queued'", $qt, (int) $row->id));
                 if ($wpdb->rows_affected !== 1) { continue; }
-                $still_sending = $wpdb->get_var($wpdb->prepare("SELECT status FROM $ct WHERE id=%d", $campaign_id));
+                $still_sending = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE id=%d', $ct, $campaign_id));
                 if ($still_sending !== 'sending') {
                     $wpdb->update($qt, array('status' => 'queued'), array('id' => (int) $row->id));
                     break;
                 }
-                $eligible = (bool) $wpdb->get_var($wpdb->prepare('SELECT 1 FROM ' . self::table('members') .
-                    ' WHERE list_id=%d AND contact_id=%d AND status=%s',
-                    (int) $campaign->list_id, (int) $row->contact_id, 'confirmed'));
-                if ($row->status !== 'confirmed' || !$eligible) {
+                $eligible = (bool) $wpdb->get_var($wpdb->prepare('SELECT 1 FROM %i WHERE list_id=%d AND contact_id=%d AND status=%s',
+                    self::table('members'), (int) $campaign->list_id, (int) $row->contact_id, 'confirmed'));
+                if ($row->status !== 'confirmed' || !$eligible ||
+                    Dendrila_Simple_Edit_Suppressions::is_blocked($row->email)) {
                     $wpdb->update($qt, array('status' => 'skipped'), array('id' => (int) $row->id));
                     continue;
                 }
@@ -889,8 +930,8 @@ final class Dendrila_Simple_Edit_Mailing
                     'accepted_at' => $ok ? current_time('mysql', true) : null),
                     array('id' => (int) $row->id));
             }
-            $remaining = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $qt WHERE campaign_id=%d AND status='queued'", $campaign_id));
-            $current_status = $wpdb->get_var($wpdb->prepare("SELECT status FROM $ct WHERE id=%d", $campaign_id));
+            $remaining = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM %i WHERE campaign_id=%d AND status='queued'", $qt, $campaign_id));
+            $current_status = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE id=%d', $ct, $campaign_id));
             if ($current_status === 'paused') { return; }
             if ($remaining > 0) {
                 wp_schedule_single_event(time() + 60, self::CRON_HOOK, array($campaign_id));
@@ -953,7 +994,7 @@ final class Dendrila_Simple_Edit_Mailing
         $notice = isset($_GET['dendrila_simple_edit_ml_notice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_ml_notice'])) : '';
         if (isset($notices[$notice])) { echo '<p class="notice notice-info" role="status">' . esc_html($notices[$notice]) . '</p>'; }
         if ($section === 'connexion') {
-        echo '<section class="dendrila-simple-edit-card"><h2>Connexion pour envoyer les e-mails</h2><p>FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa connexion avant de lancer une newsletter.</p>';
+        echo '<section class="dendrila-simple-edit-card"><h2>Connexion pour envoyer les e-mails</h2><p>' . esc_html__('FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa connexion avant de lancer une newsletter.', 'dendrila-simple-edit') . '</p>';
         echo '<p><strong>Transport :</strong> ' . (self::transport_ready() ?
             'FluentSMTP détecté. Vérifiez sa connexion avant de lancer une campagne.' :
             'FluentSMTP n’a pas encore de connexion prête. Les campagnes ne peuvent pas démarrer.') . '</p>';
@@ -968,15 +1009,13 @@ final class Dendrila_Simple_Edit_Mailing
             if (!$lists) { echo '<p>Aucune liste pour le moment. Utilisez « Ajouter une liste » ci-dessous.</p>'; }
             foreach ($lists as $list) {
                 $count = (int) $wpdb->get_var($wpdb->prepare(
-                    'SELECT COUNT(*) FROM ' . self::table('members') .
-                    ' m JOIN ' . self::table('contacts') .
-                    ' c ON c.id=m.contact_id WHERE m.list_id=%d AND c.status=%s AND m.status=%s',
-                    $list->id, 'confirmed', 'confirmed'));
+                    'SELECT COUNT(*) FROM %i m JOIN %i c ON c.id=m.contact_id WHERE m.list_id=%d AND c.status=%s AND m.status=%s',
+                    self::table('members'), self::table('contacts'), $list->id, 'confirmed', 'confirmed'));
                 echo '<details class="dendrila-simple-edit-subcard dendrila-simple-edit-list-card"><summary><strong>' .
-                    esc_html($list->name) . '</strong> · ' . $count .
+                    esc_html($list->name) . '</strong> · ' . esc_html((string)$count) .
                     ($count === 1 ? ' abonné confirmé' : ' abonnés confirmés') . '</summary>';
                 if ($admin) {
-                    echo '<details class="dendrila-simple-edit-list-assignment"><summary>Attribuer cette liste à un éditeur</summary>';
+                    echo '<details class="dendrila-simple-edit-list-assignment"><summary>' . esc_html__('Attribuer cette liste à un éditeur', 'dendrila-simple-edit') . '</summary>';
                     $users = get_users(array('role'=>Dendrila_Simple_Edit_Plugin::ROLE,'number'=>100));
                     $options = '<option value="0"' . selected((int)$list->owner_user_id,0,false) .
                         '>Administration (non attribuée)</option>';
@@ -995,10 +1034,8 @@ final class Dendrila_Simple_Edit_Mailing
                 echo '<details class="dendrila-simple-edit-list-shortcode"><summary>Formulaire d’inscription</summary><p>Code à placer sur une page</p><code id="dendrila-simple-edit-list-code-' . (int)$list->id . '">[dse_newsletter_inscription liste="' .
                     (int)$list->id . '"]</code> <button class="button dendrila-simple-edit-copy" type="button" data-dendrila-simple-edit-copy="dendrila-simple-edit-list-code-' . (int)$list->id . '">Copier le code</button></details>';
                 $members = $wpdb->get_results($wpdb->prepare(
-                    'SELECT c.id,c.email,c.display_name,c.status AS contact_status,m.status AS membership_status FROM ' .
-                    self::table('members') . ' m JOIN ' . self::table('contacts') .
-                    ' c ON c.id=m.contact_id WHERE m.list_id=%d ORDER BY c.email ASC LIMIT 40',
-                    (int)$list->id));
+                    'SELECT c.id,c.email,c.display_name,c.status AS contact_status,m.status AS membership_status FROM %i m JOIN %i c ON c.id=m.contact_id WHERE m.list_id=%d ORDER BY c.email ASC LIMIT 40',
+                    self::table('members'), self::table('contacts'), (int)$list->id));
                 if (!$members) { echo '<p>Aucun contact dans cette liste.</p>'; }
                 foreach ((array)$members as $member) {
                     $unsubscribed = $member->contact_status === 'unsubscribed' ||
@@ -1033,7 +1070,7 @@ final class Dendrila_Simple_Edit_Mailing
                     ));
                     echo '</details>';
                     if ($unsubscribed) {
-                        echo '<details class="dendrila-simple-edit-contact-invite"><summary>Proposer un réabonnement</summary>';
+                        echo '<details class="dendrila-simple-edit-contact-invite"><summary>' . esc_html__('Proposer un réabonnement', 'dendrila-simple-edit') . '</summary>';
                         echo '<p class="description">Envoyez une invitation uniquement si cette personne vous l’a demandé. ' .
                             '' .
                             'Elle pourra confirmer son réabonnement par e-mail.</p>';
@@ -1071,7 +1108,7 @@ final class Dendrila_Simple_Edit_Mailing
             echo '</section>';
             echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-create-list" id="dendrila-simple-edit-add-list">';
             echo '<summary>Ajouter une liste</summary>';
-            echo '<p class="description">Donnez un nom à la liste. Vous pourrez ensuite y ajouter des contacts.</p>';
+            echo '<p class="description">' . esc_html__('Donnez un nom à la liste. Vous pourrez ensuite y ajouter des contacts.', 'dendrila-simple-edit') . '</p>';
             self::form('list', 'Créer la nouvelle liste', array(
                 '<label>Nom de la nouvelle liste <input name="name" type="text" required maxlength="160" ' .
                     'data-dendrila-simple-edit-new-list-name></label>'
@@ -1084,7 +1121,7 @@ final class Dendrila_Simple_Edit_Mailing
             'orderby' => 'modified', 'order' => 'DESC');
         if (!$admin) { $query['author'] = get_current_user_id(); }
         $approved = array_filter(get_posts($query), array(__CLASS__, 'can_prepare_newsletter'));
-        echo '<section class="dendrila-simple-edit-card"><h2>Préparer une campagne</h2>';
+        echo '<section class="dendrila-simple-edit-card"><h2>' . esc_html__('Préparer une campagne', 'dendrila-simple-edit') . '</h2>';
         if (!$approved || !$lists) {
             echo '<p>Il faut au moins une newsletter que vous êtes autorisé à envoyer et une liste existante.</p>';
         }
@@ -1104,16 +1141,14 @@ final class Dendrila_Simple_Edit_Mailing
         echo '</section>';
         }
         if ($section === 'suivi') {
-        $campaigns = $wpdb->get_results('SELECT c.*, l.name AS list_name FROM ' .
-            self::table('campaigns') . ' c LEFT JOIN ' . self::table('lists') .
-            ' l ON l.id=c.list_id ORDER BY c.id DESC LIMIT 100');
+        $campaigns = $wpdb->get_results($wpdb->prepare('SELECT c.*, l.name AS list_name FROM %i c LEFT JOIN %i l ON l.id=c.list_id ORDER BY c.id DESC LIMIT 100',
+            self::table('campaigns'), self::table('lists')));
         if (!$admin) { $campaigns = array_values(array_filter((array)$campaigns,
             array(__CLASS__, 'can_manage_campaign'))); }
         $campaigns = array_slice((array)$campaigns, 0, 15);
-        echo '<section class="dendrila-simple-edit-card"><h2>Campagnes préparées et envoyées</h2>';
+        echo '<section class="dendrila-simple-edit-card"><h2>' . esc_html__('Campagnes préparées et envoyées', 'dendrila-simple-edit') . '</h2>';
         foreach ((array) $campaigns as $c) {
-            $counts = $wpdb->get_results($wpdb->prepare('SELECT status,COUNT(*) as total FROM ' .
-                self::table('queue') . ' WHERE campaign_id=%d GROUP BY status', $c->id));
+            $counts = $wpdb->get_results($wpdb->prepare('SELECT status,COUNT(*) as total FROM %i WHERE campaign_id=%d GROUP BY status', self::table('queue'), $c->id));
             $queue_labels = array(
                 'queued' => 'en attente',
                 'processing' => 'en cours de traitement',
@@ -1141,7 +1176,7 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<p>État : <strong>' . esc_html($campaign_status) . '</strong>' .
                 ($stats ? ' · ' . esc_html(implode(' · ', $stats)) : '') . '</p>';
             if (in_array($c->status, array('prepared','paused'), true)) {
-                echo '<p>Un clic sur « Lancer » n’envoie rien immédiatement : les messages seront traités par petits lots planifiés.</p>';
+                echo '<p>' . esc_html__('Un clic sur « Lancer » n’envoie rien immédiatement : les messages seront traités par petits lots planifiés.', 'dendrila-simple-edit') . '</p>';
                 self::form('start', 'Lancer ou programmer les envois', array(
                     '<input type="hidden" name="campaign_id" value="' . (int) $c->id . '">',
                     '<label>Envoyer à partir du (facultatif) <input type="datetime-local" name="send_at"></label>',
@@ -1175,7 +1210,21 @@ final class Dendrila_Simple_Edit_Mailing
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '" class="dendrila-simple-edit-mailing-form">';
         echo '<input type="hidden" name="action" value="dendrila_simple_edit_ml_' . esc_attr($action) . '">';
         wp_nonce_field('dendrila_simple_edit_ml_' . $action);
-        foreach ($fields as $field) { echo $field; } // Static, carefully escaped strings.
+        foreach ($fields as $field) {
+            // Only allow form controls and their expected attributes in generated fragments.
+            echo wp_kses($field, array(
+                'input' => array('type'=>true,'name'=>true,'value'=>true,'id'=>true,'class'=>true,'required'=>true,'checked'=>true,'readonly'=>true,'disabled'=>true,'min'=>true,'max'=>true,'maxlength'=>true,'placeholder'=>true,'autocomplete'=>true,'step'=>true),
+                'textarea' => array('name'=>true,'id'=>true,'rows'=>true,'cols'=>true,'maxlength'=>true,'placeholder'=>true),
+                'select' => array('name'=>true,'id'=>true,'required'=>true,'multiple'=>true),
+                'option' => array('value'=>true,'selected'=>true,'disabled'=>true),
+                'label' => array('for'=>true,'class'=>true),
+                'p' => array('class'=>true), 'small'=>array('class'=>true),
+                'details'=>array('class'=>true,'open'=>true), 'summary'=>array(),
+                'strong'=>array(), 'span'=>array('class'=>true), 'div'=>array('class'=>true),
+                'a'=>array('href'=>true,'target'=>true,'rel'=>true),
+                'br'=>array(),
+            ));
+        }
         echo '<p><button type="submit" class="button button-primary">' . esc_html($label) . '</button></p></form>';
     }
 }

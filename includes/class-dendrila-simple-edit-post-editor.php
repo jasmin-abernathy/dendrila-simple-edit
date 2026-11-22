@@ -9,7 +9,7 @@ final class Dendrila_Simple_Edit_Post_Editor
 
     public static function can_create_type($type)
     {
-        if (!in_array($type, array('page', 'post'), true) || !Dendrila_Simple_Edit_Plugin::can_edit()) { return false; }
+        if (!in_array($type, array('page', 'post'), true)) { return false; }
         if (current_user_can('manage_options')) { return true; }
         return Dendrila_Simple_Edit_Modules::allowed('editorial', $type === 'page' ? 'create_pages' : 'create_articles');
     }
@@ -69,6 +69,8 @@ final class Dendrila_Simple_Edit_Post_Editor
         if (!$post || !in_array($post->post_type, array('page', 'post'), true) ||
             (string) $post->post_password !== '') { return false; }
         if (self::own_created($post)) { return $post; }
+        if (current_user_can('manage_options') && $post->post_status === 'publish' && self::compatible($post)) { return $post; }
+        if (!self::can_modify($post->post_type)) { return false; }
         return in_array($id, self::allowed_ids(), true) &&
             $post->post_status === 'publish' ? $post : false;
     }
@@ -78,9 +80,13 @@ final class Dendrila_Simple_Edit_Post_Editor
         return hash('sha256', $post->ID . '|' . $post->post_title . '|' . $post->post_content . '|' . $post->post_status . '|' . $post->post_modified_gmt);
     }
 
-    private static function can_modify()
+    private static function can_modify($type = null)
     {
-        return current_user_can('manage_options') || Dendrila_Simple_Edit_Plugin::can_edit();
+        if (current_user_can('manage_options')) { return true; }
+        // Editing existing posts is explicitly configured by WordPress role.
+        if ($type === 'page') { return Dendrila_Simple_Edit_Modules::allowed('editorial', 'edit_pages'); }
+        if ($type === 'post') { return Dendrila_Simple_Edit_Modules::allowed('editorial', 'edit_articles'); }
+        return false;
     }
 
     private static function redirect($notice, $post_id = 0)
@@ -98,7 +104,7 @@ final class Dendrila_Simple_Edit_Post_Editor
             wp_die('Réservé à l’administration.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_post_permissions');
-        $raw = isset($_POST['dendrila_simple_edit_post_ids']) ? wp_unslash($_POST['dendrila_simple_edit_post_ids']) : array();
+        $raw = isset($_POST['dendrila_simple_edit_post_ids']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_post_ids']), 'sanitize_text_field') : array();
         if (!is_array($raw) || count($raw) > 100) {
             wp_die('Choix de contenus invalide.', 'Requête incorrecte', array('response' => 400));
         }
@@ -116,54 +122,69 @@ final class Dendrila_Simple_Edit_Post_Editor
         self::redirect('permissions');
     }
 
+    /** Featured image for articles; per-post alt text avoids modifying attachments site-wide. */
     public static function illustration_form($post = null)
     {
-        $current = $post ? (int)get_post_thumbnail_id($post) : 0;
+        $current = $post ? (int) get_post_thumbnail_id($post) : 0;
         $ids = Dendrila_Simple_Edit_Media::accessible_ids();
         if ($current) { $ids[] = $current; }
         $meta = $post ? get_post_meta($post->ID, '_dendrila_simple_edit_illustration', true) : array();
-        echo '<fieldset class="dendrila-simple-edit-photo-editor" data-dendrila-simple-edit-photo-picker><legend>Illustration principale</legend><label>Image <select data-dendrila-simple-edit-photo-select name="dendrila_simple_edit_illustration"><option value="0">Aucune image</option>';
-        foreach (array_unique($ids) as $id) {
-            echo '<option value="'.(int)$id.'" '.selected($id,$current,false).'>'.esc_html(get_the_title($id)).'</option>';
+        if (!is_array($meta)) { $meta = array(); }
+        $alt = isset($meta['alt']) ? $meta['alt'] : ($current ? get_post_meta($current, '_wp_attachment_image_alt', true) : '');
+        echo '<fieldset class="dendrila-simple-edit-photo-editor" data-dendrila-simple-edit-photo-picker><legend>Illustration principale</legend>';
+        echo '<label>Image <select name="dendrila_simple_edit_illustration" data-dendrila-simple-edit-photo-select><option value="0">Aucune image</option>';
+        foreach (array_unique(array_map('absint', $ids)) as $id) {
+            if (!$id || !wp_attachment_is_image($id)) { continue; }
+            echo '<option value="' . (int) $id . '" ' . selected($id, $current, false) . '>' . esc_html(get_the_title($id)) . '</option>';
         }
-        echo '</select></label> <button type="button" class="button" data-dendrila-simple-edit-photo-open hidden>Choisir dans la médiathèque</button> <button type="button" class="button" data-dendrila-simple-edit-photo-clear hidden>Retirer</button><div data-dendrila-simple-edit-photo-preview>';
-        if ($current) { echo wp_get_attachment_image($current,'thumbnail'); }
-        echo '</div><label>Texte alternatif (obligatoire pour une image)<input name="dendrila_simple_edit_image_alt" maxlength="500" value="'.esc_attr($meta['alt'] ?? get_post_meta($current,'_wp_attachment_image_alt',true)).'"></label>';
-        echo '<label>Description (facultative)<textarea name="dendrila_simple_edit_image_description" maxlength="2000">'.esc_textarea($meta['description'] ?? '').'</textarea></label></fieldset>';
+        echo '</select></label> <button type="button" class="button" data-dendrila-simple-edit-photo-open hidden>' . esc_html__('Choisir dans la médiathèque', 'dendrila-simple-edit') . '</button> ';
+        echo '<button type="button" class="button" data-dendrila-simple-edit-photo-clear hidden>Retirer</button>';
+        echo '<div data-dendrila-simple-edit-photo-preview>';
+        if ($current) { echo wp_get_attachment_image($current, 'thumbnail'); }
+        echo '</div><label>Texte alternatif (obligatoire pour une image)<input type="text" name="dendrila_simple_edit_image_alt" maxlength="500" value="' . esc_attr($alt) . '"></label>';
+        echo '<label>Description (facultative)<textarea name="dendrila_simple_edit_image_description" maxlength="2000">' . esc_textarea($meta['description'] ?? '') . '</textarea></label></fieldset>';
     }
 
-    private static function illustration_input($type, $post = null)
+    private static function illustration_input($type, $post = null, $nonce_action = '')
     {
+        if ($nonce_action !== '') { check_admin_referer($nonce_action); }
         if ($type !== 'post' || !isset($_POST['dendrila_simple_edit_illustration'])) { return null; }
-        $id = absint($_POST['dendrila_simple_edit_illustration']);
+        $raw_id = sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_illustration']));
+        if (!is_string($raw_id) || !ctype_digit($raw_id)) {
+            wp_die('Illustration invalide.', 'Requête incorrecte', array('response' => 400));
+        }
+        $id = (int) $raw_id;
         $alt = sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_image_alt'] ?? ''));
         $description = sanitize_textarea_field(wp_unslash($_POST['dendrila_simple_edit_image_description'] ?? ''));
-        if ($id && (!$alt || !wp_attachment_is_image($id) || ((!$post || $id !== (int)get_post_thumbnail_id($post)) && !Dendrila_Simple_Edit_Media::allowed_image($id)))) {
-            wp_die('Choisissez une image autorisée et indiquez son texte alternatif.');
+        if (strlen($alt) > 2000 || strlen($description) > 10000 ||
+            ($id && (!$alt || !wp_attachment_is_image($id) ||
+                ((!$post || $id !== (int) get_post_thumbnail_id($post)) && !Dendrila_Simple_Edit_Media::allowed_image($id))))) {
+            wp_die('Choisissez une image autorisée et indiquez son texte alternatif.', 'Image invalide', array('response' => 400));
         }
-        return array('id'=>$id,'alt'=>$alt,'description'=>$description);
+        return array('id' => $id, 'alt' => $alt, 'description' => $description);
     }
 
     public static function apply_illustration($id, $image)
     {
-        if (!is_array($image)) { return; }
+        if (!is_array($image) || !isset($image['id'], $image['alt'], $image['description'])) { return; }
         if ($image['id']) {
-            set_post_thumbnail($id,$image['id']);
-            update_post_meta($id,'_dendrila_simple_edit_illustration',wp_slash($image));
+            set_post_thumbnail($id, (int) $image['id']);
+            update_post_meta($id, '_dendrila_simple_edit_illustration', wp_slash($image));
         } else {
             delete_post_thumbnail($id);
-            delete_post_meta($id,'_dendrila_simple_edit_illustration');
+            delete_post_meta($id, '_dendrila_simple_edit_illustration');
         }
     }
 
-    public static function thumbnail_html($html,$id,$thumbnail)
+    public static function thumbnail_html($html, $id, $thumbnail)
     {
-        $image = get_post_meta($id,'_dendrila_simple_edit_illustration',true);
-        if (!is_array($image) || (int)$thumbnail !== (int)$image['id']) { return $html; }
+        $image = get_post_meta($id, '_dendrila_simple_edit_illustration', true);
+        if (!is_array($image) || !isset($image['id']) || (int) $thumbnail !== (int) $image['id']) { return $html; }
+        if (!class_exists('WP_HTML_Tag_Processor')) { return $html; }
         $tag = new WP_HTML_Tag_Processor($html);
         if ($tag->next_tag('IMG')) {
-            $tag->set_attribute('alt',$image['alt']);
-            if ($image['description'] !== '') { $tag->set_attribute('title',$image['description']); }
+            $tag->set_attribute('alt', (string) ($image['alt'] ?? ''));
+            if (!empty($image['description'])) { $tag->set_attribute('title', (string) $image['description']); }
         }
         return $tag->get_updated_html();
     }
@@ -176,8 +197,8 @@ final class Dendrila_Simple_Edit_Post_Editor
         if (!self::can_create_type($type)) {
             wp_die('Vous ne pouvez pas créer ce type de contenu.', 'Accès refusé', array('response' => 403));
         }
-        $raw_title = isset($_POST['dendrila_simple_edit_new_title']) ? wp_unslash($_POST['dendrila_simple_edit_new_title']) : null;
-        $raw_body = isset($_POST['dendrila_simple_edit_new_body']) ? wp_unslash($_POST['dendrila_simple_edit_new_body']) : null;
+        $raw_title = isset($_POST['dendrila_simple_edit_new_title']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_new_title'])) : null;
+        $raw_body = isset($_POST['dendrila_simple_edit_new_body']) ? wp_kses(wp_unslash($_POST['dendrila_simple_edit_new_body']), Dendrila_Simple_Edit_Block_Editor::allowed_tags(), array('http', 'https', 'mailto')) : null;
         $status = isset($_POST['dendrila_simple_edit_new_status']) && is_string($_POST['dendrila_simple_edit_new_status']) ?
             sanitize_key(wp_unslash($_POST['dendrila_simple_edit_new_status'])) : '';
         if (!is_string($raw_title) || strlen($raw_title) > 800 || !is_string($raw_body) ||
@@ -198,7 +219,7 @@ final class Dendrila_Simple_Edit_Post_Editor
         if (!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($content)) {
             wp_die('Contenu incompatible avec l’éditeur simplifié.', 'Requête incorrecte', array('response' => 400));
         }
-        $image = self::illustration_input($type);
+        $image = self::illustration_input($type, null, 'dendrila_simple_edit_post_create');
         $id = wp_insert_post(array(
             'post_type' => $type, 'post_status' => $status === 'review' ? 'draft' : $status,
             'post_author' => get_current_user_id(), 'post_title' => wp_slash($title),
@@ -207,7 +228,7 @@ final class Dendrila_Simple_Edit_Post_Editor
         ), true);
         if (is_wp_error($id) || !$id) { self::redirect('error'); }
         update_post_meta((int) $id, self::CREATED_META, '1');
-        self::apply_illustration($id,$image);
+        self::apply_illustration((int) $id, $image);
         if ($status === 'review') {
             if (!Dendrila_Simple_Edit_Approvals::submit(get_post((int)$id), $title, $content, 'publish')) {
                 self::redirect('error', (int)$id);
@@ -220,13 +241,10 @@ final class Dendrila_Simple_Edit_Post_Editor
     public static function save()
     {
         check_admin_referer('dendrila_simple_edit_post_save');
-        if (!self::can_modify()) {
-            wp_die('Vous ne pouvez pas modifier ces pages.', 'Accès refusé', array('response' => 403));
-        }
-        $raw_id = isset($_POST['dendrila_simple_edit_paged_id']) ? wp_unslash($_POST['dendrila_simple_edit_paged_id']) : '';
-        $expected = isset($_POST['dendrila_simple_edit_paged_version']) ? wp_unslash($_POST['dendrila_simple_edit_paged_version']) : '';
-        $content = isset($_POST['dendrila_simple_edit_paged_body']) ? wp_unslash($_POST['dendrila_simple_edit_paged_body']) : null;
-        $raw_title = isset($_POST['dendrila_simple_edit_paged_title']) ? wp_unslash($_POST['dendrila_simple_edit_paged_title']) : null;
+        $raw_id = isset($_POST['dendrila_simple_edit_paged_id']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_paged_id'])) : '';
+        $expected = isset($_POST['dendrila_simple_edit_paged_version']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_paged_version'])) : '';
+        $content = isset($_POST['dendrila_simple_edit_paged_body']) ? wp_kses(wp_unslash($_POST['dendrila_simple_edit_paged_body']), Dendrila_Simple_Edit_Block_Editor::allowed_tags(), array('http', 'https', 'mailto')) : null;
+        $raw_title = isset($_POST['dendrila_simple_edit_paged_title']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_paged_title'])) : null;
         if (!is_string($raw_id) || !ctype_digit($raw_id) || !is_string($expected) ||
             !preg_match('/^[a-f0-9]{64}$/', $expected) || !is_string($content) || strlen($content) > 100000 ||
             !is_string($raw_title) || strlen($raw_title) > 800) {
@@ -234,7 +252,8 @@ final class Dendrila_Simple_Edit_Post_Editor
         }
         $id = (int) $raw_id;
         $post = self::permitted_post($id);
-        if (!$post || !self::compatible($post)) {
+        if (!$post || !self::compatible($post) ||
+            (!self::can_modify($post->post_type) && !self::own_created($post))) {
             self::redirect('forbidden');
         }
         if (!hash_equals(self::fingerprint($post), $expected)) { self::redirect('conflict', $id); }
@@ -270,7 +289,7 @@ final class Dendrila_Simple_Edit_Post_Editor
         $needs_review = Dendrila_Simple_Edit_Approvals::required($post->post_type) &&
             !current_user_can('manage_options') &&
             ($post->post_status === 'publish' || $review_requested);
-        $image = self::illustration_input($post->post_type,$post);
+        $image = self::illustration_input($post->post_type, $post, 'dendrila_simple_edit_post_save');
         if ($needs_review) {
             if (!Dendrila_Simple_Edit_Approvals::submit($post, $title, $clean,
                 $review_requested ? 'publish' : $post->post_status, $image)) {
@@ -278,7 +297,8 @@ final class Dendrila_Simple_Edit_Post_Editor
             }
             self::redirect('submitted', $id);
         }
-        $image_changed = $image && ($image['id'] !== (int)get_post_thumbnail_id($post) || ($image['id'] && $image !== get_post_meta($id,'_dendrila_simple_edit_illustration',true)));
+        $image_changed = $image && ($image['id'] !== (int) get_post_thumbnail_id($post) ||
+            ($image['id'] && $image !== get_post_meta($id, '_dendrila_simple_edit_illustration', true)));
         if (!$image_changed && $clean === $post->post_content && $title === $post->post_title && $status === $post->post_status) {
             self::redirect('unchanged', $id);
         }
@@ -286,8 +306,8 @@ final class Dendrila_Simple_Edit_Post_Editor
         // is validated by the content allowlist/ownership, nonce and fingerprint.
         $updated = wp_update_post($update, true);
         if (is_wp_error($updated) || !$updated) { self::redirect('error', $id); }
-        self::apply_illustration($id,$image);
-        update_post_meta($id,'_dendrila_simple_edit_last_edit',time());
+        self::apply_illustration($id, $image);
+        update_post_meta($id, '_dendrila_simple_edit_last_edit', time());
         self::redirect('saved', $id);
     }
 
@@ -318,9 +338,13 @@ final class Dendrila_Simple_Edit_Post_Editor
             echo '<fieldset class="dendrila-simple-edit-permissions"><legend>' . esc_html($heading) . '</legend>';
             $group_count = 0;
             foreach ($posts as $post) {
-                if (!$post || $post->post_type !== $type || $post->post_password || !self::compatible($post)) { continue; }
+                if (!$post || $post->post_type !== $type) { continue; }
                 $count++;
                 $group_count++;
+                if ($post->post_password || !self::compatible($post)) {
+                    echo '<p class="description">' . esc_html($post->post_title) . ' — mise en page protégée : modifier avec WordPress.</p>';
+                    continue;
+                }
                 echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_post_ids[]" value="' . (int) $post->ID . '" ' .
                     checked(in_array((int) $post->ID, $allowed, true), true, false) . '> ' .
                     esc_html($post->post_title) . '</label>';
@@ -335,10 +359,19 @@ final class Dendrila_Simple_Edit_Post_Editor
     public static function render($type = 'page')
     {
         if (!in_array($type, array('page', 'post'), true)) { return; }
-        $ids = array_values(array_filter(self::allowed_ids(), static function ($id) use ($type) {
+        $ids = self::can_modify($type) ? array_values(array_filter(self::allowed_ids(), static function ($id) use ($type) {
             $post = get_post($id);
             return $post && $post->post_type === $type;
-        }));
+        })) : array();
+        if (current_user_can('manage_options')) {
+            $available = get_posts(array('post_type' => $type, 'post_status' => 'publish',
+                'posts_per_page' => 200, 'fields' => 'ids'));
+            foreach ($available as $post_id) {
+                $post = get_post((int) $post_id);
+                if ($post && !$post->post_password && self::compatible($post)) { $ids[] = (int) $post->ID; }
+            }
+            $ids = array_values(array_unique($ids));
+        }
         // Add only own newly created content, plus all Simple Edit creations for admins.
         if (current_user_can('manage_options') || self::can_create_type($type)) {
             $created = get_posts(array('post_type' => $type, 'post_status' => array('publish','draft'),
@@ -371,9 +404,9 @@ final class Dendrila_Simple_Edit_Post_Editor
             echo '<select id="dendrila-simple-edit-new-status" name="dendrila_simple_edit_new_status">';
             echo '<option value="draft">Brouillon — non visible sur le site</option>';
             if (self::can_publish_type($type)) {
-                echo '<option value="publish">Publier sur le site immédiatement</option>';
+                echo '<option value="publish">' . esc_html__('Publier sur le site immédiatement', 'dendrila-simple-edit') . '</option>';
             } elseif (Dendrila_Simple_Edit_Approvals::required($type)) {
-                echo '<option value="review">Soumettre pour publication après validation</option>';
+                echo '<option value="review">' . esc_html__('Soumettre pour publication après validation', 'dendrila-simple-edit') . '</option>';
             }
             echo '</select></div>';
             echo '<p><button class="button button-primary" type="submit">Créer ' . esc_html($article) . '</button></p>';
@@ -393,55 +426,64 @@ final class Dendrila_Simple_Edit_Post_Editor
             'unchanged' => 'Aucun changement.', 'error' => 'Enregistrement impossible.');
         if (isset($notices[$notice])) { echo '<p class="notice notice-info" role="status">' . esc_html($notices[$notice]) . '</p>'; }
         $selected = isset($_GET['dendrila_simple_edit_paged_id']) ? absint($_GET['dendrila_simple_edit_paged_id']) : 0;
-        echo '<section class="dendrila-simple-edit-card"><h2>Choisir ' . esc_html($article) . '</h2><div class="dendrila-simple-edit-post-choice">';
+        echo '<section class="dendrila-simple-edit-content-list" aria-label="Contenus modifiables">';
+        $shown = 0;
         foreach ($ids as $id) {
             $post = self::permitted_post($id);
-            if (!$post) { continue; }
-            echo '<a class="button ' . ($selected === $id ? 'button-primary' : 'button-secondary') . '" href="' .
-                esc_url(add_query_arg(array('page' => 'dendrila-simple-edit', 'dendrila_simple_edit_tab' => $tab,
-                    'dendrila_simple_edit_paged_id' => $id), admin_url('admin.php'))) . '">' . esc_html($post->post_title) .
-                ($post->post_status === 'draft' ? ' (brouillon)' : '') . '</a> ';
-        }
-        echo '</div></section>';
-        if (!$selected) { return; }
-        $post = self::permitted_post($selected);
-        if (!$post || $post->post_type !== $type || !self::compatible($post)) {
-            echo '<p class="notice notice-warning">Ce contenu n’est pas accessible dans cette rubrique ou utilise une mise en page non compatible.</p>'; return;
-        }
-        if ($post->post_status === 'publish') {
-            echo '<p><a target="_blank" rel="noopener" href="'.esc_url(get_permalink($post)).'">Voir sur le site (nouvel onglet)</a></p>';
-        }
-        echo '<details class="dendrila-simple-edit-card"><summary>Modifier '.esc_html($post->post_title).'</summary>';
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        echo '<h2>Modifier ' . esc_html($article) . '</h2>';
-        echo '<p>' . (Dendrila_Simple_Edit_Approvals::required($type) && !current_user_can('manage_options') ?
-            'Après enregistrement, un responsable devra valider les modifications avant leur publication.' :
-            'Le titre et les autres éléments seront visibles sur le site après enregistrement.') . '</p>';
-        echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-paged-title">' . esc_html($title_label) . '</label>';
-        echo '<input type="text" id="dendrila-simple-edit-paged-title" name="dendrila_simple_edit_paged_title" required maxlength="180" value="' .
-            esc_attr($post->post_title) . '"></div>';
-        echo '<input type="hidden" name="action" value="dendrila_simple_edit_post_save">';
-        echo '<input type="hidden" name="dendrila_simple_edit_paged_id" value="' . (int) $post->ID . '">';
-        echo '<input type="hidden" name="dendrila_simple_edit_paged_version" value="' . esc_attr(self::fingerprint($post)) . '">';
-        if ($type === 'post') { self::illustration_form($post); }
-        wp_nonce_field('dendrila_simple_edit_post_save');
-        if (self::own_created($post) && self::can_create_type($post->post_type)) {
-            echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-paged-status">Publication</label>';
-            echo '<select id="dendrila-simple-edit-paged-status" name="dendrila_simple_edit_paged_status">';
-            echo '<option value="draft" ' . selected($post->post_status, 'draft', false) . '>Conserver en brouillon</option>';
-            if (self::can_publish_type($post->post_type) || $post->post_status === 'publish') {
-                echo '<option value="publish" ' . selected($post->post_status, 'publish', false) . '>Publier sur le site</option>';
-            } elseif (Dendrila_Simple_Edit_Approvals::required($post->post_type)) {
-                echo '<option value="review">Soumettre à validation pour publier</option>';
+            if (!$post || $post->post_type !== $type || !self::compatible($post)) { continue; }
+            $shown++;
+            // One editor per accordion, so opening a page never requires another navigation.
+            echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-post-item" id="dendrila-simple-edit-item-' . (int) $id . '"' .
+                ($selected === $id ? ' open' : '') . '>';
+            echo '<summary>' . esc_html($post->post_title) .
+                ($post->post_status === 'draft' ? ' <span class="dendrila-simple-edit-status">(brouillon)</span>' : '') . '</summary>';
+            if ($post->post_status === 'publish') {
+                echo '<p><a class="dendrila-simple-edit-live-link" href="' . esc_url(get_permalink($post)) . '" target="_blank" rel="noopener noreferrer">Voir sur le site <span class="screen-reader-text">(nouvel onglet)</span></a></p>';
             }
-            echo '</select></div>';
+            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            echo '<p>' . (Dendrila_Simple_Edit_Approvals::required($type) && !current_user_can('manage_options') ?
+                'Après enregistrement, un responsable devra valider les modifications avant leur publication.' :
+                'Les modifications seront visibles sur le site après enregistrement.') . '</p>';
+            $suffix = (int) $id;
+            echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-paged-title-' . esc_attr((string) $suffix) . '">' . esc_html($title_label) . '</label>';
+            echo '<input type="text" id="dendrila-simple-edit-paged-title-' . esc_attr((string) $suffix) . '" name="dendrila_simple_edit_paged_title" required maxlength="180" value="' .
+                esc_attr($post->post_title) . '"></div>';
+            echo '<input type="hidden" name="action" value="dendrila_simple_edit_post_save">';
+            echo '<input type="hidden" name="dendrila_simple_edit_paged_id" value="' . esc_attr((string) $suffix) . '">';
+            echo '<input type="hidden" name="dendrila_simple_edit_paged_version" value="' . esc_attr(self::fingerprint($post)) . '">';
+            wp_nonce_field('dendrila_simple_edit_post_save');
+            if (self::own_created($post) && self::can_create_type($post->post_type)) {
+                echo '<div class="dendrila-simple-edit-field"><label for="dendrila-simple-edit-paged-status-' . esc_attr((string) $suffix) . '">Publication</label>';
+                echo '<select id="dendrila-simple-edit-paged-status-' . esc_attr((string) $suffix) . '" name="dendrila_simple_edit_paged_status">';
+                echo '<option value="draft" ' . selected($post->post_status, 'draft', false) . '>Conserver en brouillon</option>';
+                if (self::can_publish_type($post->post_type) || $post->post_status === 'publish') {
+                    echo '<option value="publish" ' . selected($post->post_status, 'publish', false) . '>Publier sur le site</option>';
+                } elseif (Dendrila_Simple_Edit_Approvals::required($post->post_type)) {
+                    echo '<option value="review">Soumettre à validation pour publier</option>';
+                }
+                echo '</select></div>';
+            }
+            if ($type === 'post') { self::illustration_form($post); }
+            echo '<div class="dendrila-simple-edit-block-editor" data-dendrila-simple-edit-block-editor data-allow-title="0">';
+            echo '<label for="dendrila-simple-edit-paged-body-' . esc_attr((string) $suffix) . '">' . esc_html($content_label) . '</label>';
+            echo '<textarea id="dendrila-simple-edit-paged-body-' . esc_attr((string) $suffix) . '" data-dendrila-simple-edit-editor-source name="dendrila_simple_edit_paged_body" rows="10">' .
+                esc_textarea($post->post_content) . '</textarea></div>';
+            echo '<p><button type="submit" class="button button-primary">Enregistrer les modifications</button></p></form>';
+            // WordPress revisions track previous title/body content without storing
+            // duplicate copies of posts inside the plugin.
+            $revisions = wp_get_post_revisions($id, array('posts_per_page' => 5, 'orderby' => 'date', 'order' => 'DESC'));
+            if ($revisions) {
+                echo '<details class="dendrila-simple-edit-revision-list"><summary>Historique des modifications</summary><ul>';
+                foreach ($revisions as $revision) {
+                    $when = get_the_date('d/m/Y H:i', $revision);
+                    $who = get_the_author_meta('display_name', (int) $revision->post_author);
+                    echo '<li>' . esc_html($when) . ($who ? ' — ' . esc_html($who) : '') . '</li>';
+                }
+                echo '</ul></details>';
+            }
+            echo '</details>';
         }
-        echo '<div class="dendrila-simple-edit-block-editor" data-dendrila-simple-edit-block-editor data-allow-title="0">';
-        echo '<label for="dendrila-simple-edit-paged-body">' . esc_html($content_label) . '</label>';
-        echo '<textarea id="dendrila-simple-edit-paged-body" data-dendrila-simple-edit-editor-source name="dendrila_simple_edit_paged_body" rows="10">' .
-            esc_textarea($post->post_content) . '</textarea></div>';
-        echo '<p><button type="submit" class="button button-primary">Enregistrer les modifications</button></p></form>';
-        Dendrila_Simple_Edit_ACF::render_fields_for($selected);
-        echo '</details>';
+        if (!$shown) { echo '<p class="notice notice-warning">Aucun contenu compatible accessible dans cette rubrique.</p>'; }
+        echo '</section>';
     }
 }

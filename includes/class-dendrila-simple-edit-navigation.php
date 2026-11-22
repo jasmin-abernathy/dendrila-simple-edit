@@ -100,8 +100,8 @@ final class Dendrila_Simple_Edit_Navigation
         }
         check_admin_referer('dendrila_simple_edit_nav_reorder');
         $menu = self::detect();
-        $raw = isset($_POST['dendrila_simple_edit_nav_ids']) ? wp_unslash($_POST['dendrila_simple_edit_nav_ids']) : null;
-        $expected = isset($_POST['dendrila_simple_edit_nav_version']) ? wp_unslash($_POST['dendrila_simple_edit_nav_version']) : null;
+        $raw = isset($_POST['dendrila_simple_edit_nav_ids']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_nav_ids']), 'sanitize_text_field') : null;
+        $expected = isset($_POST['dendrila_simple_edit_nav_version']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nav_version'])) : null;
         if (!$menu || !is_array($raw) || !is_string($expected) || !preg_match('/^[a-f0-9]{64}$/', $expected) ||
             count($raw) !== count($menu['items']) || count($raw) > 100) {
             wp_die('Liste invalide.', 'Requête incorrecte', array('response' => 400));
