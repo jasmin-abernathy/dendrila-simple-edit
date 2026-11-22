@@ -142,6 +142,7 @@ final class Dendrila_Simple_Edit_Modules
     public static function boot()
     {
         add_action('admin_post_dendrila_simple_edit_module_configure', array(__CLASS__, 'configure'));
+        add_action('admin_post_dendrila_simple_edit_module_toggle', array(__CLASS__, 'configure_enabled'));
     }
 
     public static function configure()
@@ -174,21 +175,76 @@ final class Dendrila_Simple_Edit_Modules
             }
             $grants_by_role[$role] = array_values(array_unique($actions));
         }
-        $enabled = isset($_POST['dendrila_simple_edit_module_enabled']) &&
-            sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_module_enabled'])) === '1';
-        if ($module === 'newsletters' && $enabled && !Dendrila_Simple_Edit_Mailing::transport_ready()) {
-            wp_die(esc_html__('Pour activer le module Newsletters, installez et activez FluentSMTP, puis configurez au moins une connexion d’envoi dans ses réglages.', 'dendrila-simple-edit'), esc_html__('FluentSMTP nécessaire', 'dendrila-simple-edit'), array('response'=>400));
-        }
+        // The roles form must NEVER alter module activation. A stale roles tab
+        // cannot turn newsletter sending on/off while permissions are being saved.
         $settings = self::settings();
+        $enabled = self::enabled($module);
         $settings[$module] = array(
             'enabled' => $enabled,
             'roles' => $grants_by_role,
         );
         update_option(self::OPTION, $settings, false);
         wp_safe_redirect(add_query_arg(array('dendrila_simple_edit_notice' => 'module_configured', 'dendrila_simple_edit_tab' => 'reglages',
-            'dendrila_simple_edit_settings_section' => 'modules'),
+            'dendrila_simple_edit_settings_section' => 'roles'),
             admin_url('admin.php?page=dendrila-simple-edit')));
         exit;
+    }
+
+    /** Change activation state without replacing any saved role permissions. */
+    public static function configure_enabled()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Configuration réservée à l’administration.', 'dendrila-simple-edit'), '', array('response' => 403));
+        }
+        $slug = isset($_POST['dendrila_simple_edit_module']) && is_string($_POST['dendrila_simple_edit_module']) ?
+            sanitize_key(wp_unslash($_POST['dendrila_simple_edit_module'])) : '';
+        $defs = self::definitions();
+        if (!isset($defs[$slug])) { wp_die(esc_html__('Module inconnu.', 'dendrila-simple-edit'), '', array('response' => 400)); }
+        check_admin_referer('dendrila_simple_edit_module_toggle_' . $slug);
+        $enable = isset($_POST['dendrila_simple_edit_module_enabled']) &&
+            sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_module_enabled'])) === '1';
+        if ($slug === 'newsletters' && $enable && !Dendrila_Simple_Edit_Mailing::transport_ready()) {
+            wp_die(esc_html__('Pour activer les newsletters, configurez une connexion FluentSMTP.', 'dendrila-simple-edit'), '', array('response' => 400));
+        }
+        $settings = self::settings();
+        if (!isset($settings[$slug]) || !is_array($settings[$slug])) { $settings[$slug] = array(); }
+        $settings[$slug]['enabled'] = $enable;
+        if (!isset($settings[$slug]['roles']) || !is_array($settings[$slug]['roles'])) {
+            $settings[$slug]['roles'] = array();
+        }
+        update_option(self::OPTION, $settings, false);
+        wp_safe_redirect(add_query_arg(array('dendrila_simple_edit_tab'=>'reglages',
+            'dendrila_simple_edit_settings_section'=>'general', 'dendrila_simple_edit_notice'=>'module_configured'),
+            admin_url('admin.php?page=dendrila-simple-edit')));
+        exit;
+    }
+
+    /** A short first screen: activation only, with permissions handled separately. */
+    public static function render_modules()
+    {
+        if (!current_user_can('manage_options')) { return; }
+        echo '<section class="dendrila-simple-edit-card"><h2>' . esc_html__('Outils disponibles', 'dendrila-simple-edit') . '</h2>';
+        echo '<p>' . esc_html__('Choisissez les fonctions accessibles sur le site. Configurez ensuite les droits dans « Rôles et permissions ».', 'dendrila-simple-edit') . '</p>';
+        foreach (self::definitions() as $slug=>$def) {
+            $enabled = self::enabled($slug);
+            echo '<form class="dendrila-simple-edit-module-switch" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            echo '<input type="hidden" name="action" value="dendrila_simple_edit_module_toggle">';
+            echo '<input type="hidden" name="dendrila_simple_edit_module" value="' . esc_attr($slug) . '">';
+            wp_nonce_field('dendrila_simple_edit_module_toggle_' . $slug);
+            echo '<div class="dendrila-simple-edit-module-switch-main"><strong>' . esc_html($def['label']) . '</strong>';
+            echo '<span class="dendrila-simple-edit-module-status">' . ($enabled ? esc_html__('Activé', 'dendrila-simple-edit') : esc_html__('Désactivé', 'dendrila-simple-edit')) . '</span>';
+            if ($slug === 'newsletters') {
+                echo '<p class="description">' . esc_html__('FluentSMTP est requis pour les newsletters.', 'dendrila-simple-edit') . ' ';
+                echo Dendrila_Simple_Edit_Mailing::transport_ready() ? esc_html__('Connexion détectée.', 'dendrila-simple-edit') : esc_html__('Connexion manquante : activation impossible.', 'dendrila-simple-edit');
+                echo ' <a href="' . esc_url(admin_url('options-general.php?page=fluent-mail')) . '">' . esc_html__('Configurer FluentSMTP', 'dendrila-simple-edit') . '</a></p>';
+            }
+            echo '</div><label class="dendrila-simple-edit-module-toggle"><input type="checkbox" name="dendrila_simple_edit_module_enabled" value="1" ' . checked($enabled, true, false);
+            if ($slug === 'newsletters' && !$enabled && !Dendrila_Simple_Edit_Mailing::transport_ready()) { echo ' disabled'; }
+            echo '> ' . esc_html__('Activer', 'dendrila-simple-edit') . '</label>';
+            echo '<button class="button button-secondary" type="submit">' . esc_html__('Enregistrer', 'dendrila-simple-edit') . '</button>';
+            echo '</form>';
+        }
+        echo '</section>';
     }
 
     public static function render_admin()
@@ -200,8 +256,10 @@ final class Dendrila_Simple_Edit_Modules
         foreach (self::definitions() as $module => $definition) {
             $configured = $settings[$module] ?? array();
             $grants = is_array($configured) ? ($configured['roles'] ?? array()) : array();
-            echo '<form class="dendrila-simple-edit-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-            echo '<h2>' . esc_html($definition['label']) . '</h2>';
+            $granted_roles = 0;
+            foreach ($grants as $role_permissions) { if (is_array($role_permissions) && $role_permissions) { $granted_roles++; } }
+            echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-module-permissions"><summary><strong>' . esc_html($definition['label']) . '</strong> <span class="description">(' . (int)$granted_roles . ' rôles autorisés)</span></summary>';
+            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
             echo '<p>Configurez les accès une fois par rôle WordPress : les membres d’un même rôle ont les mêmes droits.</p>';
             if ($module === 'newsletters') {
                 echo '<p><strong>FluentSMTP est obligatoire pour le mailing.</strong> ' .
@@ -214,13 +272,12 @@ final class Dendrila_Simple_Edit_Modules
             echo '<input type="hidden" name="action" value="dendrila_simple_edit_module_configure">';
             echo '<input type="hidden" name="dendrila_simple_edit_module" value="' . esc_attr($module) . '">';
             wp_nonce_field('dendrila_simple_edit_module_configure');
-            echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_module_enabled" value="1" ' .
-                checked(self::enabled($module), true, false) . '> Activer ce module</label>';
+            echo '<p class="description">' . esc_html__('Activation et désactivation : rubrique « Modules ».', 'dendrila-simple-edit') . '</p>';
             foreach ($roles as $role => $meta) {
                 $assigned = is_array($grants) ? ($grants[$role] ?? array()) : array();
                 $role_label = translate_user_role($meta['name'] ?? $role);
                 $group_id = 'dendrila-simple-edit-' . $module . '-' . $role;
-                echo '<fieldset class="dendrila-simple-edit-permissions" id="' . esc_attr($group_id) . '"><legend>' . esc_html($role_label) . '</legend>';
+                echo '<details class="dendrila-simple-edit-role-permissions" id="' . esc_attr($group_id) . '"><summary>' . esc_html($role_label) . ' (' . count(is_array($assigned) ? $assigned : array()) . ')</summary><fieldset class="dendrila-simple-edit-permissions"><legend class="screen-reader-text">' . esc_html($role_label) . '</legend>';
                 echo '<div class="dendrila-simple-edit-bulk-permissions"><button type="button" class="button button-secondary" data-dendrila-simple-edit-select-all="' . esc_attr($group_id) . '">' . esc_html__('Tout sélectionner', 'dendrila-simple-edit') . '</button> ';
                 echo '<button type="button" class="button button-link" data-dendrila-simple-edit-select-none="' . esc_attr($group_id) . '">' . esc_html__('Tout désélectionner', 'dendrila-simple-edit') . '</button></div>';
                 foreach ($definition['actions'] as $key => $label) {
@@ -229,10 +286,10 @@ final class Dendrila_Simple_Edit_Modules
                         checked(is_array($assigned) && in_array($key, $assigned, true), true, false) .
                         '> ' . esc_html($label) . '</label>';
                 }
-                echo '</fieldset>';
+                echo '</fieldset></details>';
             }
             echo '<p class="description">' . esc_html($definition['future']) . '</p>';
-            echo '<p><button type="submit" class="button button-primary">Enregistrer les autorisations</button></p></form>';
+            echo '<p><button type="submit" class="button button-primary">Enregistrer les autorisations</button></p></form></details>';
         }
     }
 }

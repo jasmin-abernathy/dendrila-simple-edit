@@ -552,3 +552,31 @@
 .dendrila-simple-edit-wrap .dendrila-simple-edit-live-preview{background:var(--template-paper,#ffffff);color:var(--template-ink,#293a30);}
 .dendrila-simple-edit-wrap .dendrila-simple-edit-live-preview h1,.dendrila-simple-edit-wrap .dendrila-simple-edit-live-preview h2{color:var(--template-accent,#24543b);}
 .dendrila-simple-edit-wrap .dendrila-simple-edit-preview-button{background:var(--template-button,#24543b);}
+
+/* Admin settings: compact, readable and reachable on small touch screens. */
+.dendrila-simple-edit-wrap .dendrila-simple-edit-settings-subnav,
+.dendrila-simple-edit-wrap .dendrila-simple-edit-content-subnav {grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;overflow:visible;min-width:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-settings-subnav a,
+.dendrila-simple-edit-wrap .dendrila-simple-edit-content-subnav a {min-height:44px;display:inline-flex;align-items:center;white-space:normal;text-align:center;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-setup-relaunch form {margin:12px 0 0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-module-switch {display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:15px 0;border-top:1px solid #d6e3d7;min-width:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-module-switch-main {flex:1 1 220px;min-width:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-module-switch-main strong {font-size:16px;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-module-switch-main .description {margin:6px 0 0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-module-status {display:inline-block;margin-inline-start:9px;font-size:12px;color:#496851;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-module-toggle {display:flex;align-items:center;min-height:44px;gap:8px;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-module-toggle input {width:20px;height:20px;accent-color:#20733a;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-module-switch .button {min-height:44px;}
+.dendrila-simple-edit-wrap details.dendrila-simple-edit-module-permissions {min-width:0;}
+.dendrila-simple-edit-wrap details.dendrila-simple-edit-module-permissions>summary {cursor:pointer;min-height:44px;display:list-item;padding:9px 4px;font-size:16px;}
+.dendrila-simple-edit-wrap details.dendrila-simple-edit-module-permissions>form {margin-top:15px;}
+.dendrila-simple-edit-wrap details.dendrila-simple-edit-role-permissions {border:1px solid #d9e5db;border-radius:9px;margin:10px 0;background:#fafcfb;min-width:0;}
+.dendrila-simple-edit-wrap details.dendrila-simple-edit-role-permissions>summary {cursor:pointer;padding:12px;min-height:44px;font-weight:600;}
+.dendrila-simple-edit-wrap details.dendrila-simple-edit-role-permissions>fieldset {margin:8px 12px 15px;min-width:0;}
+@media(max-width:600px) { .dendrila-simple-edit-wrap .dendrila-simple-edit-module-switch {align-items:stretch;} .dendrila-simple-edit-wrap .dendrila-simple-edit-module-switch .button {width:100%;} .dendrila-simple-edit-wrap .dendrila-simple-edit-module-switch-main{flex-basis:100%;} .dendrila-simple-edit-wrap .dendrila-simple-edit-settings-subnav a {flex:1 1 140px;justify-content:center;} }
+
+/* Settings are a single readable column; role permissions are nested accordions. */
+.dendrila-simple-edit-wrap .dendrila-simple-edit-panel-reglages {grid-template-columns:minmax(0,1fr);}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-panel-reglages > * {min-width:0;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-module-permissions>summary:focus-visible,
+.dendrila-simple-edit-wrap .dendrila-simple-edit-role-permissions>summary:focus-visible {outline:3px solid #216e39;outline-offset:2px;}

@@ -6,10 +6,22 @@ final class Dendrila_Simple_Edit_Setup
 {
     const OPTION = 'dendrila_simple_edit_setup_completed_v1';
     const STEP_OPTION = 'dendrila_simple_edit_setup_step_v1';
+    const REDIRECT_OPTION = 'dendrila_simple_edit_setup_redirect_v1';
+    const REVIEW_OPTION = 'dendrila_simple_edit_setup_review_v1';
 
     public static function completed()
     {
         return get_option(self::OPTION, '0') === '1';
+    }
+
+    public static function reviewing()
+    {
+        return get_option(self::REVIEW_OPTION, '0') === '1';
+    }
+
+    public static function needs_wizard()
+    {
+        return !self::completed() || self::reviewing();
     }
 
     public static function can_configure()
@@ -20,22 +32,50 @@ final class Dendrila_Simple_Edit_Setup
 
     public static function on_activate()
     {
-        if (get_option(self::OPTION, null) === null) { add_option(self::OPTION, '0', '', false); }
-        if (!self::completed()) { update_option(self::STEP_OPTION, 1, false); }
+        // First installation only: activation after an update or reactivation must
+        // preserve the completed wizard and every existing module/list/contact.
+        if (get_option(self::OPTION, null) !== null) { return; }
+        add_option(self::OPTION, '0', '', false);
+        update_option(self::STEP_OPTION, 1, false);
+        update_option(self::REDIRECT_OPTION, '1', false);
     }
 
     public static function boot()
     {
         add_action('admin_init', array(__CLASS__, 'after_activation'), 5);
         add_action('admin_post_dendrila_simple_edit_setup_save', array(__CLASS__, 'save'));
+        add_action('admin_post_dendrila_simple_edit_setup_restart', array(__CLASS__, 'restart'));
         add_action('admin_notices', array(__CLASS__, 'notice'));
     }
 
     public static function after_activation()
     {
-        if (self::completed() || !self::can_configure() || !isset($_GET['activate'])) { return; }
+        if (!self::can_configure() || self::completed() ||
+            get_option(self::REDIRECT_OPTION, '0') !== '1') { return; }
         global $pagenow;
-        if ($pagenow !== 'plugins.php') { return; }
+        // Respect the admin-post handler and AJAX requests while activation finishes.
+        if (in_array($pagenow, array('admin-post.php', 'admin-ajax.php'), true)) { return; }
+        if ($pagenow === 'admin.php' && isset($_GET['page']) &&
+            sanitize_key(wp_unslash($_GET['page'])) === 'dendrila-simple-edit') {
+            delete_option(self::REDIRECT_OPTION);
+            return;
+        }
+        delete_option(self::REDIRECT_OPTION);
+        wp_safe_redirect(admin_url('admin.php?page=dendrila-simple-edit&dendrila_simple_edit_setup_step=1'));
+        exit;
+    }
+
+    public static function restart()
+    {
+        if (!self::can_configure()) {
+            wp_die(esc_html__('Accès refusé.', 'dendrila-simple-edit'), '', array('response' => 403));
+        }
+        check_admin_referer('dendrila_simple_edit_setup_restart');
+        // Explicit manual review: do not mark an already configured plugin as
+        // unconfigured if the administrator leaves the wizard unfinished.
+        update_option(self::REVIEW_OPTION, '1', false);
+        update_option(self::STEP_OPTION, 1, false);
+        delete_option(self::REDIRECT_OPTION);
         wp_safe_redirect(admin_url('admin.php?page=dendrila-simple-edit&dendrila_simple_edit_setup_step=1'));
         exit;
     }
@@ -68,6 +108,11 @@ final class Dendrila_Simple_Edit_Setup
     {
         if (!self::can_configure()) { wp_die('Accès refusé.', 'Accès refusé', array('response'=>403)); }
         check_admin_referer('dendrila_simple_edit_setup_save');
+        if (isset($_POST['dendrila_simple_edit_setup_cancel']) && self::reviewing()) {
+            delete_option(self::REVIEW_OPTION);
+            wp_safe_redirect(admin_url('admin.php?page=dendrila-simple-edit&dendrila_simple_edit_tab=reglages'));
+            exit;
+        }
         $step = isset($_POST['dendrila_simple_edit_setup_step']) ? absint($_POST['dendrila_simple_edit_setup_step']) : 0;
         $highest = (int) get_option(self::STEP_OPTION, 1);
         if ($step < 1 || $step > 5 || $step > $highest) { wp_die('Étape invalide.', 'Configuration',array('response'=>400)); }
@@ -159,6 +204,8 @@ final class Dendrila_Simple_Edit_Setup
                 wp_die('Migration des désinscriptions incomplète : aucune campagne n’est autorisée.');
             }
             update_option(self::OPTION, '1', false);
+            delete_option(self::REVIEW_OPTION);
+            delete_option(self::REDIRECT_OPTION);
             wp_safe_redirect(admin_url('admin.php?page=dendrila-simple-edit'));
             exit;
         }
@@ -260,6 +307,7 @@ final class Dendrila_Simple_Edit_Setup
             echo '<p>' . esc_html__('Les modifications ultérieures se font depuis les réglages du plugin.', 'dendrila-simple-edit') . '</p>';
         }
         echo '<div class="dendrila-simple-edit-setup-actions">';
+        if (self::reviewing()) { echo '<button type="submit" name="dendrila_simple_edit_setup_cancel" value="1" class="button button-secondary" formnovalidate>' . esc_html__('Quitter l’assistant', 'dendrila-simple-edit') . '</button>'; }
         if ($step>1) { echo '<button type="submit" name="dendrila_simple_edit_setup_back" value="1" class="button button-secondary" formnovalidate>Retour</button>'; }
         echo '<button type="submit" class="button button-primary">'.($step===5?'Terminer la configuration':'Continuer').' </button></div>';
         echo '</form><footer class="dendrila-simple-edit-support"><a class="dendrila-simple-edit-support-link" href="https://app.lepotager.org/soutenir/" target="_blank" rel="noopener noreferrer">☕ Offrez un café au développeur</a></footer></div>';
