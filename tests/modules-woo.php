@@ -147,7 +147,7 @@ $product->status = 'publish';
 ensure_product(Dendrila_Simple_Edit_Woo::clean_changes(array('stock_quantity' => '2'), $product)['stock_quantity'] === 2, 'Live editing requires both grants');
 $GLOBALS['dendrila_simple_edit_user'] = 4;
 $GLOBALS['dendrila_simple_edit_options']['dendrila_simple_edit_modules']['products']['roles']['product_editor'][] = 'images';
-$GLOBALS['dendrila_simple_edit_options']['dendrila_simple_edit_modules']['products']['grants']['4'][] = 'categories';
+$GLOBALS['dendrila_simple_edit_options']['dendrila_simple_edit_modules']['products']['roles']['product_editor'][] = 'categories';
 $product->status = 'draft';
 ensure_product(Dendrila_Simple_Edit_Woo::clean_changes(array('image_id' => '22'), $product) === array(), 'Same image does not trigger update');
 ensure_product(Dendrila_Simple_Edit_Woo::clean_changes(array('category_ids' => array('', '11')), $product) === array(), 'Same category set does not trigger update');
