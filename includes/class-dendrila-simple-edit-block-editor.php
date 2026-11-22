@@ -9,12 +9,15 @@ final class Dendrila_Simple_Edit_Block_Editor
     {
         $tags = array_fill_keys(array('p', 'br', 'h1', 'h2', 'h3', 'h4', 'strong', 'b',
             'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'hr'), array());
-        $tags['div'] = array('data-dendrila-simple-edit-block' => true, 'data-dendrila-simple-edit-align' => true);
+        $tags['div'] = array('data-dendrila-simple-edit-block' => true, 'data-dendrila-simple-edit-align' => true,
+            'data-dse-block' => true, 'data-dse-align' => true);
         $tags['a'] = array('href' => true, 'title' => true, 'class' => true);
         $tags['img'] = array('src' => true, 'alt' => true, 'width' => true, 'height' => true);
         foreach (array('h1', 'h2', 'h3', 'p', 'a', 'img') as $tag) {
             $tags[$tag]['data-dendrila-simple-edit-color'] = true;
             $tags[$tag]['data-dendrila-simple-edit-align'] = true;
+            $tags[$tag]['data-dse-color'] = true;
+            $tags[$tag]['data-dse-align'] = true;
         }
         return $tags;
     }
@@ -282,7 +285,7 @@ final class Dendrila_Simple_Edit_Block_Editor
         // headings are reconstructed by the JS editor without running shortcodes.
         // More complex HTML and any shortcode remain intentionally out of scope.
         if (preg_match('~\[[a-z][a-z0-9_-]*(?:\s+[^]\r\n]*)?\]~i', $html)) { return false; }
-        $remaining = preg_replace_callback('~<div\s+data-dendrila-simple-edit-block="(title|heading|text|image|button|link)"(?:\s+data-dendrila-simple-edit-align="(?:left|center|right)")?\s*>([\s\S]*?)</div>~i',
+        $remaining = preg_replace_callback('~<div\s+(?:data-dendrila-simple-edit-block|data-dse-block)="(title|heading|text|image|button|link)"(?:\s+(?:data-dendrila-simple-edit-align|data-dse-align)="(?:left|center|right)")?\s*>([\s\S]*?)</div>~i',
             static function ($match) {
                 $tag = array('title' => 'h1', 'heading' => 'h2', 'text' => 'p',
                     'image' => 'img', 'button' => 'a', 'link' => 'a')[strtolower($match[1])];

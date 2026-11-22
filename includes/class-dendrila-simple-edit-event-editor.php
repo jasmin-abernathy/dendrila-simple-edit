@@ -4,11 +4,8 @@ if (!defined('ABSPATH')) { exit; }
 
 final class Dendrila_Simple_Edit_Event_Editor
 {
-    const OPTION = 'dendrila_simple_edit_visual_editable_events';
-
     public static function boot()
     {
-        add_action('admin_post_dendrila_simple_edit_event_permissions', array(__CLASS__, 'configure'));
         add_action('admin_post_dendrila_simple_edit_event_save', array(__CLASS__, 'save'));
         add_action('admin_post_dendrila_simple_edit_event_create_venue', array(__CLASS__, 'create_venue'));
         add_filter('the_content', array(__CLASS__, 'frontend_colors'), 20);
@@ -27,13 +24,11 @@ final class Dendrila_Simple_Edit_Event_Editor
         return function_exists('tribe_update_event') && function_exists('tribe_get_event') && post_type_exists('tribe_events');
     }
 
-    public static function allowed_ids()
+    private static function can_modify_events()
     {
-        $ids = get_option(self::OPTION, array());
-        if (!is_array($ids)) { return array(); }
-        return array_values(array_unique(array_filter(array_map('intval', $ids), static function ($id) {
-            return $id > 0;
-        })));
+        return current_user_can('manage_options') ||
+            (Dendrila_Simple_Edit_Post_Editor::type_enabled('tribe_events') &&
+             Dendrila_Simple_Edit_Modules::allowed('editorial', 'edit_events'));
     }
 
     private static function compatible($post)
@@ -44,9 +39,9 @@ final class Dendrila_Simple_Edit_Event_Editor
             get_post_meta($post->ID, '_et_pb_use_builder', true) !== 'on';
     }
 
-    private static function eligible($id, $check_allowlist = true)
+    private static function eligible($id)
     {
-        if (!self::available() || ($check_allowlist && !in_array($id, self::allowed_ids(), true))) { return false; }
+        if (!self::available() || !self::can_modify_events()) { return false; }
         $post = get_post((int) $id);
         return $post && $post->post_type === 'tribe_events' && $post->post_status === 'publish' &&
             $post->post_password === '' && self::compatible($post) ? $post : false;
@@ -78,26 +73,6 @@ final class Dendrila_Simple_Edit_Event_Editor
         exit;
     }
 
-    public static function configure()
-    {
-        if (!current_user_can('manage_options')) {
-            wp_die('Réservé à l’administration.', 'Accès refusé', array('response' => 403));
-        }
-        check_admin_referer('dendrila_simple_edit_event_permissions');
-        $submitted = isset($_POST['dendrila_simple_edit_event_ids']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_event_ids']), 'sanitize_text_field') : array();
-        if (!is_array($submitted) || count($submitted) > 100) {
-            wp_die('Sélection invalide.', 'Requête incorrecte', array('response' => 400));
-        }
-        $ids = array();
-        foreach ($submitted as $id) {
-            if (is_string($id) && ctype_digit($id) && self::eligible((int) $id, false)) {
-                $ids[] = (int) $id;
-            }
-        }
-        update_option(self::OPTION, array_values(array_unique($ids)), false);
-        self::redirect('permissions');
-    }
-
     private static function date_input($value, $timezone)
     {
         if (!is_string($value) || preg_match('/^\d{4}-\d\d-\d\dT\d\d:\d\d$/', $value) !== 1) { return false; }
@@ -107,7 +82,7 @@ final class Dendrila_Simple_Edit_Event_Editor
 
     public static function save()
     {
-        if (!Dendrila_Simple_Edit_Plugin::can_edit()) {
+        if (!self::can_modify_events()) {
             wp_die('Vous ne pouvez pas modifier cet événement.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_event_save');
@@ -182,7 +157,7 @@ final class Dendrila_Simple_Edit_Event_Editor
 
     public static function create_venue()
     {
-        if (!Dendrila_Simple_Edit_Plugin::can_edit() || !self::available() || !function_exists('tribe_venues')) {
+        if (!self::can_modify_events() || !self::available() || !function_exists('tribe_venues')) {
             wp_die('Création de lieu non autorisée.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_event_create_venue');
@@ -223,25 +198,13 @@ final class Dendrila_Simple_Edit_Event_Editor
     public static function render_admin()
     {
         if (!current_user_can('manage_options')) { return; }
-        echo '<section class="dendrila-simple-edit-card"><h2>Événements autorisés</h2>';
+        echo '<section class="dendrila-simple-edit-card"><h2>Événements : droits par type</h2>';
         if (!self::available()) {
             echo '<p>Activez The Events Calendar pour utiliser cette rubrique.</p></section>';
             return;
         }
-        $ids = self::allowed_ids();
-        $posts = get_posts(array('post_type' => 'tribe_events', 'post_status' => 'publish',
-            'posts_per_page' => 100, 'orderby' => 'modified', 'order' => 'DESC'));
-        echo '<p>Choisissez les événements que les comptes Édition simple pourront modifier. Les modèles complexes restent protégés.</p>';
-        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        echo '<input type="hidden" name="action" value="dendrila_simple_edit_event_permissions">';
-        wp_nonce_field('dendrila_simple_edit_event_permissions');
-        foreach ($posts as $post) {
-            if (!self::eligible($post->ID, false)) { continue; }
-            echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_event_ids[]" value="' . (int) $post->ID . '" ' .
-                checked(in_array((int) $post->ID, $ids, true), true, false) . '> ' .
-                esc_html($post->post_title) . '</label>';
-        }
-        echo '<p><button class="button button-primary" type="submit">Enregistrer les autorisations</button></p></form></section>';
+        echo '<p>L’administrateur voit tous les événements publiés compatibles, sans sélection individuelle.
+            Pour les autres rôles, activez le type « Événements » et le droit « Modifier les événements existants » dans les autorisations.</p></section>';
     }
 
     public static function render()
@@ -250,7 +213,14 @@ final class Dendrila_Simple_Edit_Event_Editor
             echo '<section class="dendrila-simple-edit-card"><h3>Calendrier indisponible</h3><p>Activez The Events Calendar.</p></section>';
             return;
         }
-        $ids = self::allowed_ids();
+        $ids = array();
+        if (self::can_modify_events() && self::available()) {
+            $events = get_posts(array('post_type'=>'tribe_events','post_status'=>'publish',
+                'posts_per_page'=>-1,'fields'=>'ids','orderby'=>'modified','order'=>'DESC'));
+            foreach ($events as $event_id) {
+                if (self::eligible((int)$event_id)) { $ids[] = (int)$event_id; }
+            }
+        }
         $selected = isset($_GET['dendrila_simple_edit_eid']) ? absint($_GET['dendrila_simple_edit_eid']) : 0;
         $notices = array('saved' => 'Événement enregistré.', 'permissions' => 'Autorisations mises à jour.',
             'conflict' => 'Cet événement a changé : rechargez avant de recommencer.',
