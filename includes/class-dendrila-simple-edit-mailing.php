@@ -980,9 +980,9 @@ final class Dendrila_Simple_Edit_Mailing
             'duplicate_email' => 'Cette adresse existe déjà. Vérifiez le contact avant de modifier son inscription.',
             'blocked_unsubscribed' => 'Import protégé : les personnes précédemment désabonnées ont été ignorées. Aucun réabonnement automatique.',
             'invalid_contact' => 'Contact introuvable ou modification impossible.',
-            'invite_sent' => 'Invitation envoyée pour nouvelle confirmation, sans réabonnement automatique.',
-            'invite_failed' => 'L’invitation n’a pas été acceptée par le transport SMTP. Aucun réabonnement.',
-            'invite_no_permission' => 'Une permission explicite et sa provenance sont nécessaires avant toute invitation.',
+            'invite_sent' => 'Invitation acceptée par le système d’envoi. Vérifiez sa réception ; aucun réabonnement n’a encore été effectué.',
+            'invite_failed' => 'L’envoi a échoué. Vérifiez le journal FluentSMTP ; aucun réabonnement n’a été effectué.',
+            'invite_no_permission' => 'Pour envoyer l’invitation, cochez la confirmation d’accord et précisez sa provenance (12 caractères minimum). Aucun e-mail n’a été envoyé.',
             'invite_rate_limited' => 'Une invitation a déjà été envoyée récemment à cette personne (limite : 30 jours).',
             'invite_not_allowed' => 'Cette personne n’est pas désabonnée de la liste.',
             'smtp_missing' => 'Le transport SMTP doit être configuré avant d’envoyer une invitation.',
@@ -992,7 +992,12 @@ final class Dendrila_Simple_Edit_Mailing
             'error' => 'Opération non enregistrée.',
         );
         $notice = isset($_GET['dendrila_simple_edit_ml_notice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_ml_notice'])) : '';
-        if (isset($notices[$notice])) { echo '<p class="notice notice-info" role="status">' . esc_html($notices[$notice]) . '</p>'; }
+        if (isset($notices[$notice])) {
+            $bad_notice = in_array($notice, array('invite_failed','invite_no_permission','invite_rate_limited','invite_not_allowed',
+                'smtp_missing','invalid_contact','error','bad_list'), true);
+            echo '<p class="notice ' . ($bad_notice ? 'notice-error' : 'notice-info') . '" role="' .
+                ($bad_notice ? 'alert' : 'status') . '">' . esc_html($notices[$notice]) . '</p>';
+        }
         if ($section === 'connexion') {
         echo '<section class="dendrila-simple-edit-card"><h2>Connexion pour envoyer les e-mails</h2><p>' . esc_html__('FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa connexion avant de lancer une newsletter.', 'dendrila-simple-edit') . '</p>';
         echo '<p><strong>Transport :</strong> ' . (self::transport_ready() ?
@@ -1213,7 +1218,7 @@ final class Dendrila_Simple_Edit_Mailing
         foreach ($fields as $field) {
             // Only allow form controls and their expected attributes in generated fragments.
             echo wp_kses($field, array(
-                'input' => array('type'=>true,'name'=>true,'value'=>true,'id'=>true,'class'=>true,'required'=>true,'checked'=>true,'readonly'=>true,'disabled'=>true,'min'=>true,'max'=>true,'maxlength'=>true,'placeholder'=>true,'autocomplete'=>true,'step'=>true),
+                'input' => array('type'=>true,'name'=>true,'value'=>true,'id'=>true,'class'=>true,'required'=>true,'checked'=>true,'readonly'=>true,'disabled'=>true,'min'=>true,'max'=>true,'minlength'=>true,'maxlength'=>true,'placeholder'=>true,'autocomplete'=>true,'step'=>true),
                 'textarea' => array('name'=>true,'id'=>true,'rows'=>true,'cols'=>true,'maxlength'=>true,'placeholder'=>true),
                 'select' => array('name'=>true,'id'=>true,'required'=>true,'multiple'=>true),
                 'option' => array('value'=>true,'selected'=>true,'disabled'=>true),
