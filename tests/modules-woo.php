@@ -4,8 +4,8 @@ function __($text,$domain) { return $text; }
 define('ABSPATH', __DIR__);
 $GLOBALS['dendrila_simple_edit_user'] = 4;
 $GLOBALS['dendrila_simple_edit_options'] = array('dendrila_simple_edit_modules' => array(
-    'products' => array('enabled' => true, 'grants' => array(
-        '4' => array('create', 'content'), '5' => array('prices'), '6' => array('stock', 'live'),
+    'products' => array('enabled' => true, 'roles' => array(
+        'product_editor' => array('create', 'content'), 'pricing_editor' => array('prices'), 'inventory_editor' => array('stock', 'live'),
     )),
 ));
 $GLOBALS['dendrila_simple_edit_caps'] = array(
@@ -16,6 +16,7 @@ $GLOBALS['dendrila_simple_edit_caps'] = array(
 );
 function get_option($key, $default = null) { return $GLOBALS['dendrila_simple_edit_options'][$key] ?? $default; }
 function get_current_user_id() { return $GLOBALS['dendrila_simple_edit_user']; }
+function get_userdata($id) { $roles = array(4=>'product_editor',5=>'pricing_editor',6=>'inventory_editor',7=>'subscriber'); return (object) array('ID'=>(int)$id,'roles'=>array($roles[$id] ?? 'subscriber')); }
 function user_can($uid, $cap) { return in_array($cap, $GLOBALS['dendrila_simple_edit_caps'][$uid] ?? array(), true); }
 function wp_unslash($v) { return stripslashes($v); }
 function sanitize_text_field($v) { return trim(strip_tags($v)); }
@@ -145,7 +146,7 @@ $product->manage = true;
 $product->status = 'publish';
 ensure_product(Dendrila_Simple_Edit_Woo::clean_changes(array('stock_quantity' => '2'), $product)['stock_quantity'] === 2, 'Live editing requires both grants');
 $GLOBALS['dendrila_simple_edit_user'] = 4;
-$GLOBALS['dendrila_simple_edit_options']['dendrila_simple_edit_modules']['products']['grants']['4'][] = 'images';
+$GLOBALS['dendrila_simple_edit_options']['dendrila_simple_edit_modules']['products']['roles']['product_editor'][] = 'images';
 $GLOBALS['dendrila_simple_edit_options']['dendrila_simple_edit_modules']['products']['grants']['4'][] = 'categories';
 $product->status = 'draft';
 ensure_product(Dendrila_Simple_Edit_Woo::clean_changes(array('image_id' => '22'), $product) === array(), 'Same image does not trigger update');
