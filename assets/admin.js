@@ -293,71 +293,177 @@
         if (button) { button.hidden = true; }
     }
 
+    // The list, unlike a moving row, stays in the DOM during pointer capture.
+    // This is important on Android: capturing a row and then moving it in the
+    // document can immediately fire lostpointercapture and cancel the gesture.
     function initNavigationSorter() {
         Array.prototype.forEach.call(document.querySelectorAll('[data-dendrila-simple-edit-nav-sort]'), function (list) {
             var status = list.parentNode.querySelector('[data-dendrila-simple-edit-nav-status]');
             var drag = null;
             var frame = null;
             function rows() {
-                return Array.prototype.slice.call(list.querySelectorAll(':scope > .dendrila-simple-edit-nav-sort-item'));
+                return Array.prototype.filter.call(list.children, function (row) {
+                    return row.classList.contains('dendrila-simple-edit-nav-sort-item');
+                });
             }
-            function announce(message) {
-                if (status) { status.textContent = message; }
+            function id(row) { return row.getAttribute('data-dendrila-simple-edit-nav-id'); }
+            function parent(row) { return row.querySelector('[data-dendrila-simple-edit-nav-parent]').value; }
+            function rowById(key) { return rows().find(function (r) { return id(r) === key; }) || null; }
+            function childrenOf(row) {
+                var all = rows(), start = all.indexOf(row), found = [];
+                for (var i = start + 1; i < all.length && parent(all[i]) === id(row); i++) {
+                    found.push(all[i]);
+                }
+                return found;
+            }
+            function blockOf(row) { return [row].concat(parent(row) === '0' ? childrenOf(row) : []); }
+            function nextAfter(row) {
+                var part = blockOf(row);
+                return part[part.length - 1].nextElementSibling;
+            }
+            function announce(message) { if (status) { status.textContent = message; } }
+            function title(row) {
+                var label = row.querySelector('.dendrila-simple-edit-nav-sort-label');
+                return label ? label.textContent.trim() : t('Élément');
             }
             function announcePosition(row) {
-                var all = rows();
-                var title = row.querySelector('.dendrila-simple-edit-nav-sort-label');
-                announce((title ? title.textContent.trim() : t('Élément')) + ' : position ' +
-                    (all.indexOf(row) + 1) + ' sur ' + all.length +
-                    t('. Pensez à enregistrer.'));
+                announce(title(row) + ' : position ' + (rows().indexOf(row) + 1) +
+                    ' sur ' + rows().length + t('. Pensez à enregistrer.'));
             }
-            function reorderAt(x, y) {
+            function refresh() {
+                var all = rows();
+                all.forEach(function (row) {
+                    var isChild = parent(row) !== '0';
+                    row.classList.toggle('is-child', isChild);
+                    var hasChildren = all.some(function (item) { return parent(item) === id(row); });
+                    row.classList.toggle('has-children', hasChildren);
+                    var mobile = row.querySelector('[data-dendrila-simple-edit-nav-mobile-wrap]');
+                    if (mobile) { mobile.hidden = isChild || !hasChildren; }
+                });
+                all.forEach(function (row) {
+                    var select = row.querySelector('[data-dendrila-simple-edit-nav-parent]');
+                    var hasChildren = all.some(function (item) { return parent(item) === id(row); });
+                    Array.prototype.forEach.call(select.options, function (option) {
+                        if (option.value === '0') { return; }
+                        var candidate = rowById(option.value);
+                        option.disabled = !candidate || parent(candidate) !== '0' ||
+                            option.value === id(row) || hasChildren;
+                    });
+                });
+            }
+            function placeBlock(row, before) {
+                var fragment = document.createDocumentFragment();
+                blockOf(row).forEach(function (node) { fragment.appendChild(node); });
+                list.insertBefore(fragment, before || null);
+                refresh();
+            }
+            function assignParent(row, parentId) {
+                var select = row.querySelector('[data-dendrila-simple-edit-nav-parent]');
+                var group = rowById(parentId);
+                var old = select.value;
+                if (!group || parent(group) !== '0' || group === row || childrenOf(row).length) {
+                    select.value = old;
+                    return false;
+                }
+                select.value = parentId;
+                // Move the row *after* the new group's last child.
+                var groupChildren = childrenOf(group).filter(function (item) { return item !== row; });
+                var last = groupChildren.length ? groupChildren[groupChildren.length - 1] : group;
+                list.insertBefore(row, last.nextElementSibling);
+                refresh();
+                announce(t('Sous-menu créé. Pensez à enregistrer.')); 
+                return true;
+            }
+            function changeParent(row, parentId) {
+                var select = row.querySelector('[data-dendrila-simple-edit-nav-parent]');
+                var old = row.dataset.navOldParent || select.value;
+                // The browser has already changed the SELECT. Restore its old value
+                // temporarily so we can find the previous group's real last child.
+                select.value = old;
+                if (parentId === '0') {
+                    var former = rowById(old);
+                    var afterGroup = former ? nextAfter(former) : row.nextElementSibling;
+                    select.value = '0';
+                    list.insertBefore(row, afterGroup);
+                    refresh();
+                    announce(t('Lien replacé au premier niveau. Pensez à enregistrer.')); 
+                    return;
+                }
+                if (!assignParent(row, parentId)) {
+                    select.value = old;
+                    refresh();
+                    announce(t('Choisissez un parent du premier niveau, sans créer de troisième niveau.')); 
+                }
+            }
+            function siblingMove(row, direction) {
+                var all = rows(), pid = parent(row);
+                var peers = all.filter(function (item) { return parent(item) === pid; });
+                var index = peers.indexOf(row), other = peers[index + direction];
+                if (!other) { return false; }
+                if (direction < 0) { placeBlock(row, other); }
+                else { placeBlock(row, nextAfter(other)); }
+                announcePosition(row);
+                return true;
+            }
+            function reorderOver(target, after) {
+                if (!drag || !target || target === drag.row || blockOf(drag.row).indexOf(target) !== -1) { return; }
+                var moved = drag.row;
+                var targetGroup = (parent(target) !== '0' && parent(moved) === '0') ?
+                    rowById(parent(target)) : target;
+                if (!targetGroup || blockOf(moved).indexOf(targetGroup) !== -1) { return; }
+                var destinationParent = parent(moved) === '0' ? '0' : parent(target);
+                // Moving a child onto a root row makes it a root, unless the explicit
+                // drop target (below) was used to enter that root's submenu.
+                moved.querySelector('[data-dendrila-simple-edit-nav-parent]').value = destinationParent;
+                placeBlock(moved, after ? nextAfter(targetGroup) : targetGroup);
+            }
+            function dragTarget(x, y, commit) {
                 if (!drag) { return; }
                 var hit = document.elementFromPoint(x, y);
                 var target = hit && hit.closest('.dendrila-simple-edit-nav-sort-item');
-                if (!target || target === drag.row || target.parentNode !== list) { return; }
-                var rect = target.getBoundingClientRect();
-                if (y < rect.top + rect.height / 2) {
-                    list.insertBefore(drag.row, target);
-                } else {
-                    list.insertBefore(drag.row, target.nextElementSibling);
+                var drop = hit && hit.closest('[data-dendrila-simple-edit-nav-group-drop]');
+                Array.prototype.forEach.call(rows(), function (row) {
+                    row.classList.toggle('is-group-target', !!(drop && target === row &&
+                        row !== drag.row && parent(row) === '0' && !childrenOf(drag.row).length));
+                });
+                if (!target || target.parentNode !== list || target === drag.row) { return; }
+                if (drop && parent(target) === '0' && !childrenOf(drag.row).length) {
+                    if (commit) { assignParent(drag.row, id(target)); }
+                    return;
                 }
+                var box = target.getBoundingClientRect();
+                reorderOver(target, y >= box.top + box.height / 2);
             }
-            function autoScroll() {
+            function scrollNearEdge() {
                 if (!drag) { frame = null; return; }
-                var margin = 72;
-                var speed = 0;
-                if (drag.y < margin) {
-                    speed = -Math.max(2, (margin - drag.y) / 5);
-                } else if (drag.y > window.innerHeight - margin) {
-                    speed = Math.max(2, (drag.y - (window.innerHeight - margin)) / 5);
+                var margin = 66, speed = 0;
+                if (drag.y < margin) { speed = -Math.max(2, (margin - drag.y) / 6); }
+                else if (drag.y > window.innerHeight - margin) {
+                    speed = Math.max(2, (drag.y - (window.innerHeight - margin)) / 6);
                 }
-                if (speed) {
-                    window.scrollBy(0, speed);
-                    reorderAt(drag.x, drag.y);
-                }
-                frame = window.requestAnimationFrame(autoScroll);
+                if (speed) { window.scrollBy(0, speed); dragTarget(drag.x, drag.y, false); }
+                frame = window.requestAnimationFrame(scrollNearEdge);
             }
-            function finish(cancelled) {
+            function finish(cancelled, event) {
                 if (!drag) { return; }
-                var selected = drag;
+                var previous = drag;
+                if (!cancelled && event) { dragTarget(event.clientX, event.clientY, true); }
                 drag = null;
-                if (frame !== null) {
-                    window.cancelAnimationFrame(frame);
-                    frame = null;
-                }
+                if (frame !== null) { window.cancelAnimationFrame(frame); frame = null; }
                 if (cancelled) {
-                    selected.original.forEach(function (row) { list.appendChild(row); });
+                    previous.original.forEach(function (entry) {
+                        entry.row.querySelector('[data-dendrila-simple-edit-nav-parent]').value = entry.parent;
+                        list.appendChild(entry.row);
+                    });
                     announce(t('Déplacement annulé.'));
-                } else {
-                    announcePosition(selected.row);
-                }
-                selected.row.classList.remove('is-dragging');
+                } else { announcePosition(previous.row); }
+                previous.row.classList.remove('is-dragging');
                 list.classList.remove('is-dragging');
-                if (selected.handle.hasPointerCapture &&
-                    selected.handle.hasPointerCapture(selected.pointerId)) {
-                    selected.handle.releasePointerCapture(selected.pointerId);
+                rows().forEach(function (row) { row.classList.remove('is-group-target'); });
+                if (list.hasPointerCapture && list.hasPointerCapture(previous.pointerId)) {
+                    list.releasePointerCapture(previous.pointerId);
                 }
+                refresh();
             }
             list.addEventListener('pointerdown', function (event) {
                 var handle = event.target.closest('[data-dendrila-simple-edit-nav-handle]');
@@ -366,26 +472,24 @@
                 var row = handle.closest('.dendrila-simple-edit-nav-sort-item');
                 if (!row) { return; }
                 event.preventDefault();
-                handle.focus({preventScroll: true});
-                drag = {row: row, handle: handle, pointerId: event.pointerId,
-                    x: event.clientX, y: event.clientY, original: rows()};
+                handle.focus({preventScroll:true});
+                drag = {row:row, handle:handle, pointerId:event.pointerId,
+                    x:event.clientX, y:event.clientY,
+                    original:rows().map(function (item) { return {row:item, parent:parent(item)}; })};
                 row.classList.add('is-dragging');
                 list.classList.add('is-dragging');
-                try { handle.setPointerCapture(event.pointerId); }
+                try { list.setPointerCapture(event.pointerId); }
                 catch (error) { finish(true); return; }
-                frame = window.requestAnimationFrame(autoScroll);
+                announce(t('Déplacez ce lien. Déposez sur « Sous-menu » pour grouper.')); 
+                frame = window.requestAnimationFrame(scrollNearEdge);
             });
             list.addEventListener('pointermove', function (event) {
                 if (!drag || event.pointerId !== drag.pointerId) { return; }
-                drag.x = event.clientX;
-                drag.y = event.clientY;
-                reorderAt(drag.x, drag.y);
+                drag.x=event.clientX; drag.y=event.clientY;
+                dragTarget(drag.x, drag.y, false);
             });
             list.addEventListener('pointerup', function (event) {
-                if (drag && event.pointerId === drag.pointerId) {
-                    reorderAt(event.clientX, event.clientY);
-                    finish(false);
-                }
+                if (drag && event.pointerId === drag.pointerId) { finish(false, event); }
             });
             list.addEventListener('pointercancel', function (event) {
                 if (drag && event.pointerId === drag.pointerId) { finish(true); }
@@ -394,24 +498,33 @@
                 if (drag && event.pointerId === drag.pointerId) { finish(true); }
             });
             list.addEventListener('keydown', function (event) {
+                if (drag && event.key === 'Escape') { event.preventDefault(); finish(true); return; }
                 var handle = event.target.closest('[data-dendrila-simple-edit-nav-handle]');
-                if (!handle || !list.contains(handle) || drag ||
-                    ['ArrowUp', 'ArrowDown', 'Home', 'End'].indexOf(event.key) === -1) { return; }
-                var row = handle.closest('.dendrila-simple-edit-nav-sort-item');
-                if (!row) { return; }
+                if (!handle || !list.contains(handle) || drag) { return; }
+                if (['ArrowUp', 'ArrowDown'].indexOf(event.key) === -1) { return; }
                 event.preventDefault();
-                if (event.key === 'ArrowUp' && row.previousElementSibling) {
-                    list.insertBefore(row, row.previousElementSibling);
-                } else if (event.key === 'ArrowDown' && row.nextElementSibling) {
-                    list.insertBefore(row, row.nextElementSibling.nextElementSibling);
-                } else if (event.key === 'Home') {
-                    list.insertBefore(row, list.firstElementChild);
-                } else if (event.key === 'End') {
-                    list.appendChild(row);
-                } else { return; }
-                handle.focus({preventScroll: true});
-                announcePosition(row);
+                var row = handle.closest('.dendrila-simple-edit-nav-sort-item');
+                siblingMove(row, event.key === 'ArrowUp' ? -1 : 1);
+                handle.focus({preventScroll:true});
             });
+            list.addEventListener('click', function (event) {
+                var control = event.target.closest('[data-dendrila-simple-edit-nav-move]');
+                if (!control || !list.contains(control)) { return; }
+                event.preventDefault();
+                siblingMove(control.closest('.dendrila-simple-edit-nav-sort-item'),
+                    control.getAttribute('data-dendrila-simple-edit-nav-move') === 'up' ? -1 : 1);
+                control.focus({preventScroll:true});
+            });
+            list.addEventListener('focusin', function (event) {
+                var select = event.target.closest('[data-dendrila-simple-edit-nav-parent]');
+                if (select) { select.closest('.dendrila-simple-edit-nav-sort-item').dataset.navOldParent = select.value; }
+            });
+            list.addEventListener('change', function (event) {
+                var select = event.target.closest('[data-dendrila-simple-edit-nav-parent]');
+                if (!select) { return; }
+                changeParent(select.closest('.dendrila-simple-edit-nav-sort-item'), select.value);
+            });
+            refresh();
         });
     }
 

@@ -1,0 +1,13 @@
+/* Override only grouped items managed by Dendrila Simple Edit in an OPEN WordPress overlay. */
+.wp-block-navigation__responsive-container.is-menu-open .dendrila-simple-edit-mobile-open.dendrila-simple-edit-submenu-collapsed > .wp-block-navigation__submenu-container,
+.wp-block-navigation__responsive-container.is-menu-open .dendrila-simple-edit-mobile-closed.dendrila-simple-edit-submenu-collapsed > .wp-block-navigation__submenu-container {display:none!important;}
+.wp-block-navigation__responsive-container.is-menu-open .dendrila-simple-edit-mobile-open.dendrila-simple-edit-submenu-expanded > .wp-block-navigation__submenu-container,
+.wp-block-navigation__responsive-container.is-menu-open .dendrila-simple-edit-mobile-closed.dendrila-simple-edit-submenu-expanded > .wp-block-navigation__submenu-container {display:flex!important;}
+@media(max-width:782px){
+ .dendrila-simple-edit-classic-toggle {display:inline-flex;align-items:center;min-height:44px;min-width:44px;margin:4px;border:1px solid currentColor;border-radius:5px;background:transparent;color:inherit;}
+ .dendrila-simple-edit-mobile-open.dendrila-simple-edit-submenu-expanded > .sub-menu,
+ .dendrila-simple-edit-mobile-closed.dendrila-simple-edit-submenu-expanded > .sub-menu {display:block!important;}
+ .dendrila-simple-edit-mobile-open.dendrila-simple-edit-submenu-collapsed > .sub-menu,
+ .dendrila-simple-edit-mobile-closed.dendrila-simple-edit-submenu-collapsed > .sub-menu {display:none!important;}
+}
+@media(min-width:783px){.dendrila-simple-edit-classic-toggle {display:none!important;}}
