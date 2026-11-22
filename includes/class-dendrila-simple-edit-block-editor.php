@@ -278,6 +278,10 @@ final class Dendrila_Simple_Edit_Block_Editor
         if (!is_string($html)) { return false; }
         if (trim($html) === '') { return true; }
         if (self::has_unsafe_layout($html)) { return false; }
+        // Preserve ordinary existing pages. Their plain text, simple paragraphs and
+        // headings are reconstructed by the JS editor without running shortcodes.
+        // More complex HTML and any shortcode remain intentionally out of scope.
+        if (preg_match('~\[[a-z][a-z0-9_-]*(?:\s+[^]\r\n]*)?\]~i', $html)) { return false; }
         $remaining = preg_replace_callback('~<div\s+data-dendrila-simple-edit-block="(title|heading|text|image|button|link)"(?:\s+data-dendrila-simple-edit-align="(?:left|center|right)")?\s*>([\s\S]*?)</div>~i',
             static function ($match) {
                 $tag = array('title' => 'h1', 'heading' => 'h2', 'text' => 'p',
@@ -291,7 +295,12 @@ final class Dendrila_Simple_Edit_Block_Editor
                 }
                 return preg_match('~^<' . $tag . '(?:\s+[^<>]*)?>[^<>]*</' . $tag . '>$~is', $inner) ? '' : $match[0];
             }, $html);
-        return is_string($remaining) && trim($remaining) === '';
+        if (!is_string($remaining)) { return false; }
+        // Legacy content is allowed only when each complete HTML element is one
+        // plain block the visual editor understands. Rich nested markup stays
+        // protected against destructive round-trips.
+        $remaining = preg_replace('~<(p|h1|h2)>(?:[^<>]|<br\s*/?>)*</\1>|<img\s+[^<>]*\s*/?>~is', '', $remaining);
+        return is_string($remaining) && strpos($remaining, '<') === false;
     }
 
     public static function has_unsafe_layout($html)
