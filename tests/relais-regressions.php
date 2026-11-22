@@ -148,6 +148,10 @@ $reflection=new ReflectionMethod('Dendrila_Simple_Edit_Mailing','can_manage_camp
 $reflection->setAccessible(true);
 dse_assert(!$reflection->invoke(null,(object)array('newsletter_id'=>99999)),'deleted newsletter does not deny delegated campaign access');
 dse_assert($reflection->invoke(null,(object)array('newsletter_id'=>2000)),'own campaign incorrectly denied');
+// The opt-in is optional and unchecked; a checkout nonce is present in the classic form.
+ob_start(); Dendrila_Simple_Edit_Woo_Mailing::classic_checkbox(); $checkout_html = ob_get_clean();
+dse_assert(strpos($checkout_html, 'name="dendrila_simple_edit_optin_nonce"') !== false, 'classic checkout missing opt-in nonce');
+dse_assert(!preg_match('/name="dendrila_simple_edit_wc_optin"[^>]*checked/', $checkout_html), 'classic checkout opt-in must be unchecked by default');
 // Classic WooCommerce opt-in must only write order metadata after verified nonce.
 class DSE_Fake_Order {public $meta=[];public function update_meta_data($key,$value){$this->meta[$key]=$value;}}
 $_POST=array('dendrila_simple_edit_wc_optin'=>'1');
