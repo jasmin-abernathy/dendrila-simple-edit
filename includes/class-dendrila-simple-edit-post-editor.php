@@ -4,7 +4,8 @@ if (!defined('ABSPATH')) { exit; }
 
 final class Dendrila_Simple_Edit_Post_Editor
 {
-    const OPTION = 'dendrila_simple_edit_visual_editable_posts';
+    const OPTION = 'dendrila_simple_edit_visual_editable_posts'; // Legacy allowlist: retained only for data migration.
+    const TYPES_OPTION = 'dendrila_simple_edit_editable_types';
     const CREATED_META = '_dendrila_simple_edit_created_by_simple_edit';
 
     public static function can_create_type($type)
@@ -50,6 +51,27 @@ final class Dendrila_Simple_Edit_Post_Editor
         })));
     }
 
+    /** Global choices apply to delegated roles. Administrators always retain access. */
+    public static function editable_types()
+    {
+        $saved = get_option(self::TYPES_OPTION, null);
+        if ($saved === null) { return array('page', 'post', 'tribe_events'); }
+        return is_array($saved) ? array_values(array_intersect(array('page', 'post', 'tribe_events'), $saved)) : array();
+    }
+
+    public static function type_enabled($type)
+    {
+        return current_user_can('manage_options') || in_array($type, self::editable_types(), true);
+    }
+
+    public static function save_types($types)
+    {
+        if (!current_user_can('manage_options') || !is_array($types) || count($types) > 3 ||
+            array_diff($types, array('page', 'post', 'tribe_events'))) { return false; }
+        update_option(self::TYPES_OPTION, array_values(array_unique($types)), false);
+        return true;
+    }
+
     public static function is_layout_safe($post)
     {
         return self::compatible($post);
@@ -69,10 +91,10 @@ final class Dendrila_Simple_Edit_Post_Editor
         if (!$post || !in_array($post->post_type, array('page', 'post'), true) ||
             (string) $post->post_password !== '') { return false; }
         if (self::own_created($post)) { return $post; }
-        if (current_user_can('manage_options') && $post->post_status === 'publish' && self::compatible($post)) { return $post; }
+        if (!self::compatible($post)) { return false; }
+        if (current_user_can('manage_options') && in_array($post->post_status, array('publish','draft'), true)) { return $post; }
         if (!self::can_modify($post->post_type)) { return false; }
-        return in_array($id, self::allowed_ids(), true) &&
-            $post->post_status === 'publish' ? $post : false;
+        return $post->post_status === 'publish' ? $post : false;
     }
 
     public static function fingerprint($post)
@@ -83,6 +105,7 @@ final class Dendrila_Simple_Edit_Post_Editor
     private static function can_modify($type = null)
     {
         if (current_user_can('manage_options')) { return true; }
+        if (!self::type_enabled($type)) { return false; }
         // Editing existing posts is explicitly configured by WordPress role.
         if ($type === 'page') { return Dendrila_Simple_Edit_Modules::allowed('editorial', 'edit_pages'); }
         if ($type === 'post') { return Dendrila_Simple_Edit_Modules::allowed('editorial', 'edit_articles'); }
@@ -104,21 +127,11 @@ final class Dendrila_Simple_Edit_Post_Editor
             wp_die('Réservé à l’administration.', 'Accès refusé', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_post_permissions');
-        $raw = isset($_POST['dendrila_simple_edit_post_ids']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_post_ids']), 'sanitize_text_field') : array();
-        if (!is_array($raw) || count($raw) > 100) {
-            wp_die('Choix de contenus invalide.', 'Requête incorrecte', array('response' => 400));
+        $types = isset($_POST['dendrila_simple_edit_editable_types']) ?
+            map_deep(wp_unslash($_POST['dendrila_simple_edit_editable_types']), 'sanitize_key') : array();
+        if (!self::save_types($types)) {
+            wp_die('Types de contenus invalides.', 'Requête incorrecte', array('response' => 400));
         }
-        $ids = array();
-        foreach ($raw as $value) {
-            if (!is_string($value) || !ctype_digit($value)) { continue; }
-            $post = get_post((int) $value);
-            if ($post && in_array($post->post_type, array('page', 'post'), true) &&
-                $post->post_status === 'publish' && !$post->post_password &&
-                self::compatible($post)) {
-                $ids[] = (int) $post->ID;
-            }
-        }
-        update_option(self::OPTION, array_values(array_unique($ids)), false);
         self::redirect('permissions');
     }
 
@@ -316,61 +329,46 @@ final class Dendrila_Simple_Edit_Post_Editor
         if (!is_singular(array('page', 'post')) || !in_the_loop() || !is_main_query()) { return $html; }
         $id = get_the_ID();
         $post = get_post($id);
-        if ((!in_array((int) $id, self::allowed_ids(), true) &&
-            get_post_meta($id, self::CREATED_META, true) !== '1') ||
-            !$post || !self::compatible($post)) { return $html; }
+        if (!$post || !self::compatible($post) ||
+            (strpos($html, 'data-dendrila-simple-edit-') === false &&
+             strpos($html, 'data-dse-') === false)) { return $html; }
         return Dendrila_Simple_Edit_Block_Editor::frontend_colors($html);
     }
 
     public static function render_admin()
     {
         if (!current_user_can('manage_options')) { return; }
-        $allowed = self::allowed_ids();
-        $posts = get_posts(array('post_type' => array('post', 'page'), 'post_status' => 'publish',
-            'posts_per_page' => 100, 'orderby' => 'modified', 'order' => 'DESC'));
-        echo '<section class="dendrila-simple-edit-card"><h2>Pages et articles autorisés</h2>';
-        echo '<p>Cochez uniquement les contenus que les utilisateurs « Édition simple » pourront modifier. Les pages construites avec Gutenberg, Divi, Elementor ou du code complexe sont protégées.</p>';
+        $types = self::editable_types();
+        echo '<section class="dendrila-simple-edit-card"><h2>Types de contenus accessibles</h2>';
+        echo '<p>Sélectionnez les types modifiables par les rôles autorisés. Il n’est pas nécessaire de cocher chaque page, article ou événement. Les administrateurs conservent tous leurs droits.</p>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         echo '<input type="hidden" name="action" value="dendrila_simple_edit_post_permissions">';
         wp_nonce_field('dendrila_simple_edit_post_permissions');
-        $count = 0;
-        foreach (array('page' => __('Pages', 'dendrila-simple-edit'), 'post' => __('Articles', 'dendrila-simple-edit')) as $type => $heading) {
-            echo '<fieldset class="dendrila-simple-edit-permissions"><legend>' . esc_html($heading) . '</legend>';
-            $group_count = 0;
-            foreach ($posts as $post) {
-                if (!$post || $post->post_type !== $type) { continue; }
-                $count++;
-                $group_count++;
-                if ($post->post_password || !self::compatible($post)) {
-                    echo '<p class="description">' . esc_html($post->post_title) . ' — mise en page protégée : modifier avec WordPress.</p>';
-                    continue;
-                }
-                echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_post_ids[]" value="' . (int) $post->ID . '" ' .
-                    checked(in_array((int) $post->ID, $allowed, true), true, false) . '> ' .
-                    esc_html($post->post_title) . '</label>';
-            }
-            if (!$group_count) { echo '<p>Aucun contenu compatible dans cette rubrique.</p>'; }
-            echo '</fieldset>';
+        foreach (array('page'=>__('Pages','dendrila-simple-edit'), 'post'=>__('Articles','dendrila-simple-edit'),
+            'tribe_events'=>__('Événements','dendrila-simple-edit')) as $type=>$label) {
+            echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_editable_types[]" value="' . esc_attr($type) . '" ' .
+                checked(in_array($type,$types,true),true,false) . '> ' . esc_html($label) . '</label>';
         }
-        if ($count === 0) { echo '<p>Créez une page ou un article vide dans WordPress pour commencer.</p>'; }
-        echo '<p><button type="submit" class="button button-primary">Enregistrer les autorisations</button></p></form></section>';
+        echo '<p class="description">Les mises en page complexes restent visibles mais protégées : utilisez leur éditeur WordPress d’origine.</p>';
+        echo '<p><button type="submit" class="button button-primary">Enregistrer les types autorisés</button></p></form></section>';
     }
 
     public static function render($type = 'page')
     {
         if (!in_array($type, array('page', 'post'), true)) { return; }
-        $ids = self::can_modify($type) ? array_values(array_filter(self::allowed_ids(), static function ($id) use ($type) {
-            $post = get_post($id);
-            return $post && $post->post_type === $type;
-        })) : array();
-        if (current_user_can('manage_options')) {
-            $available = get_posts(array('post_type' => $type, 'post_status' => 'publish',
-                'posts_per_page' => 200, 'fields' => 'ids'));
+        // Discover contents by post type, not an obsolete per-item allowlist.
+        $ids = array();
+        $protected = array();
+        if (self::can_modify($type)) {
+            $available = get_posts(array('post_type'=>$type,
+                'post_status'=>current_user_can('manage_options') ? array('publish','draft') : 'publish',
+                'posts_per_page'=>-1, 'fields'=>'ids', 'orderby'=>'modified', 'order'=>'DESC'));
             foreach ($available as $post_id) {
-                $post = get_post((int) $post_id);
-                if ($post && !$post->post_password && self::compatible($post)) { $ids[] = (int) $post->ID; }
+                $candidate = get_post((int)$post_id);
+                if (!$candidate || $candidate->post_password !== '') { continue; }
+                if (self::compatible($candidate)) { $ids[] = (int)$candidate->ID; }
+                elseif (current_user_can('manage_options')) { $protected[] = $candidate; }
             }
-            $ids = array_values(array_unique($ids));
         }
         // Add only own newly created content, plus all Simple Edit creations for admins.
         if (current_user_can('manage_options') || self::can_create_type($type)) {
@@ -412,7 +410,7 @@ final class Dendrila_Simple_Edit_Post_Editor
             echo '<p><button class="button button-primary" type="submit">Créer ' . esc_html($article) . '</button></p>';
             echo '</form></details>';
         }
-        if (!$ids) {
+        if (!$ids && !$protected) {
             echo '<section class="dendrila-simple-edit-card"><h3>Aucun ' . esc_html($name) . ' à modifier</h3>';
             echo '<p>' . (self::can_create_type($type) ? 'Vous pouvez créer un contenu avec le formulaire ci-dessus.' :
                 'L’administrateur choisit les contenus accessibles dans Autorisations.') . '</p></section>';
@@ -428,6 +426,16 @@ final class Dendrila_Simple_Edit_Post_Editor
         $selected = isset($_GET['dendrila_simple_edit_paged_id']) ? absint($_GET['dendrila_simple_edit_paged_id']) : 0;
         echo '<section class="dendrila-simple-edit-content-list" aria-label="Contenus modifiables">';
         $shown = 0;
+        if ($protected) {
+            echo '<section class="dendrila-simple-edit-card"><h3>Contenus dont la mise en page est protégée</h3>';
+            echo '<p>Ils existent bien sur ce site, mais l’éditeur simplifié ne doit pas réécrire leurs blocs Gutenberg, WooCommerce ou constructeur.</p><ul>';
+            foreach ($protected as $locked) {
+                $edit_url = get_edit_post_link($locked->ID, '');
+                echo '<li>' . esc_html($locked->post_title) . ' — ' . esc_html($locked->post_status) .
+                    ($edit_url ? ' <a href="' . esc_url($edit_url) . '" target="_blank" rel="noopener noreferrer">Modifier dans WordPress</a>' : '') . '</li>';
+            }
+            echo '</ul></section>';
+        }
         foreach ($ids as $id) {
             $post = self::permitted_post($id);
             if (!$post || $post->post_type !== $type || !self::compatible($post)) { continue; }

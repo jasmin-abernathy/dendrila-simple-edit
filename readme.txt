@@ -17,8 +17,8 @@ Dendrila Simple Edit provides a restricted editing interface where site owners c
 
 Features:
 
-* Guided editing for explicitly allowed pages and posts, with safe content blocks, image selection and optional approval before publication.
-* Role-based permissions with granular module actions and an installation setup wizard.
+* Guided editing by content type (pages, posts and events), with permissions per WordPress role, safe content blocks, image selection and optional approval before publication. Administrators keep their native access.
+* Role-based permissions with granular module actions and an installation setup wizard, including inline mailing-list creation.
 * Optional integration with Advanced Custom Fields (supported text fields), The Events Calendar (events) and WooCommerce (products).
 * WooCommerce simple, external, grouped and variable products with delegated creation, publishing, categories, variations and stock controls where authorized.
 * A built-in newsletter composer with multiple table-based email layouts, customizable palettes saved per author, preview, mailing lists, sending queue and unsubscribe management.
@@ -44,7 +44,7 @@ The support/donation link opens https://app.lepotager.org/soutenir/ only when an
 1. Back up your WordPress database, especially mailing data, before replacing an earlier experimental version.
 2. Upload the ZIP through Plugins > Add New > Upload Plugin, then activate Dendrila Simple Edit.
 3. Complete the five-step configuration assistant as a user authorized to activate/install plugins.
-4. Choose enabled modules, role permissions and allowed pages or posts. Configure email transport before enabling real newsletters.
+4. Choose enabled modules, per-role actions and editable content types (not individual items). Administrators keep native access. Configure email transport before enabling real newsletters.
 5. Check the WooCommerce product editor and email opt-in in a test environment before using them with real orders or contacts.
 6. For a shortcode, insert it in a WordPress Shortcode block, not in a page-builder internal data structure.
 

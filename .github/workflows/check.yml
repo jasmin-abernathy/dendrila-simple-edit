@@ -39,6 +39,7 @@ jobs:
           php tests/media.php
           php tests/modules-newsletters.php
           php tests/modules-woo.php
+          php tests/content-type-scopes.php
   package:
     name: Installation ZIP
     needs: php

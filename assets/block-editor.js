@@ -356,8 +356,8 @@
         var incompatible = Array.from(holder.content.childNodes).some(function (child) {
             if (child.nodeType === 3) {return false;}
             if (child.nodeType !== 1) {return true;}
-            if (child.hasAttribute('data-dendrila-simple-edit-block')) {
-                var kind = child.getAttribute('data-dendrila-simple-edit-block');
+            if (child.hasAttribute('data-dendrila-simple-edit-block') || child.hasAttribute('data-dse-block')) {
+                var kind = child.getAttribute('data-dendrila-simple-edit-block') || child.getAttribute('data-dse-block');
                 var expected = {title: 'H1', heading: 'H2', text: 'P', image: 'IMG', button: 'A', link: 'A'};
                 var inner = child.firstElementChild;
                 return !inner || child.children.length !== 1 || expected[kind] !== inner.tagName ||
@@ -384,7 +384,7 @@
         }
         Array.from(holder.content.childNodes).forEach(function (child) {
             if (child.nodeType === 3 && !child.textContent.trim()) {return;}
-            var kind = child.nodeType === 1 ? child.getAttribute('data-dendrila-simple-edit-block') : null;
+            var kind = child.nodeType === 1 ? (child.getAttribute('data-dendrila-simple-edit-block') || child.getAttribute('data-dse-block')) : null;
             if (kind && types[kind]) {
                 flushLegacy();
                 var inner = child.firstElementChild;
@@ -396,8 +396,8 @@
                     body = inner.textContent || '';
                 }
                 addBlock(kind, {text: kind === 'image' ? inner.getAttribute('alt') : body,
-                    url: inner.getAttribute(kind === 'image' ? 'src' : 'href'), color: inner.getAttribute('data-dendrila-simple-edit-color') || 'green',
-                    align: child.getAttribute('data-dendrila-simple-edit-align') || inner.getAttribute('data-dendrila-simple-edit-align') || 'left'});
+                    url: inner.getAttribute(kind === 'image' ? 'src' : 'href'), color: inner.getAttribute('data-dendrila-simple-edit-color') || inner.getAttribute('data-dse-color') || 'green',
+                    align: child.getAttribute('data-dendrila-simple-edit-align') || child.getAttribute('data-dse-align') || inner.getAttribute('data-dendrila-simple-edit-align') || inner.getAttribute('data-dse-align') || 'left'});
             } else if (child.nodeType === 1 && /^(P|H1|H2|IMG)$/.test(child.tagName)) {
                 flushLegacy();
                 var kind2 = child.tagName === 'H1' ? 'title' : child.tagName === 'H2' ? 'heading' : child.tagName === 'IMG' ? 'image' : 'text';

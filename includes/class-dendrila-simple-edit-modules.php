@@ -19,6 +19,7 @@ final class Dendrila_Simple_Edit_Modules
                     'create_pages' => __('Créer de nouvelles pages (brouillons)', 'dendrila-simple-edit'),
                     'publish_pages' => __('Publier les nouvelles pages sans validation', 'dendrila-simple-edit'),
                     'edit_articles' => __('Modifier les articles existants autorisés', 'dendrila-simple-edit'),
+                    'edit_events' => __('Modifier les événements existants', 'dendrila-simple-edit'),
                     'create_articles' => __('Créer de nouveaux articles (brouillons)', 'dendrila-simple-edit'),
                     'publish_articles' => __('Publier les nouveaux articles sans validation', 'dendrila-simple-edit'),
                     'reorder_menu' => __('Réorganiser le menu principal', 'dendrila-simple-edit'),

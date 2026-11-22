@@ -106,22 +106,48 @@ final class Dendrila_Simple_Edit_Setup
             }
             update_option(Dendrila_Simple_Edit_Modules::OPTION, $settings, false);
         } elseif ($step === 3) {
-            $ids = isset($_POST['dendrila_simple_edit_setup_post_ids']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_setup_post_ids']), 'sanitize_text_field') : array();
-            if (!is_array($ids) || count($ids) > 200) { wp_die('Contenus invalides.'); }
-            $clean = array();
-            foreach ($ids as $id) {
-                if (!is_string($id) || !ctype_digit($id)) { wp_die('Identifiant de contenu invalide.'); }
-                $post = get_post((int)$id);
-                if ($post && in_array($post->post_type, array('page','post'), true) &&
-                    $post->post_status === 'publish' && $post->post_password === '' &&
-                    Dendrila_Simple_Edit_Post_Editor::is_layout_safe($post)) { $clean[] = (int)$id; }
+            $types = isset($_POST['dendrila_simple_edit_setup_types']) ?
+                map_deep(wp_unslash($_POST['dendrila_simple_edit_setup_types']), 'sanitize_key') : array();
+            if (!Dendrila_Simple_Edit_Post_Editor::save_types($types)) {
+                wp_die('Types de contenus invalides.', 'Configuration', array('response'=>400));
             }
-            update_option(Dendrila_Simple_Edit_Post_Editor::OPTION, array_values(array_unique($clean)), false);
         } elseif ($step === 4) {
             $list = isset($_POST['dendrila_simple_edit_woo_list']) ? absint($_POST['dendrila_simple_edit_woo_list']) : 0;
+            $new_name = isset($_POST['dendrila_simple_edit_setup_new_list']) &&
+                is_string($_POST['dendrila_simple_edit_setup_new_list']) ?
+                sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_setup_new_list'])) : '';
+            $new_name = trim($new_name);
+            if ($new_name !== '') {
+                if (!Dendrila_Simple_Edit_Modules::enabled('newsletters') || strlen($new_name) > 160) {
+                    wp_die('Nom de liste incorrect ou module Newsletters désactivé.', 'Configuration', array('response'=>400));
+                }
+                if (get_option(Dendrila_Simple_Edit_Mailing::DB_OPTION) !== Dendrila_Simple_Edit_Mailing::DB_VERSION) {
+                    Dendrila_Simple_Edit_Mailing::install();
+                }
+                if (!Dendrila_Simple_Edit_Suppressions::ready() ||
+                    get_option(Dendrila_Simple_Edit_Mailing::DB_OPTION) !== Dendrila_Simple_Edit_Mailing::DB_VERSION) {
+                    wp_die('Le stockage des listes est indisponible : vérifiez la migration du mailing.',
+                        'Configuration', array('response'=>503));
+                }
+                global $wpdb;
+                $table = $wpdb->prefix . 'dendrila_simple_edit_ml_lists';
+                $existing = (int)$wpdb->get_var($wpdb->prepare(
+                    'SELECT id FROM %i WHERE LOWER(name)=LOWER(%s) ORDER BY id ASC LIMIT 1', $table, $new_name));
+                if ($existing) {
+                    $list = $existing; // Prefer an existing list to a duplicate.
+                } else {
+                    $ok = $wpdb->insert($table, array('name'=>$new_name,'owner_user_id'=>0,
+                        'created_at'=>current_time('mysql',true)), array('%s','%d','%s'));
+                    if (!$ok || !$wpdb->insert_id) { wp_die('Création de la liste impossible.', 'Configuration', array('response'=>500)); }
+                    $list = (int)$wpdb->insert_id;
+                }
+            }
             if ($list && !Dendrila_Simple_Edit_Woo_Mailing::valid_list($list)) { wp_die('Liste introuvable.'); }
+            if (!empty($_POST['dendrila_simple_edit_woo_optin']) && !$list) {
+                wp_die('Choisissez ou créez une liste pour activer l’inscription WooCommerce.', 'Configuration', array('response'=>400));
+            }
             update_option(Dendrila_Simple_Edit_Woo_Mailing::OPTION, array('list_id'=>$list,
-                'enabled'=>$list && !empty($_POST['dendrila_simple_edit_woo_optin'])), false);
+                'enabled'=>(bool)($list && !empty($_POST['dendrila_simple_edit_woo_optin']))), false);
         } elseif ($step === 5) {
             if (Dendrila_Simple_Edit_Modules::enabled('newsletters') &&
                 !Dendrila_Simple_Edit_Mailing::transport_ready()) {
@@ -147,7 +173,7 @@ final class Dendrila_Simple_Edit_Setup
             return;
         }
         $step = self::step();
-        $labels = array(1=>__('Modules', 'dendrila-simple-edit'),2=>__('Permissions par rôle', 'dendrila-simple-edit'),3=>__('Contenus accessibles', 'dendrila-simple-edit'),4=>__('Mailing et WooCommerce', 'dendrila-simple-edit'),5=>__('Vérification', 'dendrila-simple-edit'));
+        $labels = array(1=>__('Modules', 'dendrila-simple-edit'),2=>__('Permissions par rôle', 'dendrila-simple-edit'),3=>__('Types de contenus', 'dendrila-simple-edit'),4=>__('Mailing et WooCommerce', 'dendrila-simple-edit'),5=>__('Vérification', 'dendrila-simple-edit'));
         echo '<div class="wrap dendrila-simple-edit-wrap dendrila-simple-edit-setup"><h1>' . esc_html__('Configuration de Dendrila Simple Edit', 'dendrila-simple-edit') . '</h1>';
         echo '<p>Étape ' . (int)$step . ' sur 5 — ' . esc_html($labels[$step]) . '</p>';
         echo '<ol class="dendrila-simple-edit-setup-steps">';
@@ -196,17 +222,16 @@ final class Dendrila_Simple_Edit_Setup
                 echo '</details>';
             }
         } elseif ($step === 3) {
-            echo '<h2>' . esc_html__('Choisir les pages et articles modifiables', 'dendrila-simple-edit') . '</h2><p>' . esc_html__('Les mises en page complexes restent protégées. Ne cochez que les contenus dont l’édition est volontairement déléguée.', 'dendrila-simple-edit') . '</p>';
-            $ids = Dendrila_Simple_Edit_Post_Editor::allowed_ids();
-            foreach (array('page'=>__('Pages', 'dendrila-simple-edit'),'post'=>__('Articles', 'dendrila-simple-edit')) as $type=>$label) {
-                echo '<fieldset class="dendrila-simple-edit-permissions"><legend>'.esc_html($label).'</legend>';
-                $posts = get_posts(array('post_type'=>$type,'post_status'=>'publish','posts_per_page'=>150));
-                foreach ($posts as $post) {
-                    if ($post->post_password !== '' || !Dendrila_Simple_Edit_Post_Editor::is_layout_safe($post)) { continue; }
-                    echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_setup_post_ids[]" value="'.(int)$post->ID.'" '.
-                        checked(in_array((int)$post->ID,$ids,true),true,false).'> '.esc_html($post->post_title).'</label>';
-                }
-                echo '</fieldset>';
+            echo '<h2>' . esc_html__('Choisir les types de contenus modifiables', 'dendrila-simple-edit') . '</h2>';
+            echo '<p>Ces choix s’appliquent aux rôles auxquels vous accordez le droit de modifier le type concerné. L’administrateur conserve tous ses droits. Aucun choix page par page n’est nécessaire.</p>';
+            echo '<p class="description">Les pages ou articles complexes restent visibles, mais leur mise en page ne peut être réécrite avec l’éditeur simplifié.</p>';
+            $types = Dendrila_Simple_Edit_Post_Editor::editable_types();
+            foreach (array('page'=>__('Pages','dendrila-simple-edit'), 'post'=>__('Articles','dendrila-simple-edit'),
+                'tribe_events'=>__('Événements','dendrila-simple-edit')) as $type=>$label) {
+                $counts = wp_count_posts($type);
+                $num = is_object($counts) ? (int)($counts->publish ?? 0) + (int)($counts->draft ?? 0) : 0;
+                echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_setup_types[]" value="' . esc_attr($type) . '" ' .
+                    checked(in_array($type,$types,true),true,false) . '> <strong>' . esc_html($label) . '</strong> (' . (int)$num . ')</label>';
             }
         } elseif ($step === 4) {
             echo '<h2>' . esc_html__('Courriels et inscription lors d’une commande', 'dendrila-simple-edit') . '</h2>';
@@ -214,6 +239,12 @@ final class Dendrila_Simple_Edit_Setup
             echo '<p>État FluentSMTP : <strong>' . (Dendrila_Simple_Edit_Mailing::transport_ready() ? 'connexion détectée' : 'connexion manquante') . '</strong>. <a href="' . esc_url(admin_url('options-general.php?page=fluent-mail')) . '">Configurer FluentSMTP</a></p>';
             echo '<p>' . esc_html__('Les désinscriptions historiques doivent être migrées avant le premier envoi. Le module refuse les campagnes si cette protection échoue.', 'dendrila-simple-edit') . '</p>';
             $current = Dendrila_Simple_Edit_Woo_Mailing::settings();
+            if (Dendrila_Simple_Edit_Modules::enabled('newsletters')) {
+                echo '<fieldset class="dendrila-simple-edit-permissions"><legend>Créer une liste de diffusion</legend>';
+                echo '<p>Vous pouvez créer une liste ici. Elle sera conservée pour le mailing et sélectionnée automatiquement à l’étape suivante, sans quitter l’assistant.</p>';
+                echo '<label>Nom de la nouvelle liste <input type="text" name="dendrila_simple_edit_setup_new_list" maxlength="160" placeholder="Ex. Actualités du site"></label>';
+                echo '<p class="description">Laissez vide pour utiliser une liste existante. Les doublons de nom sont évités.</p></fieldset>';
+            }
             echo '<label class="dendrila-simple-edit-check"><input type="checkbox" name="dendrila_simple_edit_woo_optin" value="1" '.checked(!empty($current['enabled']),true,false).'> Proposer une inscription à la newsletter lors du paiement WooCommerce</label>';
             echo '<p><label>Liste de destination <select name="dendrila_simple_edit_woo_list"><option value="0">Ne pas connecter</option>';
             foreach (Dendrila_Simple_Edit_Woo_Mailing::lists() as $list) {
