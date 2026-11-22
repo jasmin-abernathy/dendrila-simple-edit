@@ -42,6 +42,7 @@
         if (!form) {return;}
         var allowTitle = root.getAttribute('data-allow-title') !== '0';
         var styleColor = '';
+        var loadingExisting = true;
         var addBar = node('div', '', 'dendrila-simple-edit-block-palette');
         addBar.setAttribute('aria-label', 'Ajouter un élément');
         var canvas = node('div', '', 'dendrila-simple-edit-block-canvas');
@@ -105,7 +106,14 @@
             bar.append(grip, node('strong', types[type].label), controls);
             box.appendChild(bar);
             var fields = node('div', '', 'dendrila-simple-edit-block-fields');
-            box.appendChild(fields);
+            if (!allowTitle) {
+                var disclosure = node('details');
+                disclosure.open = !loadingExisting;
+                var summary = node('summary', 'Modifier ' + types[type].label.toLowerCase());
+                disclosure.append(summary, fields);
+                box.appendChild(disclosure);
+                fields.addEventListener('invalid', function () { disclosure.open = true; }, true);
+            } else { box.appendChild(fields); }
             var value, other;
             if (type === 'image') {
                 value = inputField(fields, 'Adresse de l’image', values.url, false, 'url');
@@ -360,8 +368,7 @@
             if (!html) {return;}
             // An imported post may contain HTML that cannot be reconstructed safely.
             // Its access is filtered server-side before reaching this editor.
-            var tmp = node('div');tmp.innerHTML = html;
-            addBlock('text', {text: tmp.textContent.trim()});
+            addBlock('text', {text: html});
         }
         Array.from(holder.content.childNodes).forEach(function (child) {
             if (child.nodeType === 3 && !child.textContent.trim()) {return;}
@@ -390,6 +397,7 @@
             } else {legacy.push(child.nodeType === 1 ? child.outerHTML : child.textContent);}
         });
         flushLegacy();
+        loadingExisting = false;
         function compose() {
             return blocks().map(function (item) {
                 var type = item.dataset.block, fields = item.querySelectorAll('.dendrila-simple-edit-block-fields > input, .dendrila-simple-edit-block-fields > textarea');

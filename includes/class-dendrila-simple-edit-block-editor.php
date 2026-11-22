@@ -235,7 +235,12 @@ final class Dendrila_Simple_Edit_Block_Editor
                 }
                 return preg_match('~^<' . $tag . '(?:\s+[^<>]*)?>[^<>]*</' . $tag . '>$~is', $inner) ? '' : $match[0];
             }, $html);
-        return is_string($remaining) && trim($remaining) === '';
+        if (!is_string($remaining)) { return false; }
+        // The visual editor also imports plain text and ordinary paragraphs.
+        // Other tags, attributes and embedded shortcodes require their original editor.
+        if (preg_match('/\[[a-zA-Z_][^\]]*\]/', $remaining)) { return false; }
+        $plain = preg_replace('~<p>(?:[^<>]|<br\s*/?>)*</p>~i', '', $remaining);
+        return is_string($plain) && strpbrk($plain, '<>') === false;
     }
 
     public static function has_unsafe_layout($html)

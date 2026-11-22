@@ -74,3 +74,9 @@ $_POST = array();
 $GLOBALS['dendrila_simple_edit_options'][Dendrila_Simple_Edit_Modules::OPTION]['newsletters']['enabled'] = false;
 ensure(!Dendrila_Simple_Edit_Modules::allowed('newsletters', 'create', 9), 'Disabling blocks admin path too');
 echo "OK — per-user module ACL, closed newsletter sending boundary, private drafts\n";
+
+require_once dirname(__DIR__) . '/includes/class-dendrila-simple-edit-block-editor.php';
+ensure(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor("First line\nSecond line"), 'Plain text can enter the visual editor');
+ensure(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>First<br>second</p>'), 'Simple paragraphs can enter the visual editor');
+ensure(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Structured</p><!-- /wp:paragraph -->'), 'Gutenberg stays protected');
+ensure(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>[gallery]</p>'), 'Embedded shortcode stays protected');
