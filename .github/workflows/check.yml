@@ -1,0 +1,71 @@
+name: PHP quick checks
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.php'
+      - '.github/workflows/check.yml'
+  pull_request:
+    paths:
+      - '**.php'
+      - '.github/workflows/check.yml'
+permissions:
+  contents: read
+concurrency:
+  group: dse-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  php:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.4']
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Check PHP syntax
+        run: find . -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Run contract tests
+        run: |
+          php tests/smoke.php
+          php tests/builders-acf.php
+          php tests/media.php
+          php tests/modules-newsletters.php
+          php tests/modules-woo.php
+  package:
+    name: Installation ZIP
+    needs: php
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Assemble installable extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/dendrila-simple-edit
+          cp dendrila-simple-edit.php readme.txt LICENSE.txt dist/dendrila-simple-edit/
+          cp -R includes assets languages dist/dendrila-simple-edit/
+          (cd dist && zip -qr ../dendrila-simple-edit-0.0.1.zip dendrila-simple-edit)
+          unzip -t dendrila-simple-edit-0.0.1.zip
+          test "$(unzip -Z1 dendrila-simple-edit-0.0.1.zip | grep -c '^dendrila-simple-edit/dendrila-simple-edit.php$')" -eq 1
+          if unzip -Z1 dendrila-simple-edit-0.0.1.zip | grep -E '(^|/)(tests|docs|\.git|\.github)/'; then
+            echo 'Unexpected development files in the installable archive' >&2
+            exit 1
+          fi
+      - name: Attach installable archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: dendrila-simple-edit-installation
+          path: dendrila-simple-edit-0.0.1.zip
+          if-no-files-found: error
+          retention-days: 14
