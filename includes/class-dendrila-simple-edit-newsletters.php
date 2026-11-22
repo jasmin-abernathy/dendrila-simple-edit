@@ -408,7 +408,7 @@ final class Dendrila_Simple_Edit_Newsletters
     {
         $existing = $post !== null;
         echo '<form class="dendrila-simple-edit-subcard" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
-        echo '<h3>' . ($existing ? __('Modifier le brouillon', 'dendrila-simple-edit') : __('Nouvelle newsletter', 'dendrila-simple-edit')) . '</h3>';
+        echo '<h3>' . ($existing ? esc_html__('Modifier le brouillon', 'dendrila-simple-edit') : esc_html__('Nouvelle newsletter', 'dendrila-simple-edit')) . '</h3>';
         Dendrila_Simple_Edit_Newsletter_Templates::form($post);
         if (!$existing) { echo '<div data-dendrila-simple-edit-template-editor hidden>'; }
         echo '<input type="hidden" name="action" value="dendrila_simple_edit_newsletter_save">';

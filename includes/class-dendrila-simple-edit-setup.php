@@ -77,7 +77,7 @@ final class Dendrila_Simple_Edit_Setup
             $active = isset($_POST['dendrila_simple_edit_setup_modules']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_setup_modules']), 'sanitize_text_field') : array();
             if (!is_array($active) || array_diff($active, array_keys($defs))) { wp_die('Modules invalides.'); }
             if (in_array('newsletters', $active, true) && !Dendrila_Simple_Edit_Mailing::fluent_smtp_active()) {
-                wp_die(__('Le module Newsletters nécessite FluentSMTP installé et activé. Activez FluentSMTP dans Extensions, puis reprenez cette étape.', 'dendrila-simple-edit'), __('FluentSMTP nécessaire', 'dendrila-simple-edit'), array('response'=>400));
+                wp_die(esc_html__('Le module Newsletters nécessite FluentSMTP installé et activé. Activez FluentSMTP dans Extensions, puis reprenez cette étape.', 'dendrila-simple-edit'), esc_html__('FluentSMTP nécessaire', 'dendrila-simple-edit'), array('response'=>400));
             }
             $settings = Dendrila_Simple_Edit_Modules::settings();
             foreach ($defs as $slug => $definition) {
@@ -151,7 +151,7 @@ final class Dendrila_Simple_Edit_Setup
         } elseif ($step === 5) {
             if (Dendrila_Simple_Edit_Modules::enabled('newsletters') &&
                 !Dendrila_Simple_Edit_Mailing::transport_ready()) {
-                wp_die(__('FluentSMTP doit être actif et posséder une connexion e-mail configurée avant de terminer la configuration du module Newsletters.', 'dendrila-simple-edit'), __('Connexion FluentSMTP nécessaire', 'dendrila-simple-edit'), array('response'=>400));
+                wp_die(esc_html__('FluentSMTP doit être actif et posséder une connexion e-mail configurée avant de terminer la configuration du module Newsletters.', 'dendrila-simple-edit'), esc_html__('Connexion FluentSMTP nécessaire', 'dendrila-simple-edit'), array('response'=>400));
             }
             if (Dendrila_Simple_Edit_Modules::enabled('newsletters') &&
                 !Dendrila_Simple_Edit_Suppressions::ready() &&
