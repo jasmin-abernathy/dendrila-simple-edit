@@ -20,6 +20,8 @@ function user_can($id, $cap) { return in_array($cap, $GLOBALS['dendrila_simple_e
 function current_user_can($cap) { return user_can(get_current_user_id(), $cap); }
 function check_admin_referer($nonce) { return true; }
 function wp_unslash($value) { return $value; }
+function sanitize_text_field($value) { return is_string($value) ? trim(strip_tags($value)) : $value; }
+function map_deep($value, $callback) { if (is_array($value)) { foreach ($value as $key => $part) { $value[$key] = map_deep($part, $callback); } return $value; } return $callback($value); }
 function get_user_by($field, $value) { return $field === 'id' && (int) $value === 7 ? (object) array('ID' => 7) : false; }
 function wp_die($message, $title = '', $args = array()) { throw new RuntimeException($message); }
 function register_post_type($name, $config) { $GLOBALS['dendrila_simple_edit_registered'] = array($name, $config); }
