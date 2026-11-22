@@ -55,9 +55,9 @@ foreach ($dendrila_simple_edit_dependencies as $dendrila_simple_edit_dependency)
 register_activation_hook(__FILE__, array('Dendrila_Simple_Edit_Plugin', 'activate'));
 register_activation_hook(__FILE__, array('Dendrila_Simple_Edit_Mailing', 'install'));
 add_action('plugins_loaded', array('Dendrila_Simple_Edit_Plugin', 'boot'));
-// Register bundled translations on init, after WordPress has set the site locale.
-// WordPress.org language packs still take priority where they are available.
-add_action('init', static function () {
-    load_plugin_textdomain('dendrila-simple-edit', false,
-        dirname(plugin_basename(DENDRILA_SIMPLE_EDIT_PLUGIN_FILE)) . '/languages');
-}, 20);
+// WordPress 6.8+ registers the Domain Path header during plugin bootstrap.
+if (version_compare($GLOBALS['wp_version'], '6.8', '<')) {
+    add_action('init', static function () {
+        $GLOBALS['wp_textdomain_registry']->set_custom_path('dendrila-simple-edit', __DIR__ . '/languages');
+    }, 0);
+}
