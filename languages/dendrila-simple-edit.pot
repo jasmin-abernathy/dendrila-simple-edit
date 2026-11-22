@@ -838,3 +838,78 @@ msgstr ""
 msgid "Événements"
 msgstr ""
 
+
+msgid "Quitter l’assistant"
+msgstr ""
+
+msgid "Outils disponibles"
+msgstr ""
+
+msgid "Choisissez les fonctions accessibles sur le site. Configurez ensuite les droits dans « Rôles et permissions »."
+msgstr ""
+
+msgid "Activé"
+msgstr ""
+
+msgid "Désactivé"
+msgstr ""
+
+msgid "FluentSMTP est requis pour les newsletters."
+msgstr ""
+
+msgid "Connexion détectée."
+msgstr ""
+
+msgid "Connexion manquante : activation impossible."
+msgstr ""
+
+msgid "Activer"
+msgstr ""
+
+msgid "Enregistrer"
+msgstr ""
+
+msgid "Accès refusé."
+msgstr ""
+
+msgid "Configuration réservée à l’administration."
+msgstr ""
+
+msgid "Module inconnu."
+msgstr ""
+
+msgid "Pour activer les newsletters, configurez une connexion FluentSMTP."
+msgstr ""
+
+msgid "Rôles et permissions"
+msgstr ""
+
+msgid "Validation"
+msgstr ""
+
+msgid "Assistant de configuration"
+msgstr ""
+
+msgid "Reprendre manuellement les cinq étapes sans désinstaller le plugin. Les listes et contacts sont conservés, et vous pouvez quitter le parcours à tout moment. Une mise à jour ne relancera jamais l’assistant."
+msgstr ""
+
+msgid "Relancer l’assistant de configuration"
+msgstr ""
+
+msgid "Pages, articles et événements"
+msgstr ""
+
+msgid "Images"
+msgstr ""
+
+msgid "Champs complémentaires"
+msgstr ""
+
+msgid "Textes et coordonnées"
+msgstr ""
+
+msgid "Ouvrez uniquement le module et le rôle à configurer. Les administrateurs conservent tous leurs droits."
+msgstr ""
+
+msgid "Activation et désactivation : rubrique « Modules »."
+msgstr ""

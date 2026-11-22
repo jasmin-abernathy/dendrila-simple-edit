@@ -711,7 +711,7 @@ final class Dendrila_Simple_Edit_Plugin
             'acf_conflict' => array('error', 'Ce champ a changé entre-temps. Rechargez la page avant de réessayer.'),
             'acf_error' => array('error', 'Champ non enregistré. Aucun succès ne peut être confirmé.'),
             'media_configured' => array('updated', 'La sélection des images autorisées a été mise à jour.'),
-            'module_configured' => array('updated', 'Autorisations du module mises à jour.'),
+            'module_configured' => array('updated', 'Réglages du module enregistrés.'),
             'conflict' => array('error', 'Une autre modification a eu lieu. Rechargez la page avant de réessayer.'),
             'unconfigured' => array('error', 'Aucun champ n’a été autorisé par l’administration.'),
             'missing_revision' => array('error', 'Cette révision n’est plus disponible.'),
@@ -807,7 +807,7 @@ final class Dendrila_Simple_Edit_Plugin
         if (!self::can_access()) {
             wp_die('Accès refusé.', 'Accès refusé', array('response' => 403));
         }
-        if (!Dendrila_Simple_Edit_Setup::completed()) {
+        if (Dendrila_Simple_Edit_Setup::needs_wizard()) {
             Dendrila_Simple_Edit_Setup::render();
             return;
         }
@@ -842,7 +842,7 @@ final class Dendrila_Simple_Edit_Plugin
                 'intro' => __('Consultez les changements précédents et les pages qui utilisent vos textes.', 'dendrila-simple-edit')),
             'reglages' => array('label' => __('Autorisations', 'dendrila-simple-edit'), 'icon' => 'admin-users',
                 'title' => __('Choisir ce que chacun peut modifier', 'dendrila-simple-edit'),
-                'intro' => __('Choisissez les outils et les images accessibles aux comptes ayant le rôle « Édition simple ».', 'dendrila-simple-edit')),
+                'intro' => __('Activez les outils, puis choisissez les droits des rôles et les types de contenus.', 'dendrila-simple-edit')),
             'validations' => array('label' => __('Validations', 'dendrila-simple-edit'), 'icon' => 'yes-alt',
                 'title' => __('Contenus en attente de validation', 'dendrila-simple-edit'),
                 'intro' => __('Vérifiez les propositions avant qu’elles ne soient mises en ligne.', 'dendrila-simple-edit')),
@@ -1039,17 +1039,24 @@ final class Dendrila_Simple_Edit_Plugin
         echo '</section>';
         } elseif ($tab === 'reglages' && $is_admin) {
         $settings_sections = array(
-            'textes' => 'Textes et coordonnées',
-            'contenus' => 'Pages et articles',
-            'evenements' => 'Événements',
-            'images' => 'Images',
-            'acf' => 'Champs complémentaires',
-            'modules' => 'Modules et rôles',
-            'validations' => 'Validation',
+            'general' => __('Modules', 'dendrila-simple-edit'),
+            'contenu' => __('Contenu', 'dendrila-simple-edit'),
+            'roles' => __('Rôles et permissions', 'dendrila-simple-edit'),
+            'validations' => __('Validation', 'dendrila-simple-edit'),
         );
         $section = isset($_GET['dendrila_simple_edit_settings_section']) && is_string($_GET['dendrila_simple_edit_settings_section']) ?
-            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_settings_section'])) : 'textes';
-        if (!isset($settings_sections[$section])) { $section = 'textes'; }
+            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_settings_section'])) : 'general';
+        // Preserve old links/bookmarks without keeping redundant settings tabs.
+        $legacy_content = array('textes'=>'textes', 'contenus'=>'pages', 'images'=>'images',
+            'acf'=>'acf', 'evenements'=>'pages');
+        $content_section = isset($_GET['dendrila_simple_edit_content_section']) && is_string($_GET['dendrila_simple_edit_content_section']) ?
+            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_content_section'])) : 'pages';
+        if (isset($legacy_content[$section])) {
+            $content_section = $legacy_content[$section];
+            $section = 'contenu';
+        } elseif ($section === 'modules') { $section = 'general'; }
+        if (!isset($settings_sections[$section])) { $section = 'general'; }
+        if (!in_array($content_section, array('pages','images','acf','textes'), true)) { $content_section = 'pages'; }
         echo '<nav class="dendrila-simple-edit-newsletter-subnav dendrila-simple-edit-settings-subnav" aria-label="Sous-rubriques des réglages">';
         foreach ($settings_sections as $key => $label) {
             $url = add_query_arg('dendrila_simple_edit_settings_section', $key, self::tab_link('reglages'));
@@ -1057,7 +1064,33 @@ final class Dendrila_Simple_Edit_Plugin
                 ($section === $key ? ' aria-current="page"' : '') . '>' . esc_html($label) . '</a>';
         }
         echo '</nav>';
-        if ($section === 'textes') {
+        if ($section === 'general') {
+            echo '<section class="dendrila-simple-edit-card dendrila-simple-edit-setup-relaunch"><h2>' . esc_html__('Assistant de configuration', 'dendrila-simple-edit') . '</h2>';
+            echo '<p>' . esc_html__('Reprendre manuellement les cinq étapes sans désinstaller le plugin. Les listes et contacts sont conservés, et vous pouvez quitter le parcours à tout moment. Une mise à jour ne relancera jamais l’assistant.', 'dendrila-simple-edit') . '</p>';
+            echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '"><input type="hidden" name="action" value="dendrila_simple_edit_setup_restart">';
+            wp_nonce_field('dendrila_simple_edit_setup_restart');
+            echo '<button class="button button-secondary" type="submit">' . esc_html__('Relancer l’assistant de configuration', 'dendrila-simple-edit') . '</button></form></section>';
+            Dendrila_Simple_Edit_Modules::render_modules();
+        } elseif ($section === 'contenu') {
+            $content_sections = array('pages'=>__('Pages, articles et événements', 'dendrila-simple-edit'),
+                'images'=>__('Images', 'dendrila-simple-edit'),
+                'acf'=>__('Champs complémentaires', 'dendrila-simple-edit'),
+                'textes'=>__('Textes et coordonnées', 'dendrila-simple-edit'));
+            echo '<nav class="dendrila-simple-edit-newsletter-subnav dendrila-simple-edit-content-subnav" aria-label="Options de contenu">';
+            foreach ($content_sections as $key=>$label) {
+                $url = add_query_arg(array('dendrila_simple_edit_settings_section'=>'contenu',
+                    'dendrila_simple_edit_content_section'=>$key), self::tab_link('reglages'));
+                echo '<a class="dendrila-simple-edit-newsletter-subtab" href="' . esc_url($url) . '"' .
+                    ($content_section === $key ? ' aria-current="page"' : '') . '>' . esc_html($label) . '</a>';
+            }
+            echo '</nav>';
+            if ($content_section === 'pages') {
+                Dendrila_Simple_Edit_Post_Editor::render_admin();
+            } elseif ($content_section === 'images') {
+                Dendrila_Simple_Edit_Media::render_admin();
+            } elseif ($content_section === 'acf') {
+                Dendrila_Simple_Edit_ACF::render(true);
+            } elseif ($content_section === 'textes') {
 
             echo '<section class="dendrila-simple-edit-card"><h2>Qui peut modifier le site ?</h2>';
             echo '<p>Attribuez le rôle <strong>Édition simple</strong> aux comptes de votre choix. ' .
@@ -1111,15 +1144,10 @@ final class Dendrila_Simple_Edit_Plugin
             echo '</select></div>';
             echo '<p><button class="button" type="submit">Créer le texte et obtenir son code</button></p>';
             echo '</form></details>';
-        } elseif ($section === 'contenus') {
-            Dendrila_Simple_Edit_Post_Editor::render_admin();
-        } elseif ($section === 'evenements') {
-            Dendrila_Simple_Edit_Event_Editor::render_admin();
-        } elseif ($section === 'images') {
-            Dendrila_Simple_Edit_Media::render_admin();
-        } elseif ($section === 'acf') {
-            Dendrila_Simple_Edit_ACF::render(true);
-        } elseif ($section === 'modules') {
+            }
+        } elseif ($section === 'roles') {
+            echo '<section class="dendrila-simple-edit-card"><h2>' . esc_html__('Permissions par rôle', 'dendrila-simple-edit') . '</h2>';
+            echo '<p>' . esc_html__('Ouvrez uniquement le module et le rôle à configurer. Les administrateurs conservent tous leurs droits.', 'dendrila-simple-edit') . '</p></section>';
             Dendrila_Simple_Edit_Modules::render_admin();
         } elseif ($section === 'validations') {
             Dendrila_Simple_Edit_Approvals::render_settings();

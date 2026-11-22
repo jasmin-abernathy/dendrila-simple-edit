@@ -18,7 +18,8 @@ Dendrila Simple Edit provides a restricted editing interface where site owners c
 Features:
 
 * Guided editing by content type (pages, posts and events), with permissions per WordPress role, safe content blocks, image selection and optional approval before publication. Administrators keep their native access.
-* Role-based permissions with granular module actions and an installation setup wizard, including inline mailing-list creation.
+* Role-based permissions with a five-step wizard shown on first installation only (never automatically on update or reactivation), inline mailing-list creation and an optional manual configuration review without erasing contacts or lists.
+* Compact administration settings: enable or disable modules (including newsletters) independently, manage content types and media under Content, and configure per-role permissions in collapsible groups.
 * Optional integration with Advanced Custom Fields (supported text fields), The Events Calendar (events) and WooCommerce (products).
 * WooCommerce simple, external, grouped and variable products with delegated creation, publishing, categories, variations and stock controls where authorized.
 * A built-in newsletter composer with multiple table-based email layouts, customizable palettes saved per author, preview, mailing lists, sending queue and unsubscribe management.
@@ -43,7 +44,7 @@ The support/donation link opens https://app.lepotager.org/soutenir/ only when an
 
 1. Back up your WordPress database, especially mailing data, before replacing an earlier experimental version.
 2. Upload the ZIP through Plugins > Add New > Upload Plugin, then activate Dendrila Simple Edit.
-3. Complete the five-step configuration assistant as a user authorized to activate/install plugins.
+3. On the first installation, complete the five-step configuration assistant as a user authorized to activate/install plugins. Updating or reactivating an existing configured installation does not restart it; use Settings > Modules > Reopen setup to review it manually.
 4. Choose enabled modules, per-role actions and editable content types (not individual items). Administrators keep native access. Configure email transport before enabling real newsletters.
 5. Check the WooCommerce product editor and email opt-in in a test environment before using them with real orders or contacts.
 6. For a shortcode, insert it in a WordPress Shortcode block, not in a page-builder internal data structure.
@@ -71,4 +72,4 @@ The plugin's administration includes an optional link to https://app.lepotager.o
 * Initial guided content editor and granular WordPress role permissions.
 * WooCommerce product types, categories, variation editing, stock and publishing workflows.
 * Newsletter templates and palettes, optional WooCommerce opt-in and durable unsubscribe history.
-* First-run configuration and mobile administration improvements.
+* First-install-only guided setup, compact role permissions and module activation controls, and mobile administration improvements.

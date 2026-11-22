@@ -880,3 +880,78 @@ msgstr "FluentSMTP status:"
 msgid "Événements"
 msgstr "Events"
 
+
+msgid "Quitter l’assistant"
+msgstr "Exit setup"
+
+msgid "Outils disponibles"
+msgstr "Available tools"
+
+msgid "Choisissez les fonctions accessibles sur le site. Configurez ensuite les droits dans « Rôles et permissions »."
+msgstr "Choose the features available on this site. Then configure access under “Roles and permissions”."
+
+msgid "Activé"
+msgstr "Enabled"
+
+msgid "Désactivé"
+msgstr "Disabled"
+
+msgid "FluentSMTP est requis pour les newsletters."
+msgstr "FluentSMTP is required for newsletters."
+
+msgid "Connexion détectée."
+msgstr "Connection detected."
+
+msgid "Connexion manquante : activation impossible."
+msgstr "No connection configured: activation is unavailable."
+
+msgid "Activer"
+msgstr "Enable"
+
+msgid "Enregistrer"
+msgstr "Save"
+
+msgid "Accès refusé."
+msgstr "Access denied."
+
+msgid "Configuration réservée à l’administration."
+msgstr "Only administrators may configure this setting."
+
+msgid "Module inconnu."
+msgstr "Unknown module."
+
+msgid "Pour activer les newsletters, configurez une connexion FluentSMTP."
+msgstr "To enable newsletters, configure a FluentSMTP connection."
+
+msgid "Rôles et permissions"
+msgstr "Roles and permissions"
+
+msgid "Validation"
+msgstr "Approvals"
+
+msgid "Assistant de configuration"
+msgstr "Setup wizard"
+
+msgid "Reprendre manuellement les cinq étapes sans désinstaller le plugin. Les listes et contacts sont conservés, et vous pouvez quitter le parcours à tout moment. Une mise à jour ne relancera jamais l’assistant."
+msgstr "Reopen the five setup steps without uninstalling the plugin. Mailing lists and contacts are preserved, and you can exit at any time. Updating the plugin will never restart the wizard."
+
+msgid "Relancer l’assistant de configuration"
+msgstr "Reopen setup wizard"
+
+msgid "Pages, articles et événements"
+msgstr "Pages, posts and events"
+
+msgid "Images"
+msgstr "Images"
+
+msgid "Champs complémentaires"
+msgstr "Custom fields"
+
+msgid "Textes et coordonnées"
+msgstr "Text and contact details"
+
+msgid "Ouvrez uniquement le module et le rôle à configurer. Les administrateurs conservent tous leurs droits."
+msgstr "Open only the module and role you need to configure. Administrators retain full permissions."
+
+msgid "Activation et désactivation : rubrique « Modules »."
+msgstr "Enable or disable modules in the “Modules” section."

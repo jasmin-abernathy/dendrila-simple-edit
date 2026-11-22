@@ -901,3 +901,78 @@ msgstr "État FluentSMTP :"
 msgid "Événements"
 msgstr "Événements"
 
+
+msgid "Quitter l’assistant"
+msgstr "Quitter l’assistant"
+
+msgid "Outils disponibles"
+msgstr "Outils disponibles"
+
+msgid "Choisissez les fonctions accessibles sur le site. Configurez ensuite les droits dans « Rôles et permissions »."
+msgstr "Choisissez les fonctions accessibles sur le site. Configurez ensuite les droits dans « Rôles et permissions »."
+
+msgid "Activé"
+msgstr "Activé"
+
+msgid "Désactivé"
+msgstr "Désactivé"
+
+msgid "FluentSMTP est requis pour les newsletters."
+msgstr "FluentSMTP est requis pour les newsletters."
+
+msgid "Connexion détectée."
+msgstr "Connexion détectée."
+
+msgid "Connexion manquante : activation impossible."
+msgstr "Connexion manquante : activation impossible."
+
+msgid "Activer"
+msgstr "Activer"
+
+msgid "Enregistrer"
+msgstr "Enregistrer"
+
+msgid "Accès refusé."
+msgstr "Accès refusé."
+
+msgid "Configuration réservée à l’administration."
+msgstr "Configuration réservée à l’administration."
+
+msgid "Module inconnu."
+msgstr "Module inconnu."
+
+msgid "Pour activer les newsletters, configurez une connexion FluentSMTP."
+msgstr "Pour activer les newsletters, configurez une connexion FluentSMTP."
+
+msgid "Rôles et permissions"
+msgstr "Rôles et permissions"
+
+msgid "Validation"
+msgstr "Validation"
+
+msgid "Assistant de configuration"
+msgstr "Assistant de configuration"
+
+msgid "Reprendre manuellement les cinq étapes sans désinstaller le plugin. Les listes et contacts sont conservés, et vous pouvez quitter le parcours à tout moment. Une mise à jour ne relancera jamais l’assistant."
+msgstr "Reprendre manuellement les cinq étapes sans désinstaller le plugin. Les listes et contacts sont conservés, et vous pouvez quitter le parcours à tout moment. Une mise à jour ne relancera jamais l’assistant."
+
+msgid "Relancer l’assistant de configuration"
+msgstr "Relancer l’assistant de configuration"
+
+msgid "Pages, articles et événements"
+msgstr "Pages, articles et événements"
+
+msgid "Images"
+msgstr "Images"
+
+msgid "Champs complémentaires"
+msgstr "Champs complémentaires"
+
+msgid "Textes et coordonnées"
+msgstr "Textes et coordonnées"
+
+msgid "Ouvrez uniquement le module et le rôle à configurer. Les administrateurs conservent tous leurs droits."
+msgstr "Ouvrez uniquement le module et le rôle à configurer. Les administrateurs conservent tous leurs droits."
+
+msgid "Activation et désactivation : rubrique « Modules »."
+msgstr "Activation et désactivation : rubrique « Modules »."

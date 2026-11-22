@@ -41,6 +41,8 @@ jobs:
           php tests/modules-woo.php
           php tests/content-type-scopes.php
           php tests/relais-regressions.php
+          php tests/first-install.php
+          php tests/admin-settings.php
   package:
     name: Installation ZIP
     needs: php
