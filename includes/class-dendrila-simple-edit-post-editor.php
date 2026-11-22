@@ -12,7 +12,7 @@ final class Dendrila_Simple_Edit_Post_Editor
     {
         if (!in_array($type, array('page', 'post'), true)) { return false; }
         if (current_user_can('manage_options')) { return true; }
-        return Dendrila_Simple_Edit_Modules::allowed('editorial', $type === 'page' ? 'create_pages' : 'create_articles');
+        return self::type_enabled($type) && Dendrila_Simple_Edit_Modules::allowed('editorial', $type === 'page' ? 'create_pages' : 'create_articles');
     }
 
     public static function can_publish_type($type)
@@ -362,25 +362,31 @@ final class Dendrila_Simple_Edit_Post_Editor
         if (self::can_modify($type)) {
             $available = get_posts(array('post_type'=>$type,
                 'post_status'=>current_user_can('manage_options') ? array('publish','draft') : 'publish',
-                'posts_per_page'=>-1, 'fields'=>'ids', 'orderby'=>'modified', 'order'=>'DESC'));
-            foreach ($available as $post_id) {
-                $candidate = get_post((int)$post_id);
+                'has_password'=>false, 'posts_per_page'=>-1, 'update_post_term_cache'=>false, 'orderby'=>'modified', 'order'=>'DESC'));
+            foreach ($available as $candidate) {
                 if (!$candidate || $candidate->post_password !== '') { continue; }
                 if (self::compatible($candidate)) { $ids[] = (int)$candidate->ID; }
                 elseif (current_user_can('manage_options')) { $protected[] = $candidate; }
             }
         }
-        // Add only own newly created content, plus all Simple Edit creations for admins.
-        if (current_user_can('manage_options') || self::can_create_type($type)) {
-            $created = get_posts(array('post_type' => $type, 'post_status' => array('publish','draft'),
-                'posts_per_page' => 100, 'meta_key' => self::CREATED_META, 'meta_value' => '1',
-                'author' => current_user_can('manage_options') ? '' : get_current_user_id(),
-                'fields' => 'ids'));
-            foreach ($created as $created_id) {
-                if (self::own_created(get_post($created_id))) { $ids[] = (int) $created_id; }
+        // Administrators already received all drafts and published content above.
+        // Delegates keep access to their own compatible creations, without a 100-item ceiling.
+        if (!current_user_can('manage_options') && self::can_create_type($type)) {
+            $created = get_posts(array(
+                'post_type' => $type,
+                'post_status' => self::can_modify($type) ? 'draft' : array('publish','draft'),
+                'author' => get_current_user_id(),
+                'has_password' => false,
+                'posts_per_page' => -1,
+                'update_post_term_cache' => false,
+            ));
+            foreach ($created as $candidate) {
+                if (self::own_created($candidate) && self::compatible($candidate)) {
+                    $ids[] = (int) $candidate->ID;
+                }
             }
-            $ids = array_values(array_unique($ids));
         }
+        $ids = array_values(array_unique($ids));
         $name = $type === 'page' ? 'page' : 'article';
         $article = $type === 'page' ? 'une page' : 'un article';
         $title_label = $type === 'page' ? 'Titre de la page' : 'Titre de l’article';

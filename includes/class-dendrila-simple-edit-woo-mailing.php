@@ -95,6 +95,7 @@ final class Dendrila_Simple_Edit_Woo_Mailing
     public static function classic_checkbox()
     {
         if (!self::enabled()) { return; }
+        wp_nonce_field('dendrila_simple_edit_wc_optin', 'dendrila_simple_edit_optin_nonce', false);
         echo '<p class="form-row"><label class="woocommerce-form__label woocommerce-form__label-for-checkbox">' .
             '<input type="checkbox" name="dendrila_simple_edit_wc_optin" value="1"> ' .
             esc_html__('Je souhaite recevoir la newsletter du site (confirmation par e-mail).', 'dendrila-simple-edit') .
@@ -104,6 +105,10 @@ final class Dendrila_Simple_Edit_Woo_Mailing
     public static function classic_save($order, $data)
     {
         if (!self::enabled()) { return; }
+        if (!isset($_POST['dendrila_simple_edit_optin_nonce']) ||
+            !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_optin_nonce'])), 'dendrila_simple_edit_wc_optin')) {
+            return;
+        }
         if (isset($_POST['dendrila_simple_edit_wc_optin']) &&
             sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_wc_optin'])) === '1') {
             $order->update_meta_data('_dendrila_simple_edit_wc_optin','1');

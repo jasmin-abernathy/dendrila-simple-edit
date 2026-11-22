@@ -448,7 +448,7 @@ final class Dendrila_Simple_Edit_Woo
             $saved_id = $product->save();
             if ($creating && $product->is_type('variable')) {
                 $var_name = sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_variable_attribute'] ?? ''));
-                $var_values = wp_unslash($_POST['dendrila_simple_edit_variable_values'] ?? '');
+                $var_values = sanitize_textarea_field(wp_unslash($_POST['dendrila_simple_edit_variable_values'] ?? ''));
                 if (is_string($var_values) && $var_name !== '' && strlen($var_values)<500) {
                     $values = array_values(array_unique(array_filter(array_map('sanitize_text_field',
                         preg_split('/[,\n|]+/', $var_values)))));

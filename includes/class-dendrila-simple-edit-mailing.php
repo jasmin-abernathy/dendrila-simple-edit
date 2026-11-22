@@ -568,8 +568,9 @@ final class Dendrila_Simple_Edit_Mailing
     {
         if (!$campaign) { return false; }
         if (current_user_can('manage_options')) { return true; }
-        return Dendrila_Simple_Edit_Newsletters::can_send() &&
-            Dendrila_Simple_Edit_Newsletters::can_send(get_post((int)$campaign->newsletter_id));
+        $newsletter = get_post((int) $campaign->newsletter_id);
+        return $newsletter && (int) $newsletter->ID === (int) $campaign->newsletter_id &&
+            Dendrila_Simple_Edit_Newsletters::can_send($newsletter);
     }
 
     private static function require_send($action)
@@ -985,8 +986,6 @@ final class Dendrila_Simple_Edit_Mailing
             'invite_no_permission' => 'Pour envoyer l’invitation, cochez la confirmation d’accord et précisez sa provenance (12 caractères minimum). Aucun e-mail n’a été envoyé.',
             'invite_rate_limited' => 'Une invitation a déjà été envoyée récemment à cette personne (limite : 30 jours).',
             'invite_not_allowed' => 'Cette personne n’est pas désabonnée de la liste.',
-            'smtp_missing' => 'Le transport SMTP doit être configuré avant d’envoyer une invitation.',
-            'test_failed' => 'Le transport n’a pas accepté le message. Vérifiez FluentSMTP.',
             'not_ready' => 'Cette campagne n’est pas prête.',
             'cron_failed' => 'La programmation a échoué. Aucun envoi démarré.',
             'error' => 'Opération non enregistrée.',
@@ -1146,11 +1145,19 @@ final class Dendrila_Simple_Edit_Mailing
         echo '</section>';
         }
         if ($section === 'suivi') {
-        $campaigns = $wpdb->get_results($wpdb->prepare('SELECT c.*, l.name AS list_name FROM %i c LEFT JOIN %i l ON l.id=c.list_id ORDER BY c.id DESC LIMIT 100',
-            self::table('campaigns'), self::table('lists')));
-        if (!$admin) { $campaigns = array_values(array_filter((array)$campaigns,
-            array(__CLASS__, 'can_manage_campaign'))); }
-        $campaigns = array_slice((array)$campaigns, 0, 15);
+        if ($admin) {
+            $campaigns = $wpdb->get_results($wpdb->prepare(
+                'SELECT c.*, l.name AS list_name FROM %i c LEFT JOIN %i l ON l.id=c.list_id ORDER BY c.id DESC LIMIT 15',
+                self::table('campaigns'), self::table('lists')));
+        } elseif (Dendrila_Simple_Edit_Newsletters::can_send()) {
+            // Filter by owner before applying LIMIT; unrelated authors must not hide a campaign.
+            $campaigns = $wpdb->get_results($wpdb->prepare(
+                'SELECT c.*, l.name AS list_name FROM %i c INNER JOIN %i p ON p.ID=c.newsletter_id LEFT JOIN %i l ON l.id=c.list_id WHERE p.post_type=%s AND p.post_author=%d ORDER BY c.id DESC LIMIT 15',
+                self::table('campaigns'), $wpdb->posts, self::table('lists'),
+                Dendrila_Simple_Edit_Newsletters::TYPE, get_current_user_id()));
+        } else {
+            $campaigns = array();
+        }
         echo '<section class="dendrila-simple-edit-card"><h2>' . esc_html__('Campagnes préparées et envoyées', 'dendrila-simple-edit') . '</h2>';
         foreach ((array) $campaigns as $c) {
             $counts = $wpdb->get_results($wpdb->prepare('SELECT status,COUNT(*) as total FROM %i WHERE campaign_id=%d GROUP BY status', self::table('queue'), $c->id));
