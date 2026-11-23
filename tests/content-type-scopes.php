@@ -73,6 +73,9 @@ verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($generated_art
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>Ordinary paragraph</p>'), 'Simple HTML remains editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'Simple Gutenberg paragraph is editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2>Intertitre</h2><!-- /wp:heading -->'), 'Simple Gutenberg heading is editable');
+$woo_list = '<!-- wp:list --><ul><li>Gift cards</li><li>Downloadable software products</li></ul><!-- /wp:list -->';
+verify_case(is_string(Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content($woo_list)), 'WooCommerce native list block converts to the visual editor');
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($woo_list), 'WooCommerce native list block is safe to edit');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2 class="wp-block-heading">Overview</h2><!-- /wp:heading --><!-- wp:paragraph --><p><b>This is a sample page.</b></p><!-- /wp:paragraph --><!-- wp:list --><ul><li>Gift cards</li><li>Downloadable software products</li></ul><!-- /wp:list -->'), 'WooCommerce policy page headings, paragraphs and native list items stay editable');
 verify_case(strpos(Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'data-dendrila-simple-edit-block="text"') !== false, 'Simple Gutenberg paragraph is converted into a visual editor block');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p><strong>Texte riche</strong></p><!-- /wp:paragraph -->'), 'Rich Gutenberg paragraph can be edited without rewriting unchanged markup');
