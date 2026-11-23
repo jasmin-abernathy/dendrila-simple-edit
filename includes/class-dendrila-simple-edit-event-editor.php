@@ -221,7 +221,7 @@ final class Dendrila_Simple_Edit_Event_Editor
                 if (self::eligible((int)$event_id)) { $ids[] = (int)$event_id; }
             }
         }
-        $selected = isset($_GET['dendrila_simple_edit_eid']) ? absint($_GET['dendrila_simple_edit_eid']) : 0;
+        $selected = Dendrila_Simple_Edit_Plugin::screen_id('dendrila_simple_edit_eid', 0);
         $notices = array('saved' => 'Événement enregistré.', 'permissions' => 'Autorisations mises à jour.',
             'conflict' => 'Cet événement a changé : rechargez avant de recommencer.',
             'forbidden' => 'Événement non autorisé.', 'bad_dates' => 'Vérifiez les dates et les horaires.',
@@ -229,7 +229,7 @@ final class Dendrila_Simple_Edit_Event_Editor
             'error' => 'Enregistrement non confirmé.',
             'venue_created' => 'Lieu créé. Vérifiez sa sélection, puis enregistrez l’événement pour l’associer.',
             'venue_error' => 'Le lieu n’a pas pu être créé.');
-        $notice = isset($_GET['dendrila_simple_edit_enotice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_enotice'])) : '';
+        $notice = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_enotice', '');
         if (isset($notices[$notice])) { echo '<p class="notice notice-info" role="status">' . esc_html($notices[$notice]) . '</p>'; }
         echo '<section class="dendrila-simple-edit-card"><h2>Choisir un événement</h2><div class="dendrila-simple-edit-post-choice">';
         $found = 0;
@@ -253,7 +253,7 @@ final class Dendrila_Simple_Edit_Event_Editor
         $start = str_replace(' ', 'T', substr(self::date_meta($post->ID, '_EventStartDate'), 0, 16));
         $end = str_replace(' ', 'T', substr(self::date_meta($post->ID, '_EventEndDate'), 0, 16));
         $current_venue = (int) tribe_get_venue_id($post->ID);
-        $new_venue = isset($_GET['dendrila_simple_edit_new_venue']) ? absint($_GET['dendrila_simple_edit_new_venue']) : 0;
+        $new_venue = Dendrila_Simple_Edit_Plugin::screen_id('dendrila_simple_edit_new_venue', 0);
         if ($new_venue && get_post_type($new_venue) === 'tribe_venue' && get_post_status($new_venue) === 'publish') {
             $current_venue = $new_venue;
         }
