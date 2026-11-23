@@ -8,6 +8,7 @@ final class Dendrila_Simple_Edit_Navigation
     const CLASS_CLOSED = 'dendrila-simple-edit-mobile-closed';
     const CLASSIC_PREFS = 'dendrila_simple_edit_nav_mobile_prefs';
     const AUTO_ADD = 'dendrila_simple_edit_nav_auto_add';
+    const TITLE_ONLY = 'dendrila-simple-edit-nav-heading';
 
     public static function boot()
     {
@@ -17,6 +18,7 @@ final class Dendrila_Simple_Edit_Navigation
         add_action('wp_enqueue_scripts', array(__CLASS__, 'enqueue_mobile'));
         add_filter('render_block_core/navigation-submenu', array(__CLASS__, 'render_submenu'), 10, 2);
         add_filter('nav_menu_css_class', array(__CLASS__, 'classic_item_classes'), 10, 2);
+        add_filter('nav_menu_link_attributes', array(__CLASS__, 'classic_heading_link_attributes'), 10, 2);
     }
 
     public static function allowed()
@@ -143,7 +145,8 @@ final class Dendrila_Simple_Edit_Navigation
             $attrs = isset($item['attrs']) ? $item['attrs'] : array();
             $classnames = isset($attrs['className']) ? preg_split('/\s+/', trim((string)$attrs['className'])) : array();
             $classnames = array_values(array_diff($classnames, array(self::CLASS_OPEN, self::CLASS_CLOSED)));
-            if (!empty($children[$id])) {
+            if (!empty($children[$id]) || ($item['blockName'] === 'core/navigation-submenu' &&
+                strpos(' ' . (isset($attrs['className']) ? $attrs['className'] : '') . ' ', ' ' . self::TITLE_ONLY . ' ') !== false)) {
                 $attrs['className'] = trim(implode(' ', $classnames) . ' ' .
                     ($by_id[$id]['mobile'] === 'open' ? self::CLASS_OPEN : self::CLASS_CLOSED));
                 $item['blockName'] = 'core/navigation-submenu';
@@ -313,6 +316,9 @@ final class Dendrila_Simple_Edit_Navigation
             }
             $new_title = $page->post_title;
             $new_url = get_permalink($page);
+        } elseif ($operation === 'add_heading') {
+            $new_title = isset($_POST['dendrila_simple_edit_nav_heading']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nav_heading'])) : '';
+            if ($new_title === '' || $parent !== 0) { self::redirect('error'); }
         } elseif ($operation === 'add_link') {
             $new_title = isset($_POST['dendrila_simple_edit_nav_title']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nav_title'])) : '';
             $new_url = isset($_POST['dendrila_simple_edit_nav_url']) ? esc_url_raw(wp_unslash($_POST['dendrila_simple_edit_nav_url'])) : '';
@@ -335,20 +341,23 @@ final class Dendrila_Simple_Edit_Navigation
                     $args['menu-item-object-id'] = $new_page;
                 } else {
                     $args['menu-item-type'] = 'custom';
-                    $args['menu-item-url'] = $new_url;
+                    $args['menu-item-url'] = $operation === 'add_heading' ? '#' : $new_url;
                 }
                 $created = wp_update_nav_menu_item($menu['target'], 0, $args);
                 if (is_wp_error($created) || !$created) { self::redirect('error'); }
+                if ($operation === 'add_heading') { update_post_meta($created, '_dendrila_simple_edit_nav_heading', '1'); }
             }
             self::redirect('saved');
         }
         if ($operation !== 'remove') {
             $new_id = count($order) ? max($order) + 1 : 1;
             $values[$new_id] = array('parent'=>$parent, 'mobile'=>'closed');
-            $sources[$new_id] = array('blockName'=>'core/navigation-link',
-                'attrs'=>$new_page
-                    ? array('label'=>$new_title, 'url'=>$new_url, 'kind'=>'post-type', 'type'=>'page', 'id'=>$new_page)
-                    : array('label'=>$new_title, 'url'=>$new_url, 'kind'=>'custom'),
+            $sources[$new_id] = array('blockName'=>$operation === 'add_heading' ? 'core/navigation-submenu' : 'core/navigation-link',
+                'attrs'=>$operation === 'add_heading'
+                    ? array('label'=>$new_title, 'className'=>self::TITLE_ONLY)
+                    : ($new_page
+                        ? array('label'=>$new_title, 'url'=>$new_url, 'kind'=>'post-type', 'type'=>'page', 'id'=>$new_page)
+                        : array('label'=>$new_title, 'url'=>$new_url, 'kind'=>'custom')),
                 'innerBlocks'=>array(), 'innerHTML'=>'', 'innerContent'=>array());
             if (!$parent) { $order[] = $new_id; }
             else {
@@ -426,8 +435,21 @@ final class Dendrila_Simple_Edit_Navigation
         return $html;
     }
 
+    public static function classic_heading_link_attributes($atts, $item)
+    {
+        if (get_post_meta($item->ID, '_dendrila_simple_edit_nav_heading', true) === '1') {
+            unset($atts['href']);
+            $atts['role'] = 'button';
+            $atts['aria-haspopup'] = 'true';
+        }
+        return $atts;
+    }
+
     public static function classic_item_classes($classes, $item)
     {
+        if (get_post_meta($item->ID, '_dendrila_simple_edit_nav_heading', true) === '1') {
+            $classes[] = self::TITLE_ONLY;
+        }
         $prefs=get_option(self::CLASSIC_PREFS, array());
         if (isset($prefs[$item->ID]) && in_array($prefs[$item->ID], array('open','closed'), true)) {
             $classes[]= $prefs[$item->ID] === 'open' ? self::CLASS_OPEN : self::CLASS_CLOSED;
@@ -471,7 +493,7 @@ final class Dendrila_Simple_Edit_Navigation
             echo '<li class="dendrila-simple-edit-nav-sort-item'.($parent?' is-child':'').'" data-dendrila-simple-edit-nav-id="'.(int)$id.'">';
             echo '<input type="hidden" name="dendrila_simple_edit_nav_ids[]" value="'.(int)$id.'">';
             echo '<span class="dendrila-simple-edit-nav-sort-label">'.esc_html($entry['label']).'</span>';
-            echo '<span class="dendrila-simple-edit-nav-group-drop" data-dendrila-simple-edit-nav-group-drop aria-hidden="true">' . esc_html__('↳ Sous-menu ici', 'dendrila-simple-edit') . '</span>';
+            echo '<span class="dendrila-simple-edit-nav-group-drop" data-dendrila-simple-edit-nav-group-drop aria-hidden="true">' . esc_html__('↳ Placer en sous-page', 'dendrila-simple-edit') . '</span>';
             echo '<div class="dendrila-simple-edit-nav-sort-actions">';
             echo '<button type="button" class="dendrila-simple-edit-nav-move" data-dendrila-simple-edit-nav-move="up" aria-label="'.esc_attr(sprintf(esc_html__('Monter : %s', 'dendrila-simple-edit'), $entry['label'])).'">↑</button>';
             echo '<button type="button" class="dendrila-simple-edit-nav-move" data-dendrila-simple-edit-nav-move="down" aria-label="'.esc_attr(sprintf(esc_html__('Descendre : %s', 'dendrila-simple-edit'), $entry['label'])).'">↓</button>';
@@ -532,6 +554,8 @@ final class Dendrila_Simple_Edit_Navigation
             echo '</select></label> ';
             echo '<button class="button" type="submit" name="dendrila_simple_edit_nav_operation" value="add_page">'.esc_html__('Ajouter la page', 'dendrila-simple-edit').'</button> ';
             echo '<button class="button" type="submit" name="dendrila_simple_edit_nav_operation" value="add_link">'.esc_html__('Ajouter le lien', 'dendrila-simple-edit').'</button>';
+            echo '<p><label>'.esc_html__('Titre de regroupement (sans page ni lien)', 'dendrila-simple-edit').' <input type="text" name="dendrila_simple_edit_nav_heading"></label> ';
+            echo '<button class="button" type="submit" name="dendrila_simple_edit_nav_operation" value="add_heading">'.esc_html__('Ajouter un titre au menu', 'dendrila-simple-edit').'</button></p>';
             echo '<p><label>'.esc_html__('Retirer du menu', 'dendrila-simple-edit').' <select name="dendrila_simple_edit_nav_item"><option value="0">—</option>';
             foreach ($menu['items'] as $entry) {
                 echo '<option value="'.(int)$entry['id'].'">'.esc_html($entry['label']).'</option>';
