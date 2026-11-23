@@ -481,6 +481,7 @@ final class Dendrila_Simple_Edit_Post_Editor
         if ($protected) {
             echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-protected"><summary>';
             echo '<span>' . esc_html__('Contenus à ouvrir dans WordPress', 'dendrila-simple-edit') . '</span>';
+            /* translators: %d is the number of protected content items. */
             echo '<span class="dendrila-simple-edit-protected-count">' . esc_html(sprintf(_n('%d contenu', '%d contenus', count($protected), 'dendrila-simple-edit'), count($protected))) . '</span>';
             echo '</summary><p>' . esc_html__('Leur mise en page ne peut pas encore être conservée par Simple Edit. Ils n’ont pas été modifiés.', 'dendrila-simple-edit') . '</p>';
             echo '<ul class="dendrila-simple-edit-protected-list">';
