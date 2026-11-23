@@ -274,12 +274,57 @@ final class Dendrila_Simple_Edit_Block_Editor
         return self::is_safe_for_editor($body) ? self::document($body) : $saved;
     }
 
-    /** Only empty content or blocks created by this editor can be delegated safely.
-     * Never convert an existing Gutenberg or page-builder layout implicitly. */
+    /** Convert simple native Gutenberg paragraphs/headings to this editor's own blocks.
+     * Complex blocks remain untouched and unavailable to the simplified editor. */
+    public static function gutenberg_editor_content($html)
+    {
+        if (!is_string($html)) { return false; }
+        if (strpos($html, '<!-- wp:') === false) { return $html; }
+        if (!function_exists('parse_blocks')) { return false; }
+
+        $blocks = parse_blocks($html);
+        if (!is_array($blocks) || !$blocks) { return false; }
+        $converted = '';
+        foreach ($blocks as $block) {
+            if (!is_array($block) || empty($block['blockName'])) {
+                $freeform = is_array($block) ? (string) ($block['innerHTML'] ?? '') : '';
+                if (trim($freeform) === '') { continue; }
+                return false;
+            }
+            if (!empty($block['innerBlocks'])) { return false; }
+            $name = (string) $block['blockName'];
+            $attrs = isset($block['attrs']) && is_array($block['attrs']) ? $block['attrs'] : array();
+            $inner = trim((string) ($block['innerHTML'] ?? ''));
+
+            if ($name === 'core/paragraph' && !$attrs &&
+                preg_match('~^<p>([\\s\\S]*)</p>$~i', $inner, $match)) {
+                $tag = 'p';
+                $kind = 'text';
+                $body = $match[1];
+            } elseif ($name === 'core/heading' &&
+                (empty($attrs) || (count($attrs) === 1 && isset($attrs['level']) && (int) $attrs['level'] === 2)) &&
+                preg_match('~^<h2>([\\s\\S]*)</h2>$~i', $inner, $match)) {
+                $tag = 'h2';
+                $kind = 'heading';
+                $body = $match[1];
+            } else {
+                return false;
+            }
+            // Keep the visual editor's current plain-text model lossless for these
+            // blocks. Rich inline markup, styles, media and custom blocks stay protected.
+            if (!preg_match('~^(?:[^<>]|<br\\s*/?>)*$~i', $body)) { return false; }
+            $converted .= '<div data-dendrila-simple-edit-block="' . $kind . '"><' . $tag . '>' . $body . '</' . $tag . '></div>';
+        }
+        return $converted !== '' ? $converted : false;
+    }
+
+    /** Only simple paragraphs/headings and blocks created by this editor are editable. */
     public static function is_safe_for_editor($html)
     {
         if (!is_string($html)) { return false; }
         if (trim($html) === '') { return true; }
+        $html = self::gutenberg_editor_content($html);
+        if (!is_string($html)) { return false; }
         if (self::has_unsafe_layout($html)) { return false; }
         // Preserve ordinary existing pages. Their plain text, simple paragraphs and
         // headings are reconstructed by the JS editor without running shortcodes.

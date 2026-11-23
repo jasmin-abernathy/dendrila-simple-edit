@@ -7,6 +7,16 @@ $GLOBALS['test_event_grant'] = false;
 function get_option($key, $default = false) { return array_key_exists($key, $GLOBALS['test_options']) ? $GLOBALS['test_options'][$key] : $default; }
 function update_option($key, $value, $autoload = false) { $GLOBALS['test_options'][$key] = $value; return true; }
 function current_user_can($cap) { return $cap === 'manage_options' && $GLOBALS['test_admin']; }
+function parse_blocks($content) {
+    $blocks = array();
+    preg_match_all('~<!-- wp:(paragraph|heading)(?: (\\{[^>]+\\}))? -->([\\s\\S]*?)<!-- /wp:\\1 -->~', $content, $matches, PREG_SET_ORDER);
+    foreach ($matches as $match) {
+        $attrs = !empty($match[2]) ? json_decode($match[2], true) : array();
+        $blocks[] = array('blockName' => 'core/' . $match[1], 'attrs' => is_array($attrs) ? $attrs : array(),
+            'innerBlocks' => array(), 'innerHTML' => $match[3]);
+    }
+    return $blocks;
+}
 final class Dendrila_Simple_Edit_Modules {
     public static function allowed($module, $action) {
         return $module === 'editorial' && $action === 'edit_events' && $GLOBALS['test_event_grant'];
@@ -40,6 +50,10 @@ $old = '<div data-dse-block="heading" data-dse-align="center"><h2 data-dse-color
     '<div data-dse-block="text"><p data-dse-color="blue">Texte existant</p></div>';
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($old), 'Old Simple Edit blocks retain editability');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>Ordinary paragraph</p>'), 'Simple HTML remains editable');
-verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'Gutenberg block protected');
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'Simple Gutenberg paragraph is editable');
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2>Intertitre</h2><!-- /wp:heading -->'), 'Simple Gutenberg heading is editable');
+verify_case(strpos(Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'data-dendrila-simple-edit-block="text"') !== false, 'Simple Gutenberg paragraph is converted into a visual editor block');
+verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p><strong>Texte riche</strong></p><!-- /wp:paragraph -->'), 'Rich Gutenberg paragraph stays protected');
+verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:columns --><div class="wp-block-columns"></div><!-- /wp:columns -->'), 'Complex Gutenberg layout stays protected');
 verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<script>evil()</script>'), 'Unsafe markup protected');
 echo "OK — per-type editorial permissions, administrator bypass, old editor block support\n";
