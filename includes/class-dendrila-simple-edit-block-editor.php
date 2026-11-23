@@ -466,7 +466,10 @@ final class Dendrila_Simple_Edit_Block_Editor
         // headings are reconstructed by the JS editor without running shortcodes.
         // More complex HTML and any shortcode remain intentionally out of scope.
         if (preg_match('~\[[a-z][a-z0-9_-]*(?:\s+[^]\r\n]*)?\]~i', $html)) { return false; }
-        $remaining = preg_replace_callback('~<div\b([^>]*)data-dendrila-simple-edit-block="(title|heading|text|image|button|link|list|quote)"([^>]*)>([\s\S]*?)</div>~i',
+        // Keep both the current wrapper and the legacy data-dse-block wrapper
+        // editable. Simple Edit created test and site content with the legacy
+        // attribute before the Gutenberg compatibility work was added.
+        $remaining = preg_replace_callback('~<div\b([^>]*)\b(?:data-dendrila-simple-edit-block|data-dse-block)="(title|heading|text|image|button|link|list|quote)"([^>]*)>([\s\S]*?)</div>~i',
             static function ($match) {
                 $kind = strtolower($match[2]);
                 $tag = array('title' => 'h1', 'heading' => 'h2', 'text' => 'p',

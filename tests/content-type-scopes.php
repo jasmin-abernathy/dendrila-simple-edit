@@ -50,8 +50,10 @@ $GLOBALS['test_admin'] = false;
 verify_case(!$ref->invoke(null), 'Type restriction blocks delegated events');
 verify_case(!Dendrila_Simple_Edit_Post_Editor::save_types(array('invalid')), 'Unknown type blocked');
 $old = '<div data-dse-block="heading" data-dse-align="center"><h2 data-dse-color="green" data-dse-align="center">Bienvenue</h2></div>' . "\n" .
-    '<div data-dse-block="text"><p data-dse-color="blue">Texte existant</p></div>';
-verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($old), 'Old Simple Edit blocks retain editability');
+    '<div data-dse-block="text"><p data-dse-color="blue">Texte existant</p></div>' . "\n" .
+    '<div data-dse-block="button" data-dse-align="center"><a href="https://example.test/" class="dse-newsletter-cta" data-dse-color="green">Découvrir le laboratoire</a></div>' . "\n" .
+    '<div data-dse-block="link"><a href="https://example.test/">Retour au laboratoire</a></div>';
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($old), 'Legacy Simple Edit pages with headings, text, buttons and links remain editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>Ordinary paragraph</p>'), 'Simple HTML remains editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'Simple Gutenberg paragraph is editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2>Intertitre</h2><!-- /wp:heading -->'), 'Simple Gutenberg heading is editable');
