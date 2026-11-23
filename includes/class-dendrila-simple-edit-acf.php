@@ -332,8 +332,7 @@ final class Dendrila_Simple_Edit_ACF
         if (!$permissions) {
             echo '<p class="description">Vous pouvez modifier ici des informations enregistrées en plus du texte principal. Elles n’apparaissent sur le site que si la page ou le thème les affiche. Pour modifier directement une page ou un article, ouvrez la rubrique <a href="' . esc_url(admin_url('admin.php?page=dendrila-simple-edit&dendrila_simple_edit_tab=pages')) . '">Pages et articles</a>.</p>';
         }
-        $selected_post = isset($_GET['dendrila_simple_edit_acf_post']) && is_string($_GET['dendrila_simple_edit_acf_post']) ?
-            absint(wp_unslash($_GET['dendrila_simple_edit_acf_post'])) : 0;
+        $selected_post = Dendrila_Simple_Edit_Plugin::screen_id('dendrila_simple_edit_acf_post', 0);
         $mappings = self::mappings();
         $mapped_fields = array();
         $posts = array();
@@ -377,7 +376,7 @@ final class Dendrila_Simple_Edit_ACF
             $post = $posts[$selected_post];
             echo '<h3>' . esc_html(get_the_title($post)) . '</h3>';
             echo '<p><a href="' . esc_url(get_permalink($post)) . '">Voir sur le site</a></p>';
-            $notice = isset($_GET['dendrila_simple_edit_notice']) && is_string($_GET['dendrila_simple_edit_notice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_notice'])) : '';
+            $notice = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_notice', '');
             if (!$permissions) {
                 $feedback = array(
                     'acf_saved' => array('success', 'Enregistré dans WordPress : votre nouvelle valeur a bien été conservée.'),
