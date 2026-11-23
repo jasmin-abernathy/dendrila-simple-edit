@@ -16,8 +16,11 @@ final class Dendrila_Simple_Edit_Builders
         if (!is_string($field) || !in_array($field, Dendrila_Simple_Edit_Plugin::enabled_fields(), true)) {
             return array();
         }
+        static $request_cache = array();
+        if (array_key_exists($field, $request_cache)) { return $request_cache[$field]; }
         global $wpdb;
         $results = array();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared, bounded search of Elementor JSON; no public API can query this structured value.
         $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT p.ID, p.post_title, pm.meta_value
              FROM %i pm
@@ -29,7 +32,7 @@ final class Dendrila_Simple_Edit_Builders
              ORDER BY p.post_title ASC LIMIT 50",
             $wpdb->postmeta, $wpdb->posts, '%' . $wpdb->esc_like('dse_text') . '%'
         ));
-        if (!is_array($rows)) { return array(); }
+        if (!is_array($rows)) { $request_cache[$field] = array(); return array(); }
         foreach ($rows as $row) {
             if (!isset($row->ID, $row->meta_value) || !is_string($row->meta_value) ||
                 strlen($row->meta_value) > 3000000) {
@@ -42,6 +45,7 @@ final class Dendrila_Simple_Edit_Builders
                     'title' => isset($row->post_title) ? (string) $row->post_title : '');
             }
         }
+        $request_cache[$field] = $results;
         return $results;
     }
 

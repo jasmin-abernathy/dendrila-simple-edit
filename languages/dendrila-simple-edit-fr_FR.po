@@ -2,18 +2,17 @@
 # Copyright (C) 2026 Le Potager du Web
 # This file is distributed under the same license as the Dendrila Simple Edit
 # project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+# Le Potager du Web, 2026.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: Dendrila Simple Edit 0.0.1\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dendrila-simple-edit/\n"
 "POT-Creation-Date: 2026-11-22 15:33+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"PO-Revision-Date: 2026-11-23 21:34+0100\n"
+"Last-Translator: Le Potager du Web\n"
 "Language: fr_FR\n"
-"Language-Team: fr_FR <LL@li.org>\n"
+"Language-Team: French (France)\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -1065,4 +1064,106 @@ msgstr "Choisissez un parent du premier niveau, sans créer de troisième niveau
 
 msgid "Déplacez ce lien. Déposez sur « Sous-menu » pour grouper."
 msgstr "Déplacez ce lien. Déposez sur « Sous-menu » pour grouper."
+
+msgid "(nouvel onglet)"
+msgstr "(nouvel onglet)"
+
+msgid "Activez les outils, puis choisissez les droits des rôles et les types de contenus."
+msgstr "Activez les outils, puis choisissez les droits des rôles et les types de contenus."
+
+msgid "Ajouter automatiquement au menu principal les nouvelles pages publiées"
+msgstr "Ajouter automatiquement au menu principal les nouvelles pages publiées"
+
+msgid "Ajouter la page"
+msgstr "Ajouter la page"
+
+msgid "Ajouter le lien"
+msgstr "Ajouter le lien"
+
+msgid "Ajouter ou retirer des liens"
+msgstr "Ajouter ou retirer des liens"
+
+msgid "Ce contenu contient des blocs Gutenberg avancés que Simple Edit ne sait pas encore modifier."
+msgstr "Ce contenu contient des blocs Gutenberg avancés que Simple Edit ne sait pas encore modifier."
+
+msgid "Ce contenu contient un code court que Simple Edit ne peut pas préserver."
+msgstr "Ce contenu contient un code court que Simple Edit ne peut pas préserver."
+
+msgid "Cette page figure déjà dans le menu."
+msgstr "Cette page figure déjà dans le menu."
+
+msgid "Choisir les types de contenus modifiables"
+msgstr "Choisir les types de contenus modifiables"
+
+msgid "Contenus à ouvrir dans WordPress"
+msgstr "Contenus à ouvrir dans WordPress"
+
+msgid "Déplacez ou retirez les sous-menus avant de retirer leur parent."
+msgstr "Déplacez ou retirez les sous-menus avant de retirer leur parent."
+
+msgid "Emplacement"
+msgstr "Emplacement"
+
+msgid "Enregistrer cette préférence"
+msgstr "Enregistrer cette préférence"
+
+msgid "Le menu automatique se gère dans les pages WordPress."
+msgstr "Le menu automatique se gère dans les pages WordPress."
+
+msgid "Leur mise en page ne peut pas encore être conservée par Simple Edit. Ils n’ont pas été modifiés."
+msgstr "Leur mise en page ne peut pas encore être conservée par Simple Edit. Ils n’ont pas été modifiés."
+
+msgid "Mise en page Elementor : ouvrez ce contenu dans WordPress."
+msgstr "Mise en page Elementor : ouvrez ce contenu dans WordPress."
+
+msgid "Mise en page créée avec un constructeur : elle reste protégée."
+msgstr "Mise en page créée avec un constructeur : elle reste protégée."
+
+msgid "Modifier les événements existants"
+msgstr "Modifier les événements existants"
+
+msgid "Ouvrir dans WordPress"
+msgstr "Ouvrir dans WordPress"
+
+msgid "Page existante"
+msgstr "Page existante"
+
+msgid "Retirer ce lien du menu sans supprimer sa page ?"
+msgstr "Retirer ce lien du menu sans supprimer sa page ?"
+
+msgid "Retirer du menu"
+msgstr "Retirer du menu"
+
+msgid "Retirer le lien"
+msgstr "Retirer le lien"
+
+msgid "Sa mise en forme ne peut pas encore être conservée par Simple Edit."
+msgstr "Sa mise en forme ne peut pas encore être conservée par Simple Edit."
+
+msgid "Sans titre"
+msgstr "Sans titre"
+
+msgid "Titre du lien personnalisé"
+msgstr "Titre du lien personnalisé"
+
+msgid "Types de contenus"
+msgstr "Types de contenus"
+
+msgid "URL du lien personnalisé"
+msgstr "URL du lien personnalisé"
+
+msgid "Citation"
+msgstr "Citation"
+
+msgid "Éléments présentés en liste"
+msgstr "Éléments présentés en liste"
+
+msgid "Un texte mis en valeur"
+msgstr "Un texte mis en valeur"
+
+msgid "Modifiez les textes ici ; la structure des blocs WordPress sera conservée."
+msgstr "Modifiez les textes ici ; la structure des blocs WordPress sera conservée."
+
+msgid "Liste"
+msgstr "Liste"
 

@@ -1,5 +1,5 @@
 <?php
-/** Isolated regression test for type-level scopes and legacy block safety. */
+/** Isolated regression test for type-level scopes and safe Gutenberg text editing. */
 define('ABSPATH', __DIR__);
 $GLOBALS['test_options'] = array();
 $GLOBALS['test_admin'] = false;
@@ -7,15 +7,37 @@ $GLOBALS['test_event_grant'] = false;
 function get_option($key, $default = false) { return array_key_exists($key, $GLOBALS['test_options']) ? $GLOBALS['test_options'][$key] : $default; }
 function update_option($key, $value, $autoload = false) { $GLOBALS['test_options'][$key] = $value; return true; }
 function current_user_can($cap) { return $cap === 'manage_options' && $GLOBALS['test_admin']; }
+function esc_html($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
+function esc_attr($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
+function wp_strip_all_tags($value) { return strip_tags((string)$value); }
 function parse_blocks($content) {
     $blocks = array();
-    preg_match_all('~<!-- wp:(paragraph|heading)(?: (\\{[^>]+\\}))? -->([\\s\\S]*?)<!-- /wp:\\1 -->~', $content, $matches, PREG_SET_ORDER);
+    preg_match_all('~<!-- wp:(paragraph|heading|list)(?: (\\{[^>]+\\}))? -->([\\s\\S]*?)<!-- /wp:\\1 -->~', $content, $matches, PREG_SET_ORDER);
     foreach ($matches as $match) {
         $attrs = !empty($match[2]) ? json_decode($match[2], true) : array();
+        $inner = $match[3];
+        $children = array();
+        if ($match[1] === 'list' && preg_match_all('~<!-- wp:list-item(?: \\{[^>]+\\})? -->([\\s\\S]*?)<!-- /wp:list-item -->~', $inner, $items)) {
+            foreach ($items[1] as $item) {
+                if (preg_match('~<li(?:\\s+[^>]*)?>[\\s\\S]*?</li>~i', $item, $li)) {
+                    $children[] = array('blockName'=>'core/list-item','attrs'=>array(),'innerBlocks'=>array(),'innerHTML'=>$li[0]);
+                }
+            }
+            $inner = preg_replace('~<!-- wp:list-item(?: \\{[^>]+\\})? -->[\\s\\S]*?<!-- /wp:list-item -->~', '', $inner);
+        }
         $blocks[] = array('blockName' => 'core/' . $match[1], 'attrs' => is_array($attrs) ? $attrs : array(),
-            'innerBlocks' => array(), 'innerHTML' => $match[3]);
+            'innerBlocks' => $children, 'innerHTML' => $inner);
     }
     return $blocks;
+}
+function serialize_blocks($blocks) {
+    $html = '';
+    foreach ($blocks as $block) {
+        if (empty($block['blockName'])) { $html .= (string) ($block['innerHTML'] ?? ''); continue; }
+        $name = substr($block['blockName'], 5);
+        $html .= '<!-- wp:' . $name . ' -->' . (string) ($block['innerHTML'] ?? '') . '<!-- /wp:' . $name . ' -->';
+    }
+    return $html;
 }
 final class Dendrila_Simple_Edit_Modules {
     public static function allowed($module, $action) {
@@ -47,13 +69,31 @@ $GLOBALS['test_admin'] = false;
 verify_case(!$ref->invoke(null), 'Type restriction blocks delegated events');
 verify_case(!Dendrila_Simple_Edit_Post_Editor::save_types(array('invalid')), 'Unknown type blocked');
 $old = '<div data-dse-block="heading" data-dse-align="center"><h2 data-dse-color="green" data-dse-align="center">Bienvenue</h2></div>' . "\n" .
-    '<div data-dse-block="text"><p data-dse-color="blue">Texte existant</p></div>';
-verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($old), 'Old Simple Edit blocks retain editability');
+    '<div data-dse-block="text"><p data-dse-color="blue">Texte existant</p></div>' . "\n" .
+    '<div data-dse-block="button" data-dse-align="center"><a href="https://example.test/" class="dse-newsletter-cta" data-dse-color="green">Découvrir le laboratoire</a></div>' . "\n" .
+    '<div data-dse-block="link"><a href="https://example.test/">Retour au laboratoire</a></div>';
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($old), 'Legacy Simple Edit pages with headings, text, buttons and links remain editable');
+$generated_article = '<div data-dse-block="heading"><h2>Une initiative locale fictive</h2></div>' . "\n" .
+    '<div data-dse-block="text"><p>Cette actualité a été créée pour tester l’édition simple d’un article publié.</p></div>' . "\n" .
+    '<div data-dse-block="text"><p>Les participants imaginent une programmation ouverte à toutes et tous.</p></div>' . "\n" .
+    '<div data-dse-block="heading"><h2>Les prochaines étapes</h2></div>' . "\n" .
+    '<div data-dse-block="text"><p data-dse-color="plum">Recueillir les idées, planifier une rencontre et partager les résultats.</p></div>';
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($generated_article), 'Previously generated test articles remain editable with their exact legacy markup');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>Ordinary paragraph</p>'), 'Simple HTML remains editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'Simple Gutenberg paragraph is editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2>Intertitre</h2><!-- /wp:heading -->'), 'Simple Gutenberg heading is editable');
+$woo_list = '<!-- wp:list --><ul><li>Gift cards</li><li>Downloadable software products</li></ul><!-- /wp:list -->';
+$converted_woo_list = Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content($woo_list);
+verify_case(is_string($converted_woo_list) && substr_count($converted_woo_list, '<ul>') === 1, 'WooCommerce native list block converts without duplicating its list wrapper');
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($woo_list), 'WooCommerce native list block is safe to edit');
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2 class="wp-block-heading">Overview</h2><!-- /wp:heading --><!-- wp:paragraph --><p><b>This is a sample page.</b></p><!-- /wp:paragraph --><!-- wp:list --><ul><li>Gift cards</li><li>Downloadable software products</li></ul><!-- /wp:list -->'), 'WooCommerce policy page headings, paragraphs and native list items stay editable');
 verify_case(strpos(Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'data-dendrila-simple-edit-block="text"') !== false, 'Simple Gutenberg paragraph is converted into a visual editor block');
-verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p><strong>Texte riche</strong></p><!-- /wp:paragraph -->'), 'Rich Gutenberg paragraph stays protected');
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p><strong>Texte riche</strong></p><!-- /wp:paragraph -->'), 'Rich Gutenberg paragraph can be edited without rewriting unchanged markup');
+$bold_source = '<!-- wp:paragraph --><p><b>Texte de démonstration</b></p><!-- /wp:paragraph -->';
+$bold_editor = Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content($bold_source);
+$bold_editor = str_replace('Texte de démonstration', 'Texte modifié', $bold_editor);
+$bold_saved = Dendrila_Simple_Edit_Block_Editor::restore_gutenberg_content($bold_source, $bold_editor);
+verify_case(strpos($bold_saved, '<p><b>Texte modifié</b></p>') !== false, 'Editing text retains a simple bold style around the paragraph');
 verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:columns --><div class="wp-block-columns"></div><!-- /wp:columns -->'), 'Complex Gutenberg layout stays protected');
 verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<script>evil()</script>'), 'Unsafe markup protected');
 echo "OK — per-type editorial permissions, administrator bypass, old editor block support\n";

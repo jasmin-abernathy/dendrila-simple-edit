@@ -241,7 +241,13 @@ final class Dendrila_Simple_Edit_Event_Editor
                 esc_url(add_query_arg(array('page' => 'dendrila-simple-edit', 'dendrila_simple_edit_tab' => 'evenements',
                     'dendrila_simple_edit_eid' => $id), admin_url('admin.php'))) . '">' . esc_html($post->post_title) . '</a> ';
         }
-        if (!$found) { echo '<p>Aucun événement autorisé. L’administrateur peut en choisir dans Autorisations.</p>'; }
+        if (!$found) {
+            if (current_user_can('manage_options')) {
+                echo '<p>Aucun événement publié compatible avec l’éditeur simplifié. Les événements avec une mise en page complexe restent accessibles dans WordPress.</p>';
+            } else {
+                echo '<p>Aucun événement publié compatible et autorisé. Demandez à l’administrateur de vérifier l’accès au module Événements.</p>';
+            }
+        }
         echo '</div></section>';
         $post = $selected ? self::eligible($selected) : false;
         if (!$post) { return; }

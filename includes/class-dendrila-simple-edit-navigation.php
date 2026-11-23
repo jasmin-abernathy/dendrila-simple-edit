@@ -175,8 +175,11 @@ final class Dendrila_Simple_Edit_Navigation
         if (!self::allowed()) { wp_die('Réorganisation du menu non autorisée.', 'Accès refusé', array('response'=>403)); }
         check_admin_referer('dendrila_simple_edit_nav_reorder');
         $menu = self::detect();
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce is checked above; array shape and each element are validated before casting or allowlist use.
         $raw = isset($_POST['dendrila_simple_edit_nav_ids']) ? wp_unslash($_POST['dendrila_simple_edit_nav_ids']) : null;
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Parent IDs are checked as decimal strings and cast to integers before use.
         $parents = isset($_POST['dendrila_simple_edit_nav_parents']) ? wp_unslash($_POST['dendrila_simple_edit_nav_parents']) : null;
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values are restricted to the open/closed allowlist before use.
         $mobile = isset($_POST['dendrila_simple_edit_nav_mobile']) ? wp_unslash($_POST['dendrila_simple_edit_nav_mobile']) : null;
         $expected = isset($_POST['dendrila_simple_edit_nav_version']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nav_version'])) : '';
         if (!$menu || !is_array($raw) || !is_array($parents) || !is_array($mobile) ||
@@ -439,7 +442,9 @@ final class Dendrila_Simple_Edit_Navigation
     public static function render()
     {
         if (!self::allowed()) { wp_die('Accès refusé.', 'Accès refusé', array('response'=>403)); }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Display-only notice follows a separately nonce-verified save.
         $notice=isset($_GET['dendrila_simple_edit_nav_notice']) && is_string($_GET['dendrila_simple_edit_nav_notice']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Sanitized display-only status value.
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_nav_notice'])) : '';
         $messages=array('saved'=>__('Le menu et ses sous-menus ont été enregistrés.', 'dendrila-simple-edit'),
             'unchanged'=>__('Aucune modification à enregistrer.', 'dendrila-simple-edit'),

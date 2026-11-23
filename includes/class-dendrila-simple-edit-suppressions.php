@@ -2,6 +2,9 @@
 /** Permanent, database-backed email suppression with recovery from legacy tables. */
 if (!defined('ABSPATH')) { exit; }
 
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+// These queries migrate and enforce the plugin's consent/suppression tables.
+// Fresh reads are intentional so a recorded opt-out blocks the next send.
 final class Dendrila_Simple_Edit_Suppressions
 {
     const OPTION = 'dendrila_simple_edit_ml_suppression_migrated_v1';

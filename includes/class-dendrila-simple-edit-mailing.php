@@ -6,6 +6,10 @@
  */
 if (!defined('ABSPATH')) { exit; }
 
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+// The mailing subsystem owns normalized tables; prepared joins and atomic queue
+// updates are required. Reads stay uncached so consent, opt-outs, and send locks
+// take effect immediately and cannot produce duplicate or unwanted campaigns.
 final class Dendrila_Simple_Edit_Mailing
 {
     const DB_VERSION = '5';
@@ -164,6 +168,7 @@ final class Dendrila_Simple_Edit_Mailing
 
     private static function input($key)
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Every mutating caller verifies its admin/list/send nonce before using this helper; public signup validates its dedicated nonce.
         $v = isset($_POST[$key]) ? sanitize_textarea_field(wp_unslash($_POST[$key])) : '';
         return is_string($v) ? trim($v) : '';
     }
@@ -485,8 +490,10 @@ final class Dendrila_Simple_Edit_Mailing
     public static function reconfirm()
     {
         global $wpdb;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This public endpoint authenticates with a signed, single-use re-invitation token rather than a logged-in WordPress nonce.
         $raw_rid = isset($_REQUEST['rid']) ? sanitize_text_field(wp_unslash($_REQUEST['rid'])) : '';
         $rid = ctype_digit((string) $raw_rid) ? (int) $raw_rid : 0;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The recipient's signed token is the authentication proof for this public endpoint.
         $token = isset($_REQUEST['token']) && is_string($_REQUEST['token']) ?
             sanitize_text_field(wp_unslash($_REQUEST['token'])) : '';
         $table = self::table('reinvites');
@@ -523,6 +530,7 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<button type="submit">Confirmer mon abonnement</button></form></body></html>';
             exit;
         }
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- The POST is reached only after validating the signed, time-limited invitation token; this explicit checkbox is required.
         if (!isset($_POST['confirm_optin']) || sanitize_text_field(wp_unslash($_POST['confirm_optin'])) !== 'yes') {
             wp_die('Vous devez accepter explicitement le réabonnement.',
                 'Confirmation nécessaire',array('response'=>400));
@@ -687,9 +695,12 @@ final class Dendrila_Simple_Edit_Mailing
     private static function contact_from_token($action)
     {
         global $wpdb;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public subscribe/unsubscribe links are authenticated by a purpose-bound HMAC token.
         $raw_cid = isset($_REQUEST['cid']) ? sanitize_text_field(wp_unslash($_REQUEST['cid'])) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public link token binds the list ID and purpose.
         $raw_lid = isset($_REQUEST['lid']) ? sanitize_text_field(wp_unslash($_REQUEST['lid'])) : '';
         $cid = ctype_digit((string) $raw_cid) ? (int) $raw_cid : 0;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Signed email token is verified with hash_equals below.
         $token = isset($_REQUEST['token']) ? sanitize_text_field(wp_unslash($_REQUEST['token'])) : '';
         $lid = ctype_digit((string) $raw_lid) ? (int) $raw_lid : 0;
         if (!$cid || !preg_match('/^[a-f0-9]{64}$/', $token) || ($action === 'confirm' && !$lid)) { return false; }

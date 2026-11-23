@@ -79,10 +79,33 @@ final class Dendrila_Simple_Edit_Post_Editor
 
     private static function compatible($post)
     {
+        if (!$post || self::is_module_managed_page($post)) { return false; }
         return $post && Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($post->post_content) &&
             get_post_meta($post->ID, '_elementor_edit_mode', true) !== 'builder' &&
             !get_post_meta($post->ID, '_elementor_data', true) &&
             get_post_meta($post->ID, '_et_pb_use_builder', true) !== 'on';
+    }
+
+    /** Pages whose body is controlled by another plugin are not editorial content. */
+    private static function is_module_managed_page($post)
+    {
+        if (!$post || $post->post_type !== 'page') { return false; }
+        if (function_exists('wc_get_page_id')) {
+            static $woocommerce_pages = null;
+            if ($woocommerce_pages === null) {
+                $woocommerce_pages = array_map(static function ($id) { return (int) $id > 0 ? (int) $id : 0; }, array(
+                    wc_get_page_id('cart'), wc_get_page_id('checkout'),
+                    wc_get_page_id('myaccount'), wc_get_page_id('shop'),
+                ));
+            }
+            if (in_array((int) $post->ID, array_filter($woocommerce_pages), true)) { return true; }
+        }
+        $content = (string) $post->post_content;
+        if (preg_match('/\[(?:dendrila_privacy_(?:legal_notice|cookies)|woocommerce_(?:cart|checkout|my_account))\b/i', $content) ||
+            preg_match('/<!--\s*wp:woocommerce\/(?:cart|checkout|customer-account)\b/i', $content) ||
+            strpos($content, 'create-block/ea-blocks') !== false ||
+            preg_match('/\[ea_bootstrap\b/i', $content)) { return true; }
+        return false;
     }
 
     private static function protected_reason($post)
@@ -290,6 +313,9 @@ final class Dendrila_Simple_Edit_Post_Editor
         }
         if (!hash_equals(self::fingerprint($post), $expected)) { self::redirect('conflict', $id); }
         $clean = Dendrila_Simple_Edit_Block_Editor::clean($content);
+        if (strpos($post->post_content, '<!-- wp:') !== false) {
+            $clean = Dendrila_Simple_Edit_Block_Editor::restore_gutenberg_content($post->post_content, $clean);
+        }
         if (!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($clean)) {
             wp_die('Ce contenu n’est pas compatible avec l’éditeur simplifié.', 'Format non pris en charge', array('response' => 400));
         }
@@ -384,6 +410,7 @@ final class Dendrila_Simple_Edit_Post_Editor
                 'has_password'=>false, 'posts_per_page'=>-1, 'update_post_term_cache'=>false, 'orderby'=>'modified', 'order'=>'DESC'));
             foreach ($available as $candidate) {
                 if (!$candidate || $candidate->post_password !== '') { continue; }
+                if (self::is_module_managed_page($candidate)) { continue; }
                 if (self::compatible($candidate)) { $ids[] = (int)$candidate->ID; }
                 elseif (current_user_can('manage_options')) { $protected[] = $candidate; }
             }
@@ -454,6 +481,7 @@ final class Dendrila_Simple_Edit_Post_Editor
         if ($protected) {
             echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-protected"><summary>';
             echo '<span>' . esc_html__('Contenus à ouvrir dans WordPress', 'dendrila-simple-edit') . '</span>';
+            /* translators: %d is the number of protected content items. */
             echo '<span class="dendrila-simple-edit-protected-count">' . esc_html(sprintf(_n('%d contenu', '%d contenus', count($protected), 'dendrila-simple-edit'), count($protected))) . '</span>';
             echo '</summary><p>' . esc_html__('Leur mise en page ne peut pas encore être conservée par Simple Edit. Ils n’ont pas été modifiés.', 'dendrila-simple-edit') . '</p>';
             echo '<ul class="dendrila-simple-edit-protected-list">';
@@ -510,7 +538,9 @@ final class Dendrila_Simple_Edit_Post_Editor
                 echo '</select></div>';
             }
             if ($type === 'post') { self::illustration_form($post); }
-            echo '<div class="dendrila-simple-edit-block-editor" data-dendrila-simple-edit-block-editor data-allow-title="0">';
+            echo '<div class="dendrila-simple-edit-block-editor" data-dendrila-simple-edit-block-editor data-allow-title="0"' .
+                ' data-collapse-blocks="1"' .
+                (strpos($post->post_content, '<!-- wp:') !== false ? ' data-preserve-blocks="1"' : '') . '>';
             echo '<label for="dendrila-simple-edit-paged-body-' . esc_attr((string) $suffix) . '">' . esc_html($content_label) . '</label>';
             echo '<textarea id="dendrila-simple-edit-paged-body-' . esc_attr((string) $suffix) . '" data-dendrila-simple-edit-editor-source name="dendrila_simple_edit_paged_body" rows="10">' .
                 esc_textarea(Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content($post->post_content)) . '</textarea></div>';

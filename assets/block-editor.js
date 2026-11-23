@@ -10,7 +10,9 @@
         text:    {label: t('Texte'), icon: 'editor-paragraph', hint: t('Un ou plusieurs paragraphes')},
         image:   {label: t('Image'), icon: 'format-image', hint: t('Photo ou illustration')},
         button:  {label: t('Bouton'), icon: 'arrow-right-alt2', hint: t('Un lien bien visible')},
-        link:    {label: t('Lien'), icon: 'admin-links', hint: t('Un lien dans le texte')}
+        link:    {label: t('Lien'), icon: 'admin-links', hint: t('Un lien dans le texte')},
+        list:    {label: t('Liste'), icon: 'editor-ul', hint: t('Éléments présentés en liste')},
+        quote:   {label: t('Citation'), icon: 'format-quote', hint: t('Un texte mis en valeur')}
     };
     var colors = [
         {key: 'default', name: t('Automatique'), value: ''},
@@ -43,6 +45,7 @@
         var form = root.closest('form');
         if (!form) {return;}
         var allowTitle = root.getAttribute('data-allow-title') !== '0';
+        var preserveStructure = root.getAttribute('data-preserve-blocks') === '1';
         var addBar = node('div', '', 'dendrila-simple-edit-block-palette');
         addBar.setAttribute('aria-label', t('Ajouter un élément'));
         var canvas = node('div', '', 'dendrila-simple-edit-block-canvas');
@@ -82,6 +85,12 @@
             var box = node('article', '', 'dendrila-simple-edit-newsletter-block');
             box.dataset.block = type;
             box.dataset.align = ['left', 'center', 'right'].indexOf(values.align) !== -1 ? values.align : 'left';
+            if (values.gutenbergPath !== null && values.gutenbergPath !== undefined) {
+                box.dataset.gutenbergPath = values.gutenbergPath;
+                box.dataset.gutenbergType = values.gutenbergType || '';
+                box.dataset.level = String(values.level || 2);
+                box.dataset.listTag = values.listTag || 'ul';
+            }
             var bar = node('div', '', 'dendrila-simple-edit-block-bar');
             var grip = node('span', '⠿', 'dendrila-simple-edit-block-grip');
             grip.draggable = true;
@@ -111,7 +120,13 @@
             }, 'dendrila-simple-edit-block-toggle');
             toggle.setAttribute('aria-label', t('Replier : ') + types[type].label);
             toggle.setAttribute('aria-expanded', 'true');
-            controls.append(toggle,up, down, control(t('Retirer'), function () {box.remove(); repaint(t('Élément retiré.'));}));
+            if (preserveStructure) {
+                controls.append(toggle);
+                grip.hidden = true;
+                up.hidden = down.hidden = true;
+            } else {
+                controls.append(toggle,up, down, control(t('Retirer'), function () {box.remove(); repaint(t('Élément retiré.'));}));
+            }
             var heading = node('strong', types[type].label);
             var summary = node('small', '', 'dendrila-simple-edit-block-summary');
             bar.append(grip, heading, summary, controls);
@@ -145,7 +160,8 @@
                     }));
                 }
             } else {
-                value = inputField(fields, t('Contenu'), values.text, type === 'text');
+                value = inputField(fields, t('Contenu'), values.text, type === 'text' || type === 'list' || type === 'quote');
+                if (type === 'heading' && values.level) { box.dataset.level = String(values.level); }
                 if (type === 'button' || type === 'link') {other = inputField(fields, t('Adresse du lien'), values.url, false, 'url');}
             }
             box.dataset.color = values.color && (names[values.color] !== undefined || colorValue(values.color)) ? values.color : 'default';
@@ -184,6 +200,7 @@
             });
             picker.addEventListener('input', function () {box.dataset.color = picker.value; updateColor();});
             colorWrap.append(pickerLabel, colorStatus);
+            if (preserveStructure) { colorWrap.hidden = true; }
             fields.appendChild(colorWrap);
             var alignment = node('fieldset', '', 'dendrila-simple-edit-block-alignment');
             alignment.appendChild(node('legend', t('Alignement de cet élément')));
@@ -204,6 +221,7 @@
                 alignGroup.appendChild(choice);
             });
             alignment.appendChild(alignGroup);
+            if (preserveStructure) { alignment.hidden = true; }
             fields.appendChild(alignment);
             var preview = node('div', '', 'dendrila-simple-edit-block-preview');
             preview.setAttribute('aria-label', t('Aperçu de cet élément'));
@@ -358,8 +376,19 @@
             if (child.nodeType !== 1) {return true;}
             if (child.hasAttribute('data-dendrila-simple-edit-block') || child.hasAttribute('data-dse-block')) {
                 var kind = child.getAttribute('data-dendrila-simple-edit-block') || child.getAttribute('data-dse-block');
-                var expected = {title: 'H1', heading: 'H2', text: 'P', image: 'IMG', button: 'A', link: 'A'};
+                var expected = {title: 'H1', heading: 'H2', text: 'P', image: 'IMG', button: 'A', link: 'A', list: 'UL', quote: 'BLOCKQUOTE'};
                 var inner = child.firstElementChild;
+                if (preserveStructure && child.hasAttribute('data-dse-gutenberg-path')) {
+                    var sourceType = child.getAttribute('data-dse-gutenberg-type');
+                    var expectedSource = {'core/paragraph': 'P', 'core/heading': /^H[2-6]$/, 'core/list': /^(UL|OL)$/, 'core/quote': 'BLOCKQUOTE'}[sourceType];
+                    var matchesSource = expectedSource instanceof RegExp ? expectedSource.test(inner && inner.tagName) : expectedSource === (inner && inner.tagName);
+                    if (!matchesSource || child.children.length !== 1) {return true;}
+                    var nested = Array.from(inner.querySelectorAll('*'));
+                    return nested.some(function (tag) {
+                        return sourceType === 'core/list' ? tag.tagName !== 'LI' :
+                            sourceType === 'core/quote' ? tag.tagName !== 'P' : true;
+                    }) || (sourceType !== 'core/list' && sourceType !== 'core/quote' && nested.length > 0);
+                }
                 return !inner || child.children.length !== 1 || expected[kind] !== inner.tagName ||
                     Array.from(inner.querySelectorAll('*')).some(function (tag) {return tag.tagName !== 'BR';});
             }
@@ -390,6 +419,11 @@
                 var inner = child.firstElementChild;
                 if (!inner) {return;}
                 var body = inner.textContent || '';
+                if (child.hasAttribute('data-dse-gutenberg-path')) {
+                    var structural = child.getAttribute('data-dse-gutenberg-type') || '';
+                    if (structural === 'core/list') { body = Array.from(inner.querySelectorAll('li')).map(function (li) {return li.textContent;}).join('\n'); }
+                    if (structural === 'core/quote') { body = Array.from(inner.querySelectorAll('p')).map(function (p) {return p.textContent;}).join('\n'); }
+                }
                 if (kind === 'text') {
                     var breaks = inner.querySelectorAll('br');
                     breaks.forEach(function (b) {b.replaceWith(document.createTextNode('\n'));});
@@ -397,7 +431,11 @@
                 }
                 addBlock(kind, {text: kind === 'image' ? inner.getAttribute('alt') : body,
                     url: inner.getAttribute(kind === 'image' ? 'src' : 'href'), color: inner.getAttribute('data-dendrila-simple-edit-color') || inner.getAttribute('data-dse-color') || 'green',
-                    align: child.getAttribute('data-dendrila-simple-edit-align') || child.getAttribute('data-dse-align') || inner.getAttribute('data-dendrila-simple-edit-align') || inner.getAttribute('data-dse-align') || 'left'});
+                    align: child.getAttribute('data-dendrila-simple-edit-align') || child.getAttribute('data-dse-align') || inner.getAttribute('data-dendrila-simple-edit-align') || inner.getAttribute('data-dse-align') || 'left',
+                    level: Number(child.getAttribute('data-dse-gutenberg-level')) || 2,
+                    gutenbergPath: child.getAttribute('data-dse-gutenberg-path'),
+                    gutenbergType: child.getAttribute('data-dse-gutenberg-type'),
+                    listTag: inner.tagName.toLowerCase()});
             } else if (child.nodeType === 1 && /^(P|H1|H2|IMG)$/.test(child.tagName)) {
                 flushLegacy();
                 var kind2 = child.tagName === 'H1' ? 'title' : child.tagName === 'H2' ? 'heading' : child.tagName === 'IMG' ? 'image' : 'text';
@@ -409,6 +447,14 @@
             } else {legacy.push(child.nodeType === 1 ? child.outerHTML : child.textContent);}
         });
         flushLegacy();
+        if (root.getAttribute('data-collapse-blocks') === '1') {
+            blocks().forEach(function (box) {
+                var fields = box.querySelector('.dendrila-simple-edit-block-fields');
+                var toggle = box.querySelector('.dendrila-simple-edit-block-toggle');
+                if (fields) { fields.hidden = true; box.classList.add('is-collapsed'); }
+                if (toggle) { toggle.setAttribute('aria-expanded', 'false'); toggle.setAttribute('aria-label', t('Déplier le bloc')); }
+            });
+        }
         function compose() {
             return blocks().map(function (item) {
                 var type = item.dataset.block, fields = item.querySelectorAll('.dendrila-simple-edit-block-fields > input, .dendrila-simple-edit-block-fields > textarea');
@@ -416,12 +462,24 @@
                 var content = fields[0].value || '', other = fields[1] ? fields[1].value : '';
                 var wrap = node('div');wrap.dataset.dendrilaSimpleEditBlock = type;
                 wrap.dataset.dendrilaSimpleEditAlign = item.dataset.align || 'left';
-                var tag = {title: 'h1', heading: 'h2', text: 'p', image: 'img', button: 'a', link: 'a'}[type];
+                if (item.dataset.gutenbergPath !== undefined) {
+                    wrap.dataset.dseGutenbergPath = item.dataset.gutenbergPath;
+                    wrap.dataset.dseGutenbergType = item.dataset.gutenbergType;
+                    wrap.dataset.dseGutenbergLevel = item.dataset.level || '2';
+                }
+                var tag = {title: 'h1', heading: 'h' + (item.dataset.level || '2'), text: 'p', image: 'img', button: 'a', link: 'a', list: item.dataset.listTag || 'ul', quote: 'blockquote'}[type];
                 var inner = node(tag, type === 'image' ? '' : content);
                 if (type === 'text') {
                     inner.replaceChildren();
                     content.split('\n').forEach(function (line, idx) {if (idx) {inner.appendChild(node('br'));}inner.appendChild(document.createTextNode(line));});
                 } else if (type === 'image') {inner.setAttribute('src', content);inner.alt = other;}
+                else if (type === 'list') {
+                    inner.replaceChildren();
+                    content.split('\n').forEach(function (line) {if (line.trim()) {inner.appendChild(node('li', line));}});
+                } else if (type === 'quote') {
+                    inner.replaceChildren();
+                    content.split('\n').forEach(function (line) {if (line.trim()) {inner.appendChild(node('p', line));}});
+                }
                 else if (type === 'link' || type === 'button') {
                     inner.setAttribute('href', other);
                     if (type === 'button') {inner.className = 'dendrila-simple-edit-newsletter-cta';}
@@ -476,7 +534,15 @@
         source.hidden = true;
         var label = root.querySelector('label[for="' + source.id + '"]');
         if (label) {label.hidden = true;}
-        root.append(node('h4', t('Ajouter un élément'), 'dendrila-simple-edit-builder-heading'), addBar, canvas, status, previewPanel);
+        if (preserveStructure) {
+            var notice = node('p', t('Modifiez les textes ici ; la structure des blocs WordPress sera conservée.'), 'notice notice-info');
+            root.append(notice, canvas, status, previewPanel);
+            addBar.hidden = true;
+            previewPanel.hidden = true;
+            root.classList.add('dendrila-simple-edit-preserve-blocks');
+        } else {
+            root.append(node('h4', t('Ajouter un élément'), 'dendrila-simple-edit-builder-heading'), addBar, canvas, status, previewPanel);
+        }
         // Move the assistant beneath the six insertion tiles; native <details> keeps it
         // collapsed by default, with keyboard and screen-reader support.
         var articleImport = root.querySelector('[data-dendrila-simple-edit-article-import]');

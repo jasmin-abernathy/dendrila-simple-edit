@@ -409,6 +409,7 @@ final class Dendrila_Simple_Edit_Woo
                 self::redirect('conflict');
             }
         }
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The nonce is checked above; clean_changes accepts only the authorized product-field schema and sanitizes each field by type.
         $submitted = isset($_POST['dendrila_simple_edit_pfields']) ? wp_unslash($_POST['dendrila_simple_edit_pfields']) : array();
         if (is_array($submitted) && isset($submitted['manage_stock']) && $submitted['manage_stock'] !== '1') {
             unset($submitted['stock_quantity']);
@@ -488,7 +489,7 @@ final class Dendrila_Simple_Edit_Woo
             echo '<p role="status">' . esc_html($notices[$notice]) . '</p>';
         }
         if ($rights['create']) {
-            echo '<details class="dendrila-simple-edit-product-item"><summary>Ajouter un produit</summary>';
+            echo '<details class="dendrila-simple-edit-product-item dendrila-simple-edit-product-create"><summary><span class="dendrila-simple-edit-product-create-title">Ajouter un produit</span><span class="dendrila-simple-edit-product-create-note">Créer une nouvelle fiche brouillon</span></summary>';
             self::form(null, $rights);
             echo '</details>';
         }

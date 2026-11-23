@@ -25,6 +25,18 @@ function map_deep($value, $callback) { if (is_array($value)) { foreach ($value a
 function get_user_by($field, $value) { return $field === 'id' && (int) $value === 7 ? (object) array('ID' => 7) : false; }
 function wp_die($message, $title = '', $args = array()) { throw new RuntimeException($message); }
 function register_post_type($name, $config) { $GLOBALS['dendrila_simple_edit_registered'] = array($name, $config); }
+function parse_blocks($content) {
+    preg_match_all('~<!-- wp:(paragraph|heading)(?: (\\{[^>]+\\}))? -->([\\s\\S]*?)<!-- /wp:\\1 -->~', $content, $matches, PREG_SET_ORDER);
+    $blocks = array();
+    foreach ($matches as $match) {
+        $attrs = !empty($match[2]) ? json_decode($match[2], true) : array();
+        $blocks[] = array('blockName'=>'core/'.$match[1], 'attrs'=>is_array($attrs)?$attrs:array(), 'innerBlocks'=>array(), 'innerHTML'=>$match[3]);
+    }
+    return $blocks;
+}
+function esc_html($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
+function esc_attr($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8'); }
+function wp_strip_all_tags($value) { return strip_tags((string)$value); }
 require dirname(__DIR__) . '/includes/class-dendrila-simple-edit-approvals.php';
 require dirname(__DIR__) . '/includes/class-dendrila-simple-edit-modules.php';
 require dirname(__DIR__) . '/includes/class-dendrila-simple-edit-newsletters.php';
@@ -82,5 +94,5 @@ echo "OK — per-role module ACL, closed newsletter sending boundary, private dr
 require_once dirname(__DIR__) . '/includes/class-dendrila-simple-edit-block-editor.php';
 ensure(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor("First line\nSecond line"), 'Plain text can enter the visual editor');
 ensure(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>First<br>second</p>'), 'Simple paragraphs can enter the visual editor');
-ensure(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Structured</p><!-- /wp:paragraph -->'), 'Gutenberg stays protected');
+ensure(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Structured</p><!-- /wp:paragraph -->'), 'Simple Gutenberg paragraphs can be edited');
 ensure(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>[gallery]</p>'), 'Embedded shortcode stays protected');

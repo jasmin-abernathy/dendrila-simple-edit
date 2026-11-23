@@ -38,6 +38,7 @@ function __($s,$domain='') { return $s; }
 function esc_html__($s,$domain='') { return esc_html($s); }
 function esc_url($s) { return htmlspecialchars($s, ENT_QUOTES); }
 function selected($a,$b,$echo=false) { return (string)$a===(string)$b ? ' selected="selected"' : ''; }
+function checked($a,$b,$echo=false) { return (string)$a===(string)$b ? ' checked="checked"' : ''; }
 function wp_nonce_field() { echo '<input type="hidden" name="_wpnonce">'; }
 function admin_url($a) { return 'https://example.test/wp-admin/'.$a; }
 function add_query_arg($a,$b) { return $b; }

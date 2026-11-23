@@ -184,7 +184,9 @@ final class Dendrila_Simple_Edit_Plugin
         // their own nonces and capability checks. Profile allows password changes.
         if (in_array($pagenow, array('admin-ajax.php', 'admin-post.php',
             'async-upload.php', 'profile.php'), true)) { return; }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin route check keeps delegated editors on the Simple Edit screen.
         if ($pagenow === 'admin.php' && isset($_GET['page']) &&
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This value is compared with a fixed screen slug and cannot trigger an action.
             $_GET['page'] === 'dendrila-simple-edit') { return; }
         wp_safe_redirect(admin_url('admin.php?page=dendrila-simple-edit'));
         exit;
@@ -356,6 +358,7 @@ final class Dendrila_Simple_Edit_Plugin
             'Image choisie' => __('Image choisie', 'dendrila-simple-edit'),
             'Image sélectionnée' => __('Image sélectionnée', 'dendrila-simple-edit'),
             'Intertitre' => __('Intertitre', 'dendrila-simple-edit'),
+            'Liste' => __('Liste', 'dendrila-simple-edit'),
             'Le titre qui ouvre le message' => __('Le titre qui ouvre le message', 'dendrila-simple-edit'),
             'Les images importées sont disponibles. Rechargez la page pour voir les nouvelles miniatures.' => __('Les images importées sont disponibles. Rechargez la page pour voir les nouvelles miniatures.', 'dendrila-simple-edit'),
             'Lien' => __('Lien', 'dendrila-simple-edit'),
@@ -364,6 +367,10 @@ final class Dendrila_Simple_Edit_Plugin
             'Personnalisée :' => __('Personnalisée :', 'dendrila-simple-edit'),
             'Photo ou illustration' => __('Photo ou illustration', 'dendrila-simple-edit'),
             'Pour séparer deux parties' => __('Pour séparer deux parties', 'dendrila-simple-edit'),
+            'Citation' => __('Citation', 'dendrila-simple-edit'),
+            'Éléments présentés en liste' => __('Éléments présentés en liste', 'dendrila-simple-edit'),
+            'Un texte mis en valeur' => __('Un texte mis en valeur', 'dendrila-simple-edit'),
+            'Modifiez les textes ici ; la structure des blocs WordPress sera conservée.' => __('Modifiez les textes ici ; la structure des blocs WordPress sera conservée.', 'dendrila-simple-edit'),
             'Prune' => __('Prune', 'dendrila-simple-edit'),
             'Replier' => __('Replier', 'dendrila-simple-edit'),
             'Retirer ' => __('Retirer ', 'dendrila-simple-edit'),
@@ -475,6 +482,7 @@ final class Dendrila_Simple_Edit_Plugin
         global $wpdb;
         $old_raw = maybe_serialize($old);
         $new_raw = maybe_serialize($new);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Atomic compare-and-swap on options prevents concurrent edits from overwriting each other; update_option cannot express this condition.
         $affected = $wpdb->query($wpdb->prepare(
             "UPDATE {$wpdb->options}
              SET option_value = %s
@@ -591,6 +599,7 @@ final class Dendrila_Simple_Edit_Plugin
         self::require_editor();
         check_admin_referer('dendrila_simple_edit_save');
         $expected = self::submitted_revision('dendrila_simple_edit_save');
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The nonce is checked above; commit_change validates the schema and sanitizes every value by field type.
         $input = isset($_POST['dendrila_simple_edit_fields']) ? wp_unslash($_POST['dendrila_simple_edit_fields']) : array();
         try {
             $result = self::commit_change($expected, $input);
@@ -756,6 +765,7 @@ final class Dendrila_Simple_Edit_Plugin
         if (is_array($cached)) { return $cached; }
         $needle = '%' . $wpdb->esc_like('[dse_text') . '%';
         $field_needle = '%' . $wpdb->esc_like('field="' . $field . '"') . '%';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded, prepared LIKE search locates shortcode-bearing page content and is cached by the posts last-changed token above.
         $pages = $wpdb->get_results($wpdb->prepare(
             "SELECT ID, post_title FROM %i
              WHERE post_status = 'publish'
@@ -1065,12 +1075,16 @@ final class Dendrila_Simple_Edit_Plugin
             'roles' => __('Rôles et permissions', 'dendrila-simple-edit'),
             'validations' => __('Validation', 'dendrila-simple-edit'),
         );
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- GET values only select a displayed settings subtab; no data is mutated.
         $section = isset($_GET['dendrila_simple_edit_settings_section']) && is_string($_GET['dendrila_simple_edit_settings_section']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Sanitized display-only tab selector.
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_settings_section'])) : 'general';
         // Preserve old links/bookmarks without keeping redundant settings tabs.
         $legacy_content = array('textes'=>'textes', 'contenus'=>'pages', 'images'=>'images',
             'acf'=>'acf', 'evenements'=>'pages');
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only settings subtab selector.
         $content_section = isset($_GET['dendrila_simple_edit_content_section']) && is_string($_GET['dendrila_simple_edit_content_section']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Sanitized display-only tab selector.
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_content_section'])) : 'pages';
         if (isset($legacy_content[$section])) {
             $content_section = $legacy_content[$section];
@@ -1174,7 +1188,7 @@ final class Dendrila_Simple_Edit_Plugin
         }
         } elseif ($tab === 'aide') {
             echo '<section class="dendrila-simple-edit-card"><h3>Comment modifier un contenu ?</h3><ol class="dendrila-simple-edit-steps"><li>Ouvrez l’onglet Pages, Articles ou Événements.</li><li>Choisissez un contenu autorisé et modifiez son titre et les éléments nécessaires.</li><li>Enregistrez vos modifications.</li></ol><p>Si un texte n’apparaît pas, l’administrateur doit peut-être encore autoriser sa modification.</p></section>';
-            echo '<section class="dendrila-simple-edit-card"><h3>Ce que Simple Edit ne modifie pas</h3><p>Les menus, les modèles et la disposition de la page restent tels quels. L’idée est de pouvoir changer le contenu sans risquer de casser le design.</p></section>';
+            echo '<section class="dendrila-simple-edit-card"><h3>Contenu et présentation</h3><p>Modifiez le texte et les images dans les onglets Pages et Articles. Les menus se gèrent dans l’onglet Menu principal ; les modèles et la mise en page restent en place.</p></section>';
             if ($is_admin) {
                 echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-advanced"><summary>Pour les administrateurs : placer un texte sur une page</summary><div class="dendrila-simple-edit-details-body"><p>Chaque texte peut être inséré à un endroit précis avec un petit code WordPress (appelé « code court »).</p>';
                 foreach ($enabled as $key) {

@@ -55,7 +55,9 @@ final class Dendrila_Simple_Edit_Setup
         global $pagenow;
         // Respect the admin-post handler and AJAX requests while activation finishes.
         if (in_array($pagenow, array('admin-post.php', 'admin-ajax.php'), true)) { return; }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only screen check for the one-time post-activation redirect.
         if ($pagenow === 'admin.php' && isset($_GET['page']) &&
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This sanitized value only identifies the plugin screen.
             sanitize_key(wp_unslash($_GET['page'])) === 'dendrila-simple-edit') {
             delete_option(self::REDIRECT_OPTION);
             return;
@@ -82,8 +84,9 @@ final class Dendrila_Simple_Edit_Setup
 
     public static function notice()
     {
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
         if (self::completed() || !self::can_configure() ||
-            (isset($_GET['page']) && $_GET['page'] === 'dendrila-simple-edit')) { return; }
+            ($screen && $screen->id === 'toplevel_page_dendrila-simple-edit')) { return; }
         echo '<div class="notice notice-warning"><p>' .
             esc_html__('Dendrila Simple Edit doit être configuré avant utilisation.', 'dendrila-simple-edit') .
             ' <a href="' . esc_url(admin_url('admin.php?page=dendrila-simple-edit')) . '">' .
@@ -176,11 +179,13 @@ final class Dendrila_Simple_Edit_Setup
                 }
                 global $wpdb;
                 $table = $wpdb->prefix . 'dendrila_simple_edit_ml_lists';
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Setup-only lookup in the plugin-owned mailing-list table; parameters are prepared.
                 $existing = (int)$wpdb->get_var($wpdb->prepare(
                     'SELECT id FROM %i WHERE LOWER(name)=LOWER(%s) ORDER BY id ASC LIMIT 1', $table, $new_name));
                 if ($existing) {
                     $list = $existing; // Prefer an existing list to a duplicate.
                 } else {
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- WordPress's insert helper safely writes the plugin-owned table.
                     $ok = $wpdb->insert($table, array('name'=>$new_name,'owner_user_id'=>0,
                         'created_at'=>current_time('mysql',true)), array('%s','%d','%s'));
                     if (!$ok || !$wpdb->insert_id) { wp_die('Création de la liste impossible.', 'Configuration', array('response'=>500)); }

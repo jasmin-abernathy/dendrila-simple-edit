@@ -196,6 +196,7 @@ final class Dendrila_Simple_Edit_Approvals
         if (isset($notices[$message])) {
             echo '<p class="notice notice-info" role="status">' . esc_html($notices[$message]) . '</p>';
         }
+        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Pending requests are stored in post meta; this admin-only query is capped at 100 and filtered by reviewer capability.
         $posts = get_posts(array('post_type' => array('page','post'),
             'post_status' => array('publish', 'draft'), 'posts_per_page' => 100,
             'meta_key' => self::PENDING, 'orderby' => 'modified', 'order' => 'DESC'));

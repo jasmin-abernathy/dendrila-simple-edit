@@ -7,10 +7,12 @@ final class Dendrila_Simple_Edit_Block_Editor
     /** Allowed rich text used consistently for incoming HTML and stored blocks. */
     public static function allowed_tags()
     {
-        $tags = array_fill_keys(array('p', 'br', 'h1', 'h2', 'h3', 'h4', 'strong', 'b',
+        $tags = array_fill_keys(array('p', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'b',
             'em', 'i', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'hr'), array());
         $tags['div'] = array('data-dendrila-simple-edit-block' => true, 'data-dendrila-simple-edit-align' => true,
-            'data-dse-block' => true, 'data-dse-align' => true);
+            'data-dse-block' => true, 'data-dse-align' => true,
+            'data-dse-gutenberg-path' => true, 'data-dse-gutenberg-type' => true,
+            'data-dse-gutenberg-level' => true);
         $tags['a'] = array('href' => true, 'title' => true, 'class' => true);
         $tags['img'] = array('src' => true, 'alt' => true, 'width' => true, 'height' => true);
         foreach (array('h1', 'h2', 'h3', 'p', 'a', 'img') as $tag) {
@@ -274,8 +276,8 @@ final class Dendrila_Simple_Edit_Block_Editor
         return self::is_safe_for_editor($body) ? self::document($body) : $saved;
     }
 
-    /** Convert simple native Gutenberg paragraphs/headings to this editor's own blocks.
-     * Complex blocks remain untouched and unavailable to the simplified editor. */
+    /** Convert safe Gutenberg text blocks to a view the simplified editor can edit.
+     * The original block tree is retained and restored on save. */
     public static function gutenberg_editor_content($html)
     {
         if (!is_string($html)) { return false; }
@@ -285,37 +287,178 @@ final class Dendrila_Simple_Edit_Block_Editor
         $blocks = parse_blocks($html);
         if (!is_array($blocks) || !$blocks) { return false; }
         $converted = '';
-        foreach ($blocks as $block) {
+        foreach ($blocks as $index => $block) {
             if (!is_array($block) || empty($block['blockName'])) {
                 $freeform = is_array($block) ? (string) ($block['innerHTML'] ?? '') : '';
                 if (trim($freeform) === '') { continue; }
                 return false;
             }
-            if (!empty($block['innerBlocks'])) { return false; }
             $name = (string) $block['blockName'];
-            $attrs = isset($block['attrs']) && is_array($block['attrs']) ? $block['attrs'] : array();
             $inner = trim((string) ($block['innerHTML'] ?? ''));
+            $kind = '';
+            $tag = '';
+            $level = 2;
+            $body = '';
 
-            if ($name === 'core/paragraph' && !$attrs &&
-                preg_match('~^<p>([\\s\\S]*)</p>$~i', $inner, $match)) {
-                $tag = 'p';
-                $kind = 'text';
-                $body = $match[1];
-            } elseif ($name === 'core/heading' &&
-                (empty($attrs) || (count($attrs) === 1 && isset($attrs['level']) && (int) $attrs['level'] === 2)) &&
-                preg_match('~^<h2>([\\s\\S]*)</h2>$~i', $inner, $match)) {
-                $tag = 'h2';
-                $kind = 'heading';
-                $body = $match[1];
+            if ($name === 'core/paragraph' && empty($block['innerBlocks']) &&
+                preg_match('~^<p(?:\\s+[^>]*)?>([\\s\\S]*)</p>$~i', $inner, $match)) {
+                $kind = 'text'; $tag = 'p'; $body = esc_html(wp_strip_all_tags($match[1]));
+            } elseif ($name === 'core/heading' && empty($block['innerBlocks']) &&
+                preg_match('~^<h([2-6])(?:\\s+[^>]*)?>([\\s\\S]*)</h\\1>$~i', $inner, $match)) {
+                $kind = 'heading'; $level = (int) $match[1]; $tag = 'h' . $level;
+                $body = esc_html(wp_strip_all_tags($match[2]));
+            } elseif ($name === 'core/list' &&
+                preg_match('~^<(ul|ol)(?:\\s+[^>]*)?>([\\s\\S]*)</\\1>$~i', $inner, $match) &&
+                ($items = self::gutenberg_list_items($block)) !== false && !empty($items)) {
+                // The outer editor wrapper below already supplies the list tag.
+                // Keep only its items here to avoid emitting nested <ul><ul> markup.
+                $kind = 'list'; $tag = strtolower($match[1]); $body = '';
+                foreach ($items as $item) { $body .= '<li>' . esc_html($item) . '</li>'; }
+            } elseif ($name === 'core/quote' && !empty($block['innerBlocks'])) {
+                $paragraphs = array();
+                foreach ($block['innerBlocks'] as $child) {
+                    if (!is_array($child) || ($child['blockName'] ?? '') !== 'core/paragraph' || !empty($child['innerBlocks']) ||
+                        !preg_match('~^<p(?:\\s+[^>]*)?>([\\s\\S]*)</p>$~i', trim((string) ($child['innerHTML'] ?? '')), $child_match)) {
+                        return false;
+                    }
+                    $paragraphs[] = esc_html(wp_strip_all_tags($child_match[1]));
+                }
+                if (!$paragraphs) { return false; }
+                $kind = 'quote'; $tag = 'blockquote';
+                foreach ($paragraphs as $paragraph) { $body .= '<p>' . $paragraph . '</p>'; }
             } else {
                 return false;
             }
-            // Keep the visual editor's current plain-text model lossless for these
-            // blocks. Rich inline markup, styles, media and custom blocks stay protected.
-            if (!preg_match('~^(?:[^<>]|<br\\s*/?>)*$~i', $body)) { return false; }
-            $converted .= '<div data-dendrila-simple-edit-block="' . $kind . '"><' . $tag . '>' . $body . '</' . $tag . '></div>';
+            $converted .= '<div data-dendrila-simple-edit-block="' . esc_attr($kind) . '" data-dse-gutenberg-path="' .
+                esc_attr((string) $index) . '" data-dse-gutenberg-type="' . esc_attr($name) . '" data-dse-gutenberg-level="' .
+                (int) $level . '"><' . $tag . '>' . $body . '</' . $tag . '>' . '</div>';
         }
         return $converted !== '' ? $converted : false;
+    }
+
+    /** Update editable text while serializing the original Gutenberg block tree. */
+    public static function restore_gutenberg_content($original, $edited)
+    {
+        if (!is_string($original) || strpos($original, '<!-- wp:') === false ||
+            !function_exists('parse_blocks') || !function_exists('serialize_blocks')) { return $edited; }
+        $blocks = parse_blocks($original);
+        if (!is_array($blocks)) { return false; }
+        preg_match_all('~<div\\b([^>]*data-dse-gutenberg-path="(\\d+)"[^>]*)>([\\s\\S]*?)</div>~i', $edited, $matches, PREG_SET_ORDER);
+        $seen = array();
+        foreach ($matches as $match) {
+            $index = (int) $match[2];
+            if (isset($seen[$index]) || !isset($blocks[$index]) || !is_array($blocks[$index]) ||
+                !preg_match('~data-dse-gutenberg-type="(core/(?:paragraph|heading|list|quote))"~i', $match[1], $type_match)) { return false; }
+            $type = $type_match[1];
+            if (($blocks[$index]['blockName'] ?? '') !== $type) { return false; }
+            $inner = trim($match[3]);
+            if ($type === 'core/paragraph' && preg_match('~^<p(?:\\s+[^>]*)?>([\\s\\S]*)</p>$~i', $inner, $body)) {
+                $source_html = (string) ($blocks[$index]['innerHTML'] ?? '');
+                $old = trim(wp_strip_all_tags($source_html));
+                $new = trim(wp_strip_all_tags($body[1]));
+                if ($new !== $old) { self::set_block_inner_html($blocks[$index], self::replace_block_text($source_html, 'p', $new)); }
+            } elseif ($type === 'core/heading' && preg_match('~^<h([2-6])(?:\\s+[^>]*)?>([\\s\\S]*)</h\\1>$~i', $inner, $body)) {
+                $source_html = (string) ($blocks[$index]['innerHTML'] ?? '');
+                $old = trim(wp_strip_all_tags($source_html));
+                $new = trim(wp_strip_all_tags($body[2]));
+                if ($new !== $old) {
+                    $level = (int) $body[1];
+                    if (!isset($blocks[$index]['attrs']) || !is_array($blocks[$index]['attrs'])) { $blocks[$index]['attrs'] = array(); }
+                    $blocks[$index]['attrs']['level'] = $level;
+                    self::set_block_inner_html($blocks[$index], self::replace_block_text($source_html, 'h' . $level, $new));
+                }
+            } elseif ($type === 'core/list' && preg_match('~^<(ul|ol)>([\\s\\S]*)</\\1>$~i', $inner, $body) &&
+                preg_match_all('~<li>([\\s\\S]*?)</li>~i', $body[2], $items)) {
+                $new_items = array_map(static function ($item) { return trim(wp_strip_all_tags($item)); }, $items[1]);
+                $old_items = self::gutenberg_list_items($blocks[$index]);
+                if ($old_items === false) { return false; }
+                if ($new_items !== $old_items || strtolower($body[1]) !== (!empty($blocks[$index]['attrs']['ordered']) ? 'ol' : 'ul')) {
+                    if (!isset($blocks[$index]['attrs']) || !is_array($blocks[$index]['attrs'])) { $blocks[$index]['attrs'] = array(); }
+                    $tag = strtolower($body[1]);
+                    if ($tag === 'ol') { $blocks[$index]['attrs']['ordered'] = true; } else { unset($blocks[$index]['attrs']['ordered']); }
+                    if (count($new_items) === count($old_items)) {
+                        if (!empty($blocks[$index]['innerBlocks'])) {
+                            foreach ($new_items as $item_index => $item_text) {
+                                $source_item = (string) ($blocks[$index]['innerBlocks'][$item_index]['innerHTML'] ?? '');
+                                self::set_block_inner_html($blocks[$index]['innerBlocks'][$item_index], self::replace_block_text($source_item, 'li', $item_text));
+                            }
+                        } else {
+                            $source_list = (string) ($blocks[$index]['innerHTML'] ?? '');
+                            self::set_block_inner_html($blocks[$index], self::replace_list_item_texts($source_list, $new_items));
+                        }
+                    } else {
+                        $html = '<' . $tag . '>';
+                        foreach ($new_items as $item) { $html .= '<li>' . esc_html($item) . '</li>'; }
+                        $html .= '</' . $tag . '>';
+                        $blocks[$index]['innerBlocks'] = array();
+                        self::set_block_inner_html($blocks[$index], $html);
+                    }
+                }
+            } elseif ($type === 'core/quote' && !empty($blocks[$index]['innerBlocks']) &&
+                preg_match_all('~<p(?:\\s+[^>]*)?>([\\s\\S]*?)</p>~i', $inner, $paragraphs) &&
+                count($paragraphs[1]) === count($blocks[$index]['innerBlocks'])) {
+                foreach ($paragraphs[1] as $child_index => $paragraph) {
+                    $old = trim(wp_strip_all_tags((string) ($blocks[$index]['innerBlocks'][$child_index]['innerHTML'] ?? '')));
+                    $new = trim(wp_strip_all_tags($paragraph));
+                    if ($new !== $old) { self::set_block_inner_html($blocks[$index]['innerBlocks'][$child_index], '<p>' . esc_html($new) . '</p>'); }
+                }
+            } else { return false; }
+            $seen[$index] = true;
+        }
+        foreach ($blocks as $index => $block) {
+            if (!empty($block['blockName']) && !isset($seen[$index])) { return false; }
+        }
+        return serialize_blocks($blocks);
+    }
+
+    private static function set_block_inner_html(&$block, $html)
+    {
+        $block['innerHTML'] = $html;
+        $block['innerContent'] = array($html);
+    }
+
+    /** Keep trusted tag classes and inline layout attributes while changing text. */
+    private static function replace_block_text($source_html, $tag, $text)
+    {
+        $tag = preg_quote($tag, '~');
+        // Preserve a simple inline emphasis wrapped around the entire paragraph
+        // or heading instead of silently dropping it when the text is edited.
+        if (preg_match('~^(<' . $tag . '(?:\\s+[^>]*)?>)(<(strong|b|em|i)(?:\\s+[^>]*)?>)[\\s\\S]*(</\\3>)(</' . $tag . '>)$~i',
+            trim((string) $source_html), $formatted)) {
+            return $formatted[1] . $formatted[2] . esc_html($text) . $formatted[4] . $formatted[5];
+        }
+        if (preg_match('~^(<' . $tag . '(?:\\s+[^>]*)?>)[\\s\\S]*(</' . $tag . '>)$~i', trim((string) $source_html), $parts)) {
+            return $parts[1] . esc_html($text) . $parts[2];
+        }
+        return '<' . str_replace('\\', '', $tag) . '>' . esc_html($text) . '</' . str_replace('\\', '', $tag) . '>';
+    }
+
+    /** Replace each list item while retaining trusted list-item attributes. */
+    private static function replace_list_item_texts($source_html, $texts)
+    {
+        $index = 0;
+        $updated = preg_replace_callback('~(<li(?:\\s+[^>]*)?>)[\\s\\S]*?(</li>)~i', static function ($match) use (&$index, $texts) {
+            if (!array_key_exists($index, $texts)) { return $match[0]; }
+            return $match[1] . esc_html($texts[$index++]) . $match[2];
+        }, (string) $source_html);
+        return is_string($updated) && $index === count($texts) ? $updated : (string) $source_html;
+    }
+
+    /** Return plain list item text for both legacy HTML lists and nested core/list-item blocks. */
+    private static function gutenberg_list_items($block)
+    {
+        if (empty($block['innerBlocks'])) {
+            if (!preg_match('~<(?:ul|ol)(?:\\s+[^>]*)?>([\\s\\S]*)</(?:ul|ol)>~i', (string) ($block['innerHTML'] ?? ''), $list) ||
+                !preg_match_all('~<li(?:\\s+[^>]*)?>([\\s\\S]*?)</li>~i', $list[1], $items)) { return false; }
+            return array_map(static function ($item) { return trim(wp_strip_all_tags($item)); }, $items[1]);
+        }
+        $items = array();
+        foreach ($block['innerBlocks'] as $child) {
+            if (!is_array($child) || ($child['blockName'] ?? '') !== 'core/list-item' || !empty($child['innerBlocks']) ||
+                !preg_match('~^<li(?:\\s+[^>]*)?>([\\s\\S]*)</li>$~i', trim((string) ($child['innerHTML'] ?? '')), $item)) { return false; }
+            $items[] = trim(wp_strip_all_tags($item[1]));
+        }
+        return $items;
     }
 
     /** Only simple paragraphs/headings and blocks created by this editor are editable. */
@@ -330,24 +473,31 @@ final class Dendrila_Simple_Edit_Block_Editor
         // headings are reconstructed by the JS editor without running shortcodes.
         // More complex HTML and any shortcode remain intentionally out of scope.
         if (preg_match('~\[[a-z][a-z0-9_-]*(?:\s+[^]\r\n]*)?\]~i', $html)) { return false; }
-        $remaining = preg_replace_callback('~<div\s+(?:data-dendrila-simple-edit-block|data-dse-block)="(title|heading|text|image|button|link)"(?:\s+(?:data-dendrila-simple-edit-align|data-dse-align)="(?:left|center|right)")?\s*>([\s\S]*?)</div>~i',
+        // Keep both the current wrapper and the legacy data-dse-block wrapper
+        // editable. Simple Edit created test and site content with the legacy
+        // attribute before the Gutenberg compatibility work was added.
+        $remaining = preg_replace_callback('~<div\b([^>]*)\b(?:data-dendrila-simple-edit-block|data-dse-block)="(title|heading|text|image|button|link|list|quote)"([^>]*)>([\s\S]*?)</div>~i',
             static function ($match) {
+                $kind = strtolower($match[2]);
                 $tag = array('title' => 'h1', 'heading' => 'h2', 'text' => 'p',
-                    'image' => 'img', 'button' => 'a', 'link' => 'a')[strtolower($match[1])];
-                $inner = trim($match[2]);
+                    'image' => 'img', 'button' => 'a', 'link' => 'a', 'list' => 'ul', 'quote' => 'blockquote')[$kind];
+                $inner = trim($match[4]);
                 if ($tag === 'img') {
                     return preg_match('~^<img\s+[^<>]*\s*/?>$~i', $inner) ? '' : $match[0];
                 }
+                if ($kind === 'heading' && preg_match('~^<h[2-6](?:\s+[^<>]*)?>[^<>]*</h[2-6]>$~is', $inner)) { return ''; }
                 if ($tag === 'p') {
                     return preg_match('~^<p(?:\s+[^<>]*)?>(?:[^<>]|<br\s*/?>)*</p>$~is', $inner) ? '' : $match[0];
                 }
+                if ($kind === 'list' && preg_match('~^<(?:ul|ol)>(?:\s*<li>[^<>]*</li>\s*)+</(?:ul|ol)>$~is', $inner)) { return ''; }
+                if ($kind === 'quote' && preg_match('~^<blockquote>(?:\s*<p>[^<>]*</p>\s*)+</blockquote>$~is', $inner)) { return ''; }
                 return preg_match('~^<' . $tag . '(?:\s+[^<>]*)?>[^<>]*</' . $tag . '>$~is', $inner) ? '' : $match[0];
             }, $html);
         if (!is_string($remaining)) { return false; }
         // Legacy content is allowed only when each complete HTML element is one
         // plain block the visual editor understands. Rich nested markup stays
         // protected against destructive round-trips.
-        $remaining = preg_replace('~<(p|h1|h2)>(?:[^<>]|<br\s*/?>)*</\1>|<img\s+[^<>]*\s*/?>~is', '', $remaining);
+        $remaining = preg_replace('~<(p|h1|h[2-6])>(?:[^<>]|<br\s*/?>)*</\1>|<img\s+[^<>]*\s*/?>~is', '', $remaining);
         return is_string($remaining) && strpos($remaining, '<') === false;
     }
 
