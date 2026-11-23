@@ -4,10 +4,12 @@ on:
     branches: [main]
     paths:
       - '**.php'
+      - '**.js'
       - '.github/workflows/check.yml'
   pull_request:
     paths:
       - '**.php'
+      - '**.js'
       - '.github/workflows/check.yml'
 permissions:
   contents: read
