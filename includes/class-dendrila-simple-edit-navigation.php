@@ -7,10 +7,13 @@ final class Dendrila_Simple_Edit_Navigation
     const CLASS_OPEN = 'dendrila-simple-edit-mobile-open';
     const CLASS_CLOSED = 'dendrila-simple-edit-mobile-closed';
     const CLASSIC_PREFS = 'dendrila_simple_edit_nav_mobile_prefs';
+    const AUTO_ADD = 'dendrila_simple_edit_nav_auto_add';
 
     public static function boot()
     {
         add_action('admin_post_dendrila_simple_edit_nav_reorder', array(__CLASS__, 'save'));
+        add_action('admin_post_dendrila_simple_edit_nav_edit', array(__CLASS__, 'edit_items'));
+        add_action('transition_post_status', array(__CLASS__, 'auto_add_page'), 10, 3);
         add_action('wp_enqueue_scripts', array(__CLASS__, 'enqueue_mobile'));
         add_filter('render_block_core/navigation-submenu', array(__CLASS__, 'render_submenu'), 10, 2);
         add_filter('nav_menu_css_class', array(__CLASS__, 'classic_item_classes'), 10, 2);
@@ -254,6 +257,144 @@ final class Dendrila_Simple_Edit_Navigation
         self::redirect('saved');
     }
 
+
+    /** Add/remove links without changing the underlying pages. */
+    public static function edit_items()
+    {
+        if (!self::allowed()) { wp_die('Accès refusé.', 'Accès refusé', array('response'=>403)); }
+        check_admin_referer('dendrila_simple_edit_nav_edit');
+        $menu = self::detect();
+        $expected = isset($_POST['dendrila_simple_edit_nav_version']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nav_version'])) : '';
+        if (!$menu || !preg_match('/^[a-f0-9]{64}$/', $expected) ||
+            !hash_equals(self::fingerprint($menu), $expected)) { self::redirect('conflict'); }
+        $operation = isset($_POST['dendrila_simple_edit_nav_operation']) ? sanitize_key(wp_unslash($_POST['dendrila_simple_edit_nav_operation'])) : '';
+        if ($operation === 'settings') {
+            update_option(self::AUTO_ADD, isset($_POST['dendrila_simple_edit_nav_auto_add']) ? 'yes' : 'no', false);
+            self::redirect('saved');
+        }
+        if ($menu['type'] === 'page-list') {
+            // The automatic page list is never silently converted or altered.
+            self::redirect('automatic');
+        }
+        $items = $menu['items'];
+        $sources = isset($menu['sources']) ? $menu['sources'] : array();
+        $order = array();
+        $values = array();
+        foreach ($items as $item) {
+            $order[] = $item['id'];
+            $values[$item['id']] = array('parent'=>$item['parent'], 'mobile'=>$item['mobile']);
+        }
+        $remove = 0;
+        $new_page = 0;
+        $new_url = '';
+        $new_title = '';
+        $parent = isset($_POST['dendrila_simple_edit_nav_parent']) ? absint($_POST['dendrila_simple_edit_nav_parent']) : 0;
+        if ($operation === 'remove') {
+            $remove = isset($_POST['dendrila_simple_edit_nav_item']) ? absint($_POST['dendrila_simple_edit_nav_item']) : 0;
+            if (!$remove || !isset($values[$remove])) { self::redirect('error'); }
+            foreach ($values as $id=>$value) {
+                if ($value['parent'] === $remove) { self::redirect('has_children'); }
+            }
+            $order = array_values(array_diff($order, array($remove)));
+            unset($values[$remove]);
+        } elseif ($operation === 'add_page') {
+            $new_page = isset($_POST['dendrila_simple_edit_nav_page']) ? absint($_POST['dendrila_simple_edit_nav_page']) : 0;
+            $page = get_post($new_page);
+            if (!$page || $page->post_type !== 'page' || $page->post_status !== 'publish') { self::redirect('error'); }
+            foreach ($items as $item) {
+                if ($menu['type'] === 'classic') {
+                    $existing = get_post_meta($item['id'], '_menu_item_object_id', true);
+                    if ((int)$existing === $new_page && get_post_meta($item['id'], '_menu_item_type', true) === 'post_type') { self::redirect('duplicate'); }
+                } elseif (isset($sources[$item['id']]['attrs']['id']) &&
+                    (int)$sources[$item['id']]['attrs']['id'] === $new_page &&
+                    isset($sources[$item['id']]['attrs']['type']) && $sources[$item['id']]['attrs']['type'] === 'page') {
+                    self::redirect('duplicate');
+                }
+            }
+            $new_title = $page->post_title;
+            $new_url = get_permalink($page);
+        } elseif ($operation === 'add_link') {
+            $new_title = isset($_POST['dendrila_simple_edit_nav_title']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nav_title'])) : '';
+            $new_url = isset($_POST['dendrila_simple_edit_nav_url']) ? esc_url_raw(wp_unslash($_POST['dendrila_simple_edit_nav_url'])) : '';
+            $scheme = wp_parse_url($new_url, PHP_URL_SCHEME);
+            if ($new_title === '' || !$new_url || !in_array(strtolower((string)$scheme), array('https', 'http'), true)) { self::redirect('error'); }
+        } else { self::redirect('error'); }
+        if ($operation !== 'remove') {
+            if ($parent && (!isset($values[$parent]) || $values[$parent]['parent'] !== 0)) { self::redirect('error'); }
+        }
+        if ($menu['type'] === 'classic') {
+            if ($operation === 'remove') {
+                $deleted = wp_delete_post($remove, true); // nav_menu_item only; never the target page.
+                if (!$deleted) { self::redirect('error'); }
+            } else {
+                $args = array('menu-item-title'=>$new_title, 'menu-item-status'=>'publish',
+                    'menu-item-parent-id'=>$parent);
+                if ($new_page) {
+                    $args['menu-item-type'] = 'post_type';
+                    $args['menu-item-object'] = 'page';
+                    $args['menu-item-object-id'] = $new_page;
+                } else {
+                    $args['menu-item-type'] = 'custom';
+                    $args['menu-item-url'] = $new_url;
+                }
+                $created = wp_update_nav_menu_item($menu['target'], 0, $args);
+                if (is_wp_error($created) || !$created) { self::redirect('error'); }
+            }
+            self::redirect('saved');
+        }
+        if ($operation !== 'remove') {
+            $new_id = count($order) ? max($order) + 1 : 1;
+            $values[$new_id] = array('parent'=>$parent, 'mobile'=>'closed');
+            $sources[$new_id] = array('blockName'=>'core/navigation-link',
+                'attrs'=>$new_page
+                    ? array('label'=>$new_title, 'url'=>$new_url, 'kind'=>'post-type', 'type'=>'page', 'id'=>$new_page)
+                    : array('label'=>$new_title, 'url'=>$new_url, 'kind'=>'custom'),
+                'innerBlocks'=>array(), 'innerHTML'=>'', 'innerContent'=>array());
+            if (!$parent) { $order[] = $new_id; }
+            else {
+                $last = array_search($parent, $order, true);
+                foreach ($order as $position=>$id) {
+                    if ($values[$id]['parent'] === $parent) { $last = $position; }
+                }
+                array_splice($order, $last + 1, 0, array($new_id));
+            }
+        }
+        $blocks = self::block_tree($order, $values, $sources);
+        if ($blocks === false) { self::redirect('error'); }
+        $updated = wp_update_post(array('ID'=>$menu['target'], 'post_content'=>wp_slash(serialize_blocks($blocks))), true);
+        if (is_wp_error($updated) || !$updated) { self::redirect('error'); }
+        self::redirect('saved');
+    }
+
+    /** Attach newly published pages to an explicit menu only when opted in. */
+    public static function auto_add_page($new_status, $old_status, $post)
+    {
+        if ($new_status !== 'publish' || $old_status === 'publish' || !$post ||
+            $post->post_type !== 'page' || get_option(self::AUTO_ADD, 'no') !== 'yes') { return; }
+        $menu = self::detect();
+        if (!$menu || $menu['type'] === 'page-list') { return; }
+        foreach ($menu['items'] as $item) {
+            if ($menu['type'] === 'classic') {
+                if ((int)get_post_meta($item['id'], '_menu_item_object_id', true) === (int)$post->ID &&
+                    get_post_meta($item['id'], '_menu_item_type', true) === 'post_type') { return; }
+            } elseif (isset($menu['sources'][$item['id']]['attrs']['id']) &&
+                (int)$menu['sources'][$item['id']]['attrs']['id'] === (int)$post->ID &&
+                isset($menu['sources'][$item['id']]['attrs']['type']) &&
+                $menu['sources'][$item['id']]['attrs']['type'] === 'page') { return; }
+        }
+        if ($menu['type'] === 'classic') {
+            wp_update_nav_menu_item($menu['target'], 0, array('menu-item-title'=>$post->post_title,
+                'menu-item-object-id'=>$post->ID, 'menu-item-object'=>'page',
+                'menu-item-type'=>'post_type', 'menu-item-status'=>'publish'));
+            return;
+        }
+        $block = self::block_for_page($post->ID);
+        if (!$block) { return; }
+        $blocks = parse_blocks($menu['content']);
+        $blocks[] = $block;
+        wp_update_post(array('ID'=>$menu['target'], 'post_content'=>wp_slash(serialize_blocks($blocks))));
+    }
+
     public static function enqueue_mobile()
     {
         $assets=plugin_dir_path(DENDRILA_SIMPLE_EDIT_PLUGIN_FILE) . 'assets/';
@@ -302,7 +443,10 @@ final class Dendrila_Simple_Edit_Navigation
         $messages=array('saved'=>__('Le menu et ses sous-menus ont été enregistrés.', 'dendrila-simple-edit'),
             'unchanged'=>__('Aucune modification à enregistrer.', 'dendrila-simple-edit'),
             'conflict'=>__('Le menu a changé depuis son ouverture. Rechargez la page.', 'dendrila-simple-edit'),
-            'error'=>__('La réorganisation n’a pas été enregistrée. Réessayez.', 'dendrila-simple-edit'));
+            'error'=>__('La réorganisation n’a pas été enregistrée. Réessayez.', 'dendrila-simple-edit'),
+            'duplicate'=>__('Cette page figure déjà dans le menu.', 'dendrila-simple-edit'),
+            'has_children'=>__('Déplacez ou retirez les sous-menus avant de retirer leur parent.', 'dendrila-simple-edit'),
+            'automatic'=>__('Le menu automatique se gère dans les pages WordPress.', 'dendrila-simple-edit'));
         if (isset($messages[$notice])) {
             echo '<p class="notice notice-info" role="status">'.esc_html($messages[$notice]).'</p>';
         }
@@ -351,6 +495,56 @@ final class Dendrila_Simple_Edit_Navigation
         if ($menu['type'] === 'page-list') {
             echo '<label class="dendrila-simple-edit-nav-convert"><input type="checkbox" name="dendrila_simple_edit_nav_convert_confirm" value="1"> ' . esc_html__('Je confirme la conversion en menu manuel si je crée un sous-menu (les nouvelles pages ne seront plus ajoutées automatiquement).', 'dendrila-simple-edit') . '</label>';
         }
-        echo '<p><button type="submit" class="button button-primary">' . esc_html__('Enregistrer le menu et les sous-menus', 'dendrila-simple-edit') . '</button></p></form></section>';
+        echo '<p><button type="submit" class="button button-primary">' . esc_html__('Enregistrer le menu et les sous-menus', 'dendrila-simple-edit') . '</button></p></form>';
+        if ($menu['type'] !== 'page-list') {
+            $pages = get_pages(array('post_status'=>'publish', 'sort_column'=>'post_title', 'hierarchical'=>false));
+            $taken = array();
+            foreach ($menu['items'] as $entry) {
+                if ($menu['type'] === 'classic') {
+                    if (get_post_meta($entry['id'], '_menu_item_type', true) === 'post_type') {
+                        $taken[] = (int)get_post_meta($entry['id'], '_menu_item_object_id', true);
+                    }
+                } elseif (isset($menu['sources'][$entry['id']]['attrs']['type']) &&
+                    $menu['sources'][$entry['id']]['attrs']['type'] === 'page') {
+                    $taken[] = (int)$menu['sources'][$entry['id']]['attrs']['id'];
+                }
+            }
+            echo '<h3>'.esc_html__('Ajouter ou retirer des liens', 'dendrila-simple-edit').'</h3>';
+            echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
+            wp_nonce_field('dendrila_simple_edit_nav_edit');
+            echo '<input type="hidden" name="action" value="dendrila_simple_edit_nav_edit">';
+            echo '<input type="hidden" name="dendrila_simple_edit_nav_version" value="'.esc_attr(self::fingerprint($menu)).'">';
+            echo '<label>'.esc_html__('Page existante', 'dendrila-simple-edit').' <select name="dendrila_simple_edit_nav_page"><option value="0">—</option>';
+            foreach ($pages as $page) {
+                if (!in_array((int)$page->ID, $taken, true)) {
+                    echo '<option value="'.(int)$page->ID.'">'.esc_html($page->post_title).'</option>';
+                }
+            }
+            echo '</select></label> ';
+            echo '<label>'.esc_html__('Titre du lien personnalisé', 'dendrila-simple-edit').' <input type="text" name="dendrila_simple_edit_nav_title"></label> ';
+            echo '<label>'.esc_html__('URL du lien personnalisé', 'dendrila-simple-edit').' <input type="url" name="dendrila_simple_edit_nav_url" placeholder="https://"></label> ';
+            echo '<label>'.esc_html__('Emplacement', 'dendrila-simple-edit').' <select name="dendrila_simple_edit_nav_parent"><option value="0">'.esc_html__('Menu principal', 'dendrila-simple-edit').'</option>';
+            foreach ($menu['items'] as $entry) {
+                if (!$entry['parent']) {
+                    echo '<option value="'.(int)$entry['id'].'">'.esc_html($entry['label']).'</option>';
+                }
+            }
+            echo '</select></label> ';
+            echo '<button class="button" type="submit" name="dendrila_simple_edit_nav_operation" value="add_page">'.esc_html__('Ajouter la page', 'dendrila-simple-edit').'</button> ';
+            echo '<button class="button" type="submit" name="dendrila_simple_edit_nav_operation" value="add_link">'.esc_html__('Ajouter le lien', 'dendrila-simple-edit').'</button>';
+            echo '<p><label>'.esc_html__('Retirer du menu', 'dendrila-simple-edit').' <select name="dendrila_simple_edit_nav_item"><option value="0">—</option>';
+            foreach ($menu['items'] as $entry) {
+                echo '<option value="'.(int)$entry['id'].'">'.esc_html($entry['label']).'</option>';
+            }
+            echo '</select></label> ';
+            echo '<button class="button" type="submit" name="dendrila_simple_edit_nav_operation" value="remove" onclick="return confirm('.esc_attr(wp_json_encode(__('Retirer ce lien du menu sans supprimer sa page ?', 'dendrila-simple-edit'))).')">'.esc_html__('Retirer le lien', 'dendrila-simple-edit').'</button></p></form>';
+        }
+        echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
+        wp_nonce_field('dendrila_simple_edit_nav_edit');
+        echo '<input type="hidden" name="action" value="dendrila_simple_edit_nav_edit">';
+        echo '<input type="hidden" name="dendrila_simple_edit_nav_operation" value="settings">';
+        echo '<input type="hidden" name="dendrila_simple_edit_nav_version" value="'.esc_attr(self::fingerprint($menu)).'">';
+        echo '<label><input type="checkbox" name="dendrila_simple_edit_nav_auto_add" value="1"'.checked(get_option(self::AUTO_ADD, 'no'), 'yes', false).'> '.esc_html__('Ajouter automatiquement au menu principal les nouvelles pages publiées', 'dendrila-simple-edit').'</label> ';
+        echo '<button type="submit" class="button">'.esc_html__('Enregistrer cette préférence', 'dendrila-simple-edit').'</button></form></section>';
     }
 }
