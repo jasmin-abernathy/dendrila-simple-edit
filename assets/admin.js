@@ -346,7 +346,7 @@
                     Array.prototype.forEach.call(select.options, function (option) {
                         if (option.value === '0') { return; }
                         var candidate = rowById(option.value);
-                        option.disabled = row.hasAttribute('data-dendrila-simple-edit-nav-heading') ||
+                        option.disabled = row.getAttribute('data-dendrila-simple-edit-nav-heading') === '1' ||
                             !candidate || parent(candidate) !== '0' ||
                             option.value === id(row) || hasChildren;
                     });
@@ -363,7 +363,7 @@
                 var group = rowById(parentId);
                 var old = select.value;
                 if (!group || parent(group) !== '0' || group === row || childrenOf(row).length ||
-                    row.hasAttribute('data-dendrila-simple-edit-nav-heading')) {
+                    row.getAttribute('data-dendrila-simple-edit-nav-heading') === '1') {
                     select.value = old;
                     return false;
                 }
