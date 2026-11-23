@@ -75,7 +75,7 @@ final class Dendrila_Simple_Edit_Navigation
                 return array('type'=>'page-list', 'target'=>(int)$nav->ID, 'items'=>$items,
                     'content'=>$nav->post_content, 'modified'=>$nav->post_modified_gmt);
             }
-            if ($blocks) {
+            if ($blocks || trim($nav->post_content) === '') {
                 $items = array(); $sources = array();
                 if (self::flatten_blocks($blocks, $items, $sources)) {
                     return array('type'=>'block-links', 'target'=>(int)$nav->ID, 'items'=>$items,
@@ -90,7 +90,7 @@ final class Dendrila_Simple_Edit_Navigation
         $menu_id = isset($locations['primary']) ? (int)$locations['primary'] : (int)reset($locations);
         if (!$menu_id) { return false; }
         $all = wp_get_nav_menu_items($menu_id);
-        if (!$all || is_wp_error($all)) { return false; }
+        if (!is_array($all)) { return false; }
         $items = array(); $prefs = get_option(self::CLASSIC_PREFS, array());
         $ids = array();
         foreach ($all as $item) { $ids[(int)$item->ID] = true; }
@@ -312,7 +312,7 @@ final class Dendrila_Simple_Edit_Navigation
             unset($values[$remove]);
         } elseif ($operation === 'add_page') {
             $new_page = isset($_POST['dendrila_simple_edit_nav_page']) ? absint($_POST['dendrila_simple_edit_nav_page']) : 0;
-            $page = get_post($new_page);
+            $page = $new_page ? get_post($new_page) : null;
             if (!$page || $page->post_type !== 'page' || $page->post_status !== 'publish') { self::redirect('error'); }
             foreach ($items as $item) {
                 if ($menu['type'] === 'classic') {
@@ -340,6 +340,7 @@ final class Dendrila_Simple_Edit_Navigation
         }
         if ($menu['type'] === 'classic') {
             if ($operation === 'remove') {
+                if (get_post_type($remove) !== 'nav_menu_item') { self::redirect('error'); }
                 $deleted = wp_delete_post($remove, true); // nav_menu_item only; never the target page.
                 if (!$deleted) { self::redirect('error'); }
             } else {
@@ -492,7 +493,7 @@ final class Dendrila_Simple_Edit_Navigation
         if ($menu['type'] === 'page-list') {
             echo '<p class="description">' . esc_html__('Votre menu est actuellement automatique : tant que vous ne créez pas de groupe, les nouvelles pages s’y ajoutent. La création d’un sous-menu le transformera en menu explicite : les nouvelles pages devront alors être ajoutées depuis WordPress.', 'dendrila-simple-edit') . '</p>';
         }
-        if (!$menu['items']) { echo '<p>' . esc_html__('Aucun lien à organiser.', 'dendrila-simple-edit') . '</p></section>'; return; }
+        if (!$menu['items']) { echo '<p>' . esc_html__('Aucun lien à organiser.', 'dendrila-simple-edit') . '</p>'; } else {
         echo '<form class="dendrila-simple-edit-nav-reorder" method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
         echo '<input type="hidden" name="action" value="dendrila_simple_edit_nav_reorder">';
         echo '<input type="hidden" name="dendrila_simple_edit_nav_version" value="'.esc_attr(self::fingerprint($menu)).'">';
@@ -505,8 +506,11 @@ final class Dendrila_Simple_Edit_Navigation
             echo '<span class="dendrila-simple-edit-nav-sort-label">'.esc_html($entry['label']).'</span>';
             echo '<span class="dendrila-simple-edit-nav-group-drop" data-dendrila-simple-edit-nav-group-drop aria-hidden="true">' . esc_html__('↳ Placer en sous-page', 'dendrila-simple-edit') . '</span>';
             echo '<div class="dendrila-simple-edit-nav-sort-actions">';
+            /* translators: %s: menu item label. */
             echo '<button type="button" class="dendrila-simple-edit-nav-move" data-dendrila-simple-edit-nav-move="up" aria-label="'.esc_attr(sprintf(esc_html__('Monter : %s', 'dendrila-simple-edit'), $entry['label'])).'">↑</button>';
+            /* translators: %s: menu item label. */
             echo '<button type="button" class="dendrila-simple-edit-nav-move" data-dendrila-simple-edit-nav-move="down" aria-label="'.esc_attr(sprintf(esc_html__('Descendre : %s', 'dendrila-simple-edit'), $entry['label'])).'">↓</button>';
+            /* translators: %s: menu item label. */
             echo '<button type="button" class="dendrila-simple-edit-nav-drag-handle" data-dendrila-simple-edit-nav-handle aria-label="'.esc_attr(sprintf(esc_html__('Déplacer : %s', 'dendrila-simple-edit'), $entry['label'])).'" aria-keyshortcuts="ArrowUp ArrowDown" title="Maintenir pour déplacer">';
             echo '<span class="dashicons dashicons-move" aria-hidden="true"></span></button></div>';
             echo '<div class="dendrila-simple-edit-nav-advanced">';
@@ -528,6 +532,7 @@ final class Dendrila_Simple_Edit_Navigation
             echo '<label class="dendrila-simple-edit-nav-convert"><input type="checkbox" name="dendrila_simple_edit_nav_convert_confirm" value="1"> ' . esc_html__('Je confirme la conversion en menu manuel si je crée un sous-menu (les nouvelles pages ne seront plus ajoutées automatiquement).', 'dendrila-simple-edit') . '</label>';
         }
         echo '<p><button type="submit" class="button button-primary">' . esc_html__('Enregistrer le menu et les sous-menus', 'dendrila-simple-edit') . '</button></p></form>';
+        }
         if ($menu['type'] !== 'page-list') {
             $pages = get_pages(array('post_status'=>'publish', 'sort_column'=>'post_title', 'hierarchical'=>false));
             $taken = array();
@@ -536,7 +541,7 @@ final class Dendrila_Simple_Edit_Navigation
                     if (get_post_meta($entry['id'], '_menu_item_type', true) === 'post_type') {
                         $taken[] = (int)get_post_meta($entry['id'], '_menu_item_object_id', true);
                     }
-                } elseif (isset($menu['sources'][$entry['id']]['attrs']['type']) &&
+                } elseif (isset($menu['sources'][$entry['id']]['attrs']['id'], $menu['sources'][$entry['id']]['attrs']['type']) &&
                     $menu['sources'][$entry['id']]['attrs']['type'] === 'page') {
                     $taken[] = (int)$menu['sources'][$entry['id']]['attrs']['id'];
                 }

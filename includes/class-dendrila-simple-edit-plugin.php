@@ -436,12 +436,24 @@ final class Dendrila_Simple_Edit_Plugin
         return $changes;
     }
 
-    private static function require_editor($nonce_action)
+    /** Read-only view selectors. Saving always goes through the action-specific handlers. */
+    public static function screen_key($key, $fallback = '')
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This value selects a view or a notice only.
+        return isset($_GET[$key]) && is_string($_GET[$key]) ? sanitize_key(wp_unslash($_GET[$key])) : $fallback;
+    }
+
+    public static function screen_id($key, $fallback = 0)
+    {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Selects a record within the already authorized view.
+        return isset($_GET[$key]) && is_string($_GET[$key]) ? absint(wp_unslash($_GET[$key])) : $fallback;
+    }
+
+    private static function require_editor()
     {
         if (!self::can_edit()) {
             wp_die('Vous ne pouvez pas modifier ces contenus.', 'Accès refusé', array('response' => 403));
         }
-        check_admin_referer($nonce_action);
     }
 
     private static function submitted_revision($nonce_action)
@@ -576,7 +588,8 @@ final class Dendrila_Simple_Edit_Plugin
 
     public static function save()
     {
-        self::require_editor('dendrila_simple_edit_save');
+        self::require_editor();
+        check_admin_referer('dendrila_simple_edit_save');
         $expected = self::submitted_revision('dendrila_simple_edit_save');
         $input = isset($_POST['dendrila_simple_edit_fields']) ? wp_unslash($_POST['dendrila_simple_edit_fields']) : array();
         try {
@@ -589,7 +602,8 @@ final class Dendrila_Simple_Edit_Plugin
 
     public static function restore()
     {
-        self::require_editor('dendrila_simple_edit_restore');
+        self::require_editor();
+        check_admin_referer('dendrila_simple_edit_restore');
         $expected = self::submitted_revision('dendrila_simple_edit_restore');
         $raw = isset($_POST['dendrila_simple_edit_restore_revision']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_restore_revision'])) : null;
         if (!is_string($raw) || !ctype_digit($raw)) {
@@ -700,8 +714,7 @@ final class Dendrila_Simple_Edit_Plugin
 
     private static function notices()
     {
-        $notice = isset($_GET['dendrila_simple_edit_notice']) && is_string($_GET['dendrila_simple_edit_notice']) ?
-            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_notice'])) : '';
+        $notice = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_notice', '');
         $messages = array(
             'saved' => array('updated', 'Modifications enregistrées. Vérifiez le site public : un cache peut retarder l’affichage.'),
             'unchanged' => array('updated', 'Aucune modification à enregistrer.'),
@@ -738,6 +751,9 @@ final class Dendrila_Simple_Edit_Plugin
             return array();
         }
         global $wpdb;
+        $cache_key = 'public_locations:' . $field . ':' . wp_cache_get_last_changed('posts');
+        $cached = wp_cache_get($cache_key, 'dendrila_simple_edit');
+        if (is_array($cached)) { return $cached; }
         $needle = '%' . $wpdb->esc_like('[dse_text') . '%';
         $field_needle = '%' . $wpdb->esc_like('field="' . $field . '"') . '%';
         $pages = $wpdb->get_results($wpdb->prepare(
@@ -750,7 +766,9 @@ final class Dendrila_Simple_Edit_Plugin
              LIMIT 30",
             $wpdb->posts, $needle, $field_needle
         ));
-        return is_array($pages) ? $pages : array();
+        if (!is_array($pages) || $wpdb->last_error) { return array(); }
+        wp_cache_set($cache_key, $pages, 'dendrila_simple_edit', 300);
+        return $pages;
     }
 
     /** Hide tools the current delegated account cannot actually use. */
@@ -770,17 +788,16 @@ final class Dendrila_Simple_Edit_Plugin
     /** Simple navigation: each tab is its own URL, so it also works without JavaScript. */
     private static function active_tab()
     {
-        $raw = isset($_GET['dendrila_simple_edit_tab']) && is_string($_GET['dendrila_simple_edit_tab']) ?
-            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_tab'])) : '';
+        $raw = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_tab', '');
         if ($raw === '') {
             // Preserve the right tab after actions performed by older plugin versions.
-            if (isset($_GET['dendrila_simple_edit_nnotice'])) { $raw = 'newsletters'; }
-            elseif (isset($_GET['dendrila_simple_edit_pnotice'])) { $raw = 'boutique'; }
-            elseif (isset($_GET['dendrila_simple_edit_notice']) && is_string($_GET['dendrila_simple_edit_notice']) &&
-                in_array(sanitize_key(wp_unslash($_GET['dendrila_simple_edit_notice'])),
+            $notice = self::screen_key('dendrila_simple_edit_notice', null);
+            if (self::screen_key('dendrila_simple_edit_nnotice', null) !== null) { $raw = 'newsletters'; }
+            elseif (self::screen_key('dendrila_simple_edit_pnotice', null) !== null) { $raw = 'boutique'; }
+            elseif (in_array($notice,
                     array('configured', 'field_added', 'media_configured', 'module_configured'), true)) {
                 $raw = 'reglages';
-            } else { $raw = isset($_GET['dendrila_simple_edit_notice']) ? 'pages' : 'accueil'; }
+            } else { $raw = $notice !== null ? 'pages' : 'accueil'; }
         }
         if (!in_array($raw, array('accueil', 'contenus', 'pages', 'articles', 'evenements', 'menu', 'newsletters', 'boutique', 'historique', 'reglages', 'validations', 'aide'), true)) {
             return 'pages';
@@ -1116,8 +1133,7 @@ final class Dendrila_Simple_Edit_Plugin
             if ($contact_page) { echo '<p><a class="button" href="' . esc_url(get_edit_post_link($contact_page[0]->ID, '')) . '" target="_blank" rel="noopener noreferrer">Modifier la page Contact (nouvel onglet)</a></p>'; }
             echo '<p class="description">Vérifiez aussi le pied de page et les autres pages : les coordonnées peuvent y être écrites directement et ne pas dépendre des textes partagés.</p>';
             echo '</form>';
-            $created = isset($_GET['dendrila_simple_edit_created']) && is_string($_GET['dendrila_simple_edit_created']) ?
-                sanitize_key(wp_unslash($_GET['dendrila_simple_edit_created'])) : '';
+            $created = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_created', '');
             $shared = array_filter($definitions, static function ($key) {
                 return strpos($key, 'zone_') === 0;
             }, ARRAY_FILTER_USE_KEY);

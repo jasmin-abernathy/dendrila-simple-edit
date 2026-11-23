@@ -221,8 +221,7 @@ final class Dendrila_Simple_Edit_Newsletters
         if (!$may_create && !$may_edit && !$may_review && !$may_approve && !$may_send &&
             !$may_manage_lists) { return; }
         $admin = current_user_can('manage_options');
-        $section = isset($_GET['dendrila_simple_edit_nl_section']) && is_string($_GET['dendrila_simple_edit_nl_section']) ?
-            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_nl_section'])) : 'rediger';
+        $section = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_nl_section', 'rediger');
         $sections = array('rediger' => __('Rédiger les newsletters', 'dendrila-simple-edit'));
         if ($admin || $may_manage_lists) { $sections['listes'] = __('Listes et contacts', 'dendrila-simple-edit'); }
         if ($admin || $may_send) {
@@ -260,8 +259,7 @@ final class Dendrila_Simple_Edit_Newsletters
             'approved' => __('Contenu validé. Aucun e-mail envoyé.', 'dendrila-simple-edit'),
             'send_direct' => 'Votre compte peut envoyer directement : ouvrez « Préparer un envoi ».', 'conflict' => 'Ce brouillon a changé. Rechargez la page.',
             'error' => __('Enregistrement non confirmé.', 'dendrila-simple-edit'));
-        $notice = isset($_GET['dendrila_simple_edit_nnotice']) && is_string($_GET['dendrila_simple_edit_nnotice']) ?
-            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_nnotice'])) : '';
+        $notice = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_nnotice', '');
         if (isset($notices[$notice])) {
             echo '<p class="notice notice-info dendrila-simple-edit-newsletter-notice" role="status">' .
                 esc_html($notices[$notice]) . '</p>';
@@ -270,7 +268,7 @@ final class Dendrila_Simple_Edit_Newsletters
             'posts_per_page' => 60, 'orderby' => array('modified' => 'DESC', 'ID' => 'DESC'));
         if (!$admin && !$may_approve) { $query['author'] = get_current_user_id(); }
         $posts = get_posts($query);
-        $current = isset($_GET['dendrila_simple_edit_current_draft']) ? absint($_GET['dendrila_simple_edit_current_draft']) : 0;
+        $current = Dendrila_Simple_Edit_Plugin::screen_id('dendrila_simple_edit_current_draft', 0);
         // A newly saved draft is always shown at the top, even if several saves
         // happened during the same second or the post was first created earlier.
         if ($current > 0) {

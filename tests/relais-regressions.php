@@ -20,6 +20,7 @@ function get_option($key, $default = false) {
     return $default;
 }
 function get_post($id) { return $GLOBALS['dse_posts'][(int)$id] ?? $GLOBALS['dse_newsletters'][(int)$id] ?? null; }
+function get_post_status_object($status) { return (object) array('label' => $status === 'publish' ? 'Publié' : 'Brouillon'); }
 function get_posts($args) {
     $GLOBALS['dse_queries'][] = $args;
     $items = array_values(array_filter($GLOBALS['dse_posts'], static function ($p) use ($args) {
@@ -43,6 +44,7 @@ function esc_url($x) { return esc_html($x); }
 function esc_textarea($x) { return esc_html($x); }
 function esc_html__($x, $domain = null) { return esc_html($x); }
 function __($x, $domain = null) { return $x; }
+function _n($single, $plural, $number, $domain = null) { return (int) $number === 1 ? $single : $plural; }
 function wp_nonce_field($action, $name = '_wpnonce', $referer = true, $display = true) {
     $s='<input type="hidden" name="'.esc_attr($name).'" value="good">';
     if ($display) echo $s;
@@ -72,6 +74,7 @@ class Dendrila_Simple_Edit_Modules {
 class Dendrila_Simple_Edit_Approvals { public static function required($type) { return false; } }
 class Dendrila_Simple_Edit_Block_Editor {
     public static function is_safe_for_editor($body) { return strpos($body, '<!-- wp:') === false; }
+    public static function gutenberg_editor_content($body) { return $body; }
 }
 class Dendrila_Simple_Edit_Newsletters {
     const TYPE='dendrila_simple_edit';
@@ -117,6 +120,7 @@ $GLOBALS['wpdb'] = new DSE_Test_DB();
 $repo_root = dirname(__DIR__);
 $root = is_dir($repo_root . '/updated/dendrila-simple-edit/includes') ?
     $repo_root . '/updated/dendrila-simple-edit/includes/' : $repo_root . '/includes/';
+require_once $root."class-dendrila-simple-edit-plugin.php";
 require_once $root.'class-dendrila-simple-edit-post-editor.php';
 require_once $root.'class-dendrila-simple-edit-mailing.php';
 require_once $root.'class-dendrila-simple-edit-woo-mailing.php';
@@ -136,7 +140,7 @@ dse_assert((bool)array_filter($GLOBALS['dse_queries'],static function($q){return
 $GLOBALS['dse_admin']=true;
 $GLOBALS['dse_types']=array();
 ob_start();Dendrila_Simple_Edit_Post_Editor::render('page');$admin_html=ob_get_clean();
-dse_assert(strpos($admin_html,'Protected Gutenberg')!==false && strpos($admin_html,'Modifier dans WordPress')!==false,'administrator cannot see protected content');
+dse_assert(strpos($admin_html,'Protected Gutenberg')!==false && strpos($admin_html,'Ouvrir dans WordPress')!==false,'administrator cannot see protected content');
 dse_assert(substr_count($admin_html,'class="dendrila-simple-edit-card dendrila-simple-edit-post-item"')===125,'administrator cannot access all compatible drafts');
 $GLOBALS['dse_admin']=false;
 $GLOBALS['dse_newsletters'][2000]=(object)array('ID'=>2000,'post_type'=>'dendrila_simple_edit','post_author'=>7);

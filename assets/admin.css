@@ -37,6 +37,20 @@
 .dendrila-simple-edit-card h3 {font-size: 16px;margin: 0 0 9px;line-height: 1.4;color: #263b2b}
 .dendrila-simple-edit-card p {line-height: 1.55;max-width: 88ch}
 .dendrila-simple-edit-card > p:first-of-type {margin-top: 5px;color: var(--dendrila-simple-edit-muted)}
+.dendrila-simple-edit-protected {padding:0;overflow:hidden}
+.dendrila-simple-edit-protected > summary {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;color:var(--dendrila-simple-edit-ink);font-weight:700;cursor:pointer;list-style:none}
+.dendrila-simple-edit-protected > summary::-webkit-details-marker {display:none}
+.dendrila-simple-edit-protected > summary::before {content:"+";display:inline-grid;place-items:center;width:26px;height:26px;flex:0 0 26px;border-radius:50%;background:#edf5ee;color:#24543b;font-size:20px;line-height:1}
+.dendrila-simple-edit-protected[open] > summary::before {content:"−"}
+.dendrila-simple-edit-protected-count {margin-left:auto;padding:4px 9px;border-radius:999px;background:#edf1ed;color:#53645a;font-size:13px;font-weight:600;white-space:nowrap}
+.dendrila-simple-edit-protected > p {margin:0;padding:0 20px 14px 58px;color:var(--dendrila-simple-edit-muted)}
+.dendrila-simple-edit-protected-list {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px;margin:0;padding:0 20px 20px;list-style:none}
+.dendrila-simple-edit-protected-list li {min-width:0;margin:0;padding:0}
+.dendrila-simple-edit-protected-content {height:100%;box-sizing:border-box;padding:14px;border:1px solid var(--dendrila-simple-edit-border);border-radius:9px;background:#fbfdfb;overflow-wrap:anywhere}
+.dendrila-simple-edit-protected-heading {display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.dendrila-simple-edit-protected-heading strong {line-height:1.4}
+.dendrila-simple-edit-protected-content > p {margin:8px 0 12px;color:var(--dendrila-simple-edit-muted);font-size:13px;line-height:1.5}
+.dendrila-simple-edit-protected-content .button {min-height:36px;display:inline-flex;align-items:center}
 .dendrila-simple-edit-empty {border-left: 4px solid var(--dendrila-simple-edit-green);background: #fff}
 .dendrila-simple-edit-field {margin: 18px 0}
 .dendrila-simple-edit-field label {font-weight: 650;display: block;margin-bottom: 5px}

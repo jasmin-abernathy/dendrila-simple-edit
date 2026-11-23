@@ -189,8 +189,7 @@ final class Dendrila_Simple_Edit_Approvals
     public static function render()
     {
         if (!self::is_reviewer()) { return; }
-        $message = isset($_GET['dendrila_simple_edit_approval_notice']) ?
-            sanitize_key(wp_unslash($_GET['dendrila_simple_edit_approval_notice'])) : '';
+        $message = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_approval_notice', '');
         $notices = array('approved' => 'Modification validée et appliquée.',
             'rejected' => 'Demande refusée.', 'conflict' => 'Le contenu a changé : demande à examiner de nouveau.',
             'invalid' => 'Le contenu proposé n’est plus compatible.', 'error' => 'Erreur lors de la validation.');

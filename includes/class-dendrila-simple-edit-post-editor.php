@@ -85,6 +85,25 @@ final class Dendrila_Simple_Edit_Post_Editor
             get_post_meta($post->ID, '_et_pb_use_builder', true) !== 'on';
     }
 
+    private static function protected_reason($post)
+    {
+        if (get_post_meta($post->ID, '_elementor_edit_mode', true) === 'builder' ||
+            get_post_meta($post->ID, '_elementor_data', true)) {
+            return __('Mise en page Elementor : ouvrez ce contenu dans WordPress.', 'dendrila-simple-edit');
+        }
+        if (get_post_meta($post->ID, '_et_pb_use_builder', true) === 'on' ||
+            preg_match('/\\[(?:et_pb_|vc_row|elementor-template|fusion_builder)/i', $post->post_content)) {
+            return __('Mise en page créée avec un constructeur : elle reste protégée.', 'dendrila-simple-edit');
+        }
+        if (strpos($post->post_content, '<!-- wp:') !== false) {
+            return __('Ce contenu contient des blocs Gutenberg avancés que Simple Edit ne sait pas encore modifier.', 'dendrila-simple-edit');
+        }
+        if (preg_match('~\\[[a-z][a-z0-9_-]*(?:\\s+[^]\\r\\n]*)?\\]~i', $post->post_content)) {
+            return __('Ce contenu contient un code court que Simple Edit ne peut pas préserver.', 'dendrila-simple-edit');
+        }
+        return __('Sa mise en forme ne peut pas encore être conservée par Simple Edit.', 'dendrila-simple-edit');
+    }
+
     private static function permitted_post($id)
     {
         $post = get_post($id);
@@ -422,25 +441,38 @@ final class Dendrila_Simple_Edit_Post_Editor
                 'L’administrateur choisit les contenus accessibles dans Autorisations.') . '</p></section>';
             return;
         }
-        $notice = isset($_GET['dendrila_simple_edit_paged_notice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_paged_notice'])) : '';
+        $notice = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_paged_notice', '');
         $notices = array('saved' => 'Modifications enregistrées.', 'created' => 'Contenu créé et enregistré.',
             'permissions' => 'Autorisations mises à jour.',
             'submitted' => 'Proposition envoyée. Le site public n’a pas changé ; la validation est en attente.',
             'forbidden' => 'Ce contenu ne peut pas être modifié ici.', 'conflict' => 'Cette page a changé depuis votre ouverture : rechargez-la.',
             'unchanged' => 'Aucun changement.', 'error' => 'Enregistrement impossible.');
         if (isset($notices[$notice])) { echo '<p class="notice notice-info" role="status">' . esc_html($notices[$notice]) . '</p>'; }
-        $selected = isset($_GET['dendrila_simple_edit_paged_id']) ? absint($_GET['dendrila_simple_edit_paged_id']) : 0;
+        $selected = Dendrila_Simple_Edit_Plugin::screen_id('dendrila_simple_edit_paged_id', 0);
         echo '<section class="dendrila-simple-edit-content-list" aria-label="Contenus modifiables">';
         $shown = 0;
         if ($protected) {
-            echo '<section class="dendrila-simple-edit-card"><h3>Contenus dont la mise en page est protégée</h3>';
-            echo '<p>Ils existent bien sur ce site, mais l’éditeur simplifié ne doit pas réécrire leurs blocs Gutenberg, WooCommerce ou constructeur.</p><ul>';
+            echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-protected"><summary>';
+            echo '<span>' . esc_html__('Contenus à ouvrir dans WordPress', 'dendrila-simple-edit') . '</span>';
+            echo '<span class="dendrila-simple-edit-protected-count">' . esc_html(sprintf(_n('%d contenu', '%d contenus', count($protected), 'dendrila-simple-edit'), count($protected))) . '</span>';
+            echo '</summary><p>' . esc_html__('Leur mise en page ne peut pas encore être conservée par Simple Edit. Ils n’ont pas été modifiés.', 'dendrila-simple-edit') . '</p>';
+            echo '<ul class="dendrila-simple-edit-protected-list">';
             foreach ($protected as $locked) {
                 $edit_url = get_edit_post_link($locked->ID, '');
-                echo '<li>' . esc_html($locked->post_title) . ' — ' . esc_html($locked->post_status) .
-                    ($edit_url ? ' <a href="' . esc_url($edit_url) . '" target="_blank" rel="noopener noreferrer">Modifier dans WordPress</a>' : '') . '</li>';
+                $status = get_post_status_object($locked->post_status);
+                $status_label = $status && isset($status->label) ? $status->label : $locked->post_status;
+                echo '<li><div class="dendrila-simple-edit-protected-content"><div class="dendrila-simple-edit-protected-heading">';
+                echo '<strong>' . esc_html($locked->post_title !== '' ? $locked->post_title : __('Sans titre', 'dendrila-simple-edit')) . '</strong>';
+                echo '<span class="dendrila-simple-edit-status">' . esc_html($status_label) . '</span></div>';
+                echo '<p>' . esc_html(self::protected_reason($locked)) . '</p>';
+                if ($edit_url) {
+                    echo '<a class="button" href="' . esc_url($edit_url) . '" target="_blank" rel="noopener noreferrer">' .
+                        esc_html__('Ouvrir dans WordPress', 'dendrila-simple-edit') . ' <span class="screen-reader-text">' .
+                        esc_html__('(nouvel onglet)', 'dendrila-simple-edit') . '</span></a>';
+                }
+                echo '</div></li>';
             }
-            echo '</ul></section>';
+            echo '</ul></details>';
         }
         foreach ($ids as $id) {
             $post = self::permitted_post($id);
@@ -481,7 +513,7 @@ final class Dendrila_Simple_Edit_Post_Editor
             echo '<div class="dendrila-simple-edit-block-editor" data-dendrila-simple-edit-block-editor data-allow-title="0">';
             echo '<label for="dendrila-simple-edit-paged-body-' . esc_attr((string) $suffix) . '">' . esc_html($content_label) . '</label>';
             echo '<textarea id="dendrila-simple-edit-paged-body-' . esc_attr((string) $suffix) . '" data-dendrila-simple-edit-editor-source name="dendrila_simple_edit_paged_body" rows="10">' .
-                esc_textarea($post->post_content) . '</textarea></div>';
+                esc_textarea(Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content($post->post_content)) . '</textarea></div>';
             echo '<p><button type="submit" class="button button-primary">Enregistrer les modifications</button></p></form>';
             // WordPress revisions track previous title/body content without storing
             // duplicate copies of posts inside the plugin.
