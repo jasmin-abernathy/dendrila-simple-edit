@@ -117,6 +117,7 @@ $GLOBALS['wpdb'] = new DSE_Test_DB();
 $repo_root = dirname(__DIR__);
 $root = is_dir($repo_root . '/updated/dendrila-simple-edit/includes') ?
     $repo_root . '/updated/dendrila-simple-edit/includes/' : $repo_root . '/includes/';
+require_once $root."class-dendrila-simple-edit-plugin.php";
 require_once $root.'class-dendrila-simple-edit-post-editor.php';
 require_once $root.'class-dendrila-simple-edit-mailing.php';
 require_once $root.'class-dendrila-simple-edit-woo-mailing.php';
