@@ -310,9 +310,10 @@ final class Dendrila_Simple_Edit_Block_Editor
             } elseif ($name === 'core/list' &&
                 preg_match('~^<(ul|ol)(?:\\s+[^>]*)?>([\\s\\S]*)</\\1>$~i', $inner, $match) &&
                 ($items = self::gutenberg_list_items($block)) !== false && !empty($items)) {
-                $kind = 'list'; $tag = strtolower($match[1]); $body = '<' . $tag . '>';
+                // The outer editor wrapper below already supplies the list tag.
+                // Keep only its items here to avoid emitting nested <ul><ul> markup.
+                $kind = 'list'; $tag = strtolower($match[1]); $body = '';
                 foreach ($items as $item) { $body .= '<li>' . esc_html($item) . '</li>'; }
-                $body .= '</' . $tag . '>';
             } elseif ($name === 'core/quote' && !empty($block['innerBlocks'])) {
                 $paragraphs = array();
                 foreach ($block['innerBlocks'] as $child) {
