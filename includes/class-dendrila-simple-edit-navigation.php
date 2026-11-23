@@ -474,8 +474,11 @@ final class Dendrila_Simple_Edit_Navigation
             echo '<span class="dendrila-simple-edit-nav-sort-label">'.esc_html($entry['label']).'</span>';
             echo '<span class="dendrila-simple-edit-nav-group-drop" data-dendrila-simple-edit-nav-group-drop aria-hidden="true">' . esc_html__('↳ Sous-menu ici', 'dendrila-simple-edit') . '</span>';
             echo '<div class="dendrila-simple-edit-nav-sort-actions">';
+            /* translators: %s: menu item label. */
             echo '<button type="button" class="dendrila-simple-edit-nav-move" data-dendrila-simple-edit-nav-move="up" aria-label="'.esc_attr(sprintf(esc_html__('Monter : %s', 'dendrila-simple-edit'), $entry['label'])).'">↑</button>';
+            /* translators: %s: menu item label. */
             echo '<button type="button" class="dendrila-simple-edit-nav-move" data-dendrila-simple-edit-nav-move="down" aria-label="'.esc_attr(sprintf(esc_html__('Descendre : %s', 'dendrila-simple-edit'), $entry['label'])).'">↓</button>';
+            /* translators: %s: menu item label. */
             echo '<button type="button" class="dendrila-simple-edit-nav-drag-handle" data-dendrila-simple-edit-nav-handle aria-label="'.esc_attr(sprintf(esc_html__('Déplacer : %s', 'dendrila-simple-edit'), $entry['label'])).'" aria-keyshortcuts="ArrowUp ArrowDown" title="Maintenir pour déplacer">';
             echo '<span class="dashicons dashicons-move" aria-hidden="true"></span></button></div>';
             echo '<div class="dendrila-simple-edit-nav-advanced">';
