@@ -43,6 +43,7 @@ function admin_url($a) { return 'https://example.test/wp-admin/'.$a; }
 function add_query_arg($a,$b) { return $b; }
 function wp_safe_redirect($url) { $GLOBALS['redirect_url']=$url; }
 function wp_die($message) { throw new Exception((string)$message); }
+function checked($actual,$expected,$echo=false) { return $actual === $expected ? ' checked="checked"' : ''; }
 function get_option($k,$default=false) { return $default; }
 function plugin_dir_path($path) { return '/fake/'; }
 function plugin_dir_url($path) { return 'https://example.test/plugins/'; }
