@@ -93,7 +93,7 @@ final class Dendrila_Simple_Edit_Setup
     private static function step()
     {
         $saved = (int) get_option(self::STEP_OPTION, 1);
-        $requested = isset($_GET['dendrila_simple_edit_setup_step']) ? absint($_GET['dendrila_simple_edit_setup_step']) : $saved;
+        $requested = Dendrila_Simple_Edit_Plugin::screen_id('dendrila_simple_edit_setup_step', $saved);
         return max(1, min(5, min($requested, max(1, $saved))));
     }
 
