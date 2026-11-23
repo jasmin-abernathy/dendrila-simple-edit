@@ -25,10 +25,14 @@ function esc_html($value) { return htmlspecialchars($value, ENT_QUOTES, 'UTF-8')
 function current_time($type, $gmt = false) { return '2026-10-10 12:00:00'; }
 function get_current_user_id() { return 31; }
 function maybe_serialize($value) { return is_array($value) ? serialize($value) : $value; }
+function wp_cache_get_last_changed($group) { return "1"; }
+function wp_cache_get($key, $group) { return $GLOBALS["cache"][$group][$key] ?? false; }
+function wp_cache_set($key, $value, $group, $ttl) { $GLOBALS["cache"][$group][$key] = $value; return true; }
 function wp_cache_delete($key, $group) { return true; }
 function do_action($name, ...$args) { $GLOBALS['dendrila_simple_edit_actions'][] = array($name, $args); }
 
 class Dendrila_Simple_Edit_Test_DB {
+    public $last_error = "";
     public $options = 'wp_options';
     public $posts = 'wp_posts';
     public $last_sql;
