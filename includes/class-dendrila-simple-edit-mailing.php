@@ -334,7 +334,7 @@ final class Dendrila_Simple_Edit_Mailing
         self::require_lists('import', $list_id);
         $origin = sanitize_text_field(self::input('origin'));
         $raw = self::input('emails');
-        if (!self::list_exists($list_id) || !isset($_POST['consent_confirmed']) ||
+        if (!self::list_exists($list_id) || self::input('consent_confirmed') !== '1' ||
             strlen($origin) < 8 || strlen($origin) > 255) { self::redirect('consent_required'); }
         $lines = preg_split('/[\r\n;,]+/', $raw);
         if (count($lines) > 200) { self::redirect('too_many'); }
@@ -990,7 +990,7 @@ final class Dendrila_Simple_Edit_Mailing
             'cron_failed' => 'La programmation a échoué. Aucun envoi démarré.',
             'error' => 'Opération non enregistrée.',
         );
-        $notice = isset($_GET['dendrila_simple_edit_ml_notice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_ml_notice'])) : '';
+        $notice = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_ml_notice', '');
         if (isset($notices[$notice])) {
             $bad_notice = in_array($notice, array('invite_failed','invite_no_permission','invite_rate_limited','invite_not_allowed',
                 'smtp_missing','invalid_contact','error','bad_list'), true);
@@ -1130,7 +1130,7 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<p>Il faut au moins une newsletter que vous êtes autorisé à envoyer et une liste existante.</p>';
         }
         else {
-            $selected = isset($_GET['dendrila_simple_edit_send_nid']) ? absint($_GET['dendrila_simple_edit_send_nid']) : 0;
+            $selected = Dendrila_Simple_Edit_Plugin::screen_id('dendrila_simple_edit_send_nid', 0);
             $choices = '<option value="">Choisir une newsletter</option>';
             foreach ($approved as $post) {
                 $choices .= '<option value="' . (int) $post->ID . '"' .
