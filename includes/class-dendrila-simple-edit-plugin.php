@@ -1179,7 +1179,7 @@ final class Dendrila_Simple_Edit_Plugin
         }
         } elseif ($tab === 'aide') {
             echo '<section class="dendrila-simple-edit-card"><h3>Comment modifier un contenu ?</h3><ol class="dendrila-simple-edit-steps"><li>Ouvrez l’onglet Pages, Articles ou Événements.</li><li>Choisissez un contenu autorisé et modifiez son titre et les éléments nécessaires.</li><li>Enregistrez vos modifications.</li></ol><p>Si un texte n’apparaît pas, l’administrateur doit peut-être encore autoriser sa modification.</p></section>';
-            echo '<section class="dendrila-simple-edit-card"><h3>Ce que Simple Edit ne modifie pas</h3><p>Les menus, les modèles et la disposition de la page restent tels quels. L’idée est de pouvoir changer le contenu sans risquer de casser le design.</p></section>';
+            echo '<section class="dendrila-simple-edit-card"><h3>Contenu et présentation</h3><p>Modifiez le texte et les images dans les onglets Pages et Articles. Les menus se gèrent dans l’onglet Menu principal ; les modèles et la mise en page restent en place.</p></section>';
             if ($is_admin) {
                 echo '<details class="dendrila-simple-edit-card dendrila-simple-edit-advanced"><summary>Pour les administrateurs : placer un texte sur une page</summary><div class="dendrila-simple-edit-details-body"><p>Chaque texte peut être inséré à un endroit précis avec un petit code WordPress (appelé « code court »).</p>';
                 foreach ($enabled as $key) {
