@@ -596,6 +596,14 @@
 .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-list.is-dragging .dendrila-simple-edit-nav-sort-item:not(.is-dragging) .dendrila-simple-edit-nav-group-drop{display:inline-flex;}
 .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-item.is-group-target{border-color:#1e6835;box-shadow:0 0 0 3px #88c398;}
 .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-item.is-group-target .dendrila-simple-edit-nav-group-drop{background:#246a33;color:#fff;border-color:#246a33;}
+/* The submenu drop zone lives at the bottom of eligible first-level rows only. */
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-list.is-dragging .dendrila-simple-edit-nav-sort-item.is-child .dendrila-simple-edit-nav-group-drop,
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-list.is-dragging .dendrila-simple-edit-nav-sort-item.is-dragging .dendrila-simple-edit-nav-group-drop{display:none;}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-list.is-dragging .dendrila-simple-edit-nav-sort-item:not(.is-child):not(.is-dragging) .dendrila-simple-edit-nav-group-drop{
+  display:flex;flex-basis:100%;width:100%;order:99;justify-content:center;
+  margin-top:4px;box-sizing:border-box;min-height:44px;
+}
+
 .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-convert{display:flex;align-items:start;gap:9px;padding:12px;margin:12px 0;border:1px solid #d8c583;border-radius:8px;background:#fff9df;line-height:1.5;}
 .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-convert input{width:20px;height:20px;flex-shrink:0;}
 @media(max-width:420px){
