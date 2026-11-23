@@ -30,6 +30,15 @@ function parse_blocks($content) {
     }
     return $blocks;
 }
+function serialize_blocks($blocks) {
+    $html = '';
+    foreach ($blocks as $block) {
+        if (empty($block['blockName'])) { $html .= (string) ($block['innerHTML'] ?? ''); continue; }
+        $name = substr($block['blockName'], 5);
+        $html .= '<!-- wp:' . $name . ' -->' . (string) ($block['innerHTML'] ?? '') . '<!-- /wp:' . $name . ' -->';
+    }
+    return $html;
+}
 final class Dendrila_Simple_Edit_Modules {
     public static function allowed($module, $action) {
         return $module === 'editorial' && $action === 'edit_events' && $GLOBALS['test_event_grant'];
@@ -80,6 +89,11 @@ verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($woo_list), 'W
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2 class="wp-block-heading">Overview</h2><!-- /wp:heading --><!-- wp:paragraph --><p><b>This is a sample page.</b></p><!-- /wp:paragraph --><!-- wp:list --><ul><li>Gift cards</li><li>Downloadable software products</li></ul><!-- /wp:list -->'), 'WooCommerce policy page headings, paragraphs and native list items stay editable');
 verify_case(strpos(Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'data-dendrila-simple-edit-block="text"') !== false, 'Simple Gutenberg paragraph is converted into a visual editor block');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p><strong>Texte riche</strong></p><!-- /wp:paragraph -->'), 'Rich Gutenberg paragraph can be edited without rewriting unchanged markup');
+$bold_source = '<!-- wp:paragraph --><p><b>Texte de démonstration</b></p><!-- /wp:paragraph -->';
+$bold_editor = Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content($bold_source);
+$bold_editor = str_replace('Texte de démonstration', 'Texte modifié', $bold_editor);
+$bold_saved = Dendrila_Simple_Edit_Block_Editor::restore_gutenberg_content($bold_source, $bold_editor);
+verify_case(strpos($bold_saved, '<p><b>Texte modifié</b></p>') !== false, 'Editing text retains a simple bold style around the paragraph');
 verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:columns --><div class="wp-block-columns"></div><!-- /wp:columns -->'), 'Complex Gutenberg layout stays protected');
 verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<script>evil()</script>'), 'Unsafe markup protected');
 echo "OK — per-type editorial permissions, administrator bypass, old editor block support\n";
