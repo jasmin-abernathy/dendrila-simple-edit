@@ -2,18 +2,17 @@
 # Copyright (C) 2026 Le Potager du Web
 # This file is distributed under the same license as the Dendrila Simple Edit
 # project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+# Le Potager du Web, 2026.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: Dendrila Simple Edit 0.0.1\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dendrila-simple-edit/\n"
 "POT-Creation-Date: 2026-11-22 15:33+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"PO-Revision-Date: 2026-11-23 21:34+0100\n"
+"Last-Translator: Le Potager du Web\n"
 "Language: en_US\n"
-"Language-Team: en_US <LL@li.org>\n"
+"Language-Team: English (United States)\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
@@ -1047,4 +1046,106 @@ msgstr "Choose a top-level parent; a third nesting level is not supported."
 
 msgid "Déplacez ce lien. Déposez sur « Sous-menu » pour grouper."
 msgstr "Drag this link. Drop on “Submenu” to group it."
+
+msgid "(nouvel onglet)"
+msgstr "(new tab)"
+
+msgid "Activez les outils, puis choisissez les droits des rôles et les types de contenus."
+msgstr "Enable the tools, then choose role permissions and content types."
+
+msgid "Ajouter automatiquement au menu principal les nouvelles pages publiées"
+msgstr "Automatically add newly published pages to the main menu"
+
+msgid "Ajouter la page"
+msgstr "Add page"
+
+msgid "Ajouter le lien"
+msgstr "Add link"
+
+msgid "Ajouter ou retirer des liens"
+msgstr "Add or remove links"
+
+msgid "Ce contenu contient des blocs Gutenberg avancés que Simple Edit ne sait pas encore modifier."
+msgstr "This content contains advanced Gutenberg blocks that Simple Edit cannot edit yet."
+
+msgid "Ce contenu contient un code court que Simple Edit ne peut pas préserver."
+msgstr "This content contains a shortcode that Simple Edit cannot preserve."
+
+msgid "Cette page figure déjà dans le menu."
+msgstr "This page is already in the menu."
+
+msgid "Choisir les types de contenus modifiables"
+msgstr "Choose which content types can be edited"
+
+msgid "Contenus à ouvrir dans WordPress"
+msgstr "Content to open in WordPress"
+
+msgid "Déplacez ou retirez les sous-menus avant de retirer leur parent."
+msgstr "Move or remove submenus before removing their parent."
+
+msgid "Emplacement"
+msgstr "Location"
+
+msgid "Enregistrer cette préférence"
+msgstr "Save this preference"
+
+msgid "Le menu automatique se gère dans les pages WordPress."
+msgstr "Automatic menus are managed from WordPress Pages."
+
+msgid "Leur mise en page ne peut pas encore être conservée par Simple Edit. Ils n’ont pas été modifiés."
+msgstr "Simple Edit cannot preserve their layout yet. They have not been changed."
+
+msgid "Mise en page Elementor : ouvrez ce contenu dans WordPress."
+msgstr "Elementor layout: open this content in WordPress."
+
+msgid "Mise en page créée avec un constructeur : elle reste protégée."
+msgstr "This page uses a page builder and remains protected."
+
+msgid "Modifier les événements existants"
+msgstr "Edit existing events"
+
+msgid "Ouvrir dans WordPress"
+msgstr "Open in WordPress"
+
+msgid "Page existante"
+msgstr "Existing page"
+
+msgid "Retirer ce lien du menu sans supprimer sa page ?"
+msgstr "Remove this link from the menu without deleting its page?"
+
+msgid "Retirer du menu"
+msgstr "Remove from menu"
+
+msgid "Retirer le lien"
+msgstr "Remove link"
+
+msgid "Sa mise en forme ne peut pas encore être conservée par Simple Edit."
+msgstr "Simple Edit cannot preserve its formatting yet."
+
+msgid "Sans titre"
+msgstr "Untitled"
+
+msgid "Titre du lien personnalisé"
+msgstr "Custom link title"
+
+msgid "Types de contenus"
+msgstr "Content types"
+
+msgid "URL du lien personnalisé"
+msgstr "Custom link URL"
+
+msgid "Citation"
+msgstr "Quote"
+
+msgid "Éléments présentés en liste"
+msgstr "Items displayed as a list"
+
+msgid "Un texte mis en valeur"
+msgstr "Highlighted text"
+
+msgid "Modifiez les textes ici ; la structure des blocs WordPress sera conservée."
+msgstr "Edit the text here; the WordPress block structure will be preserved."
+
+msgid "Liste"
+msgstr "List"
 

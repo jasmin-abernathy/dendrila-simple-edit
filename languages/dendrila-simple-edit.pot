@@ -1,999 +1,1239 @@
-# Translations template for Dendrila Simple Edit.
-# Copyright (C) 2026 ORGANIZATION
-# This file is distributed under the same license as the Dendrila Simple Edit
-# project.
-# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
-#
-#, fuzzy
+# Translation template for Dendrila Simple Edit.
+# Copyright (C) 2026 Le Potager du Web.
+# This file is distributed under the same license as the Dendrila Simple Edit project.
 msgid ""
 msgstr ""
 "Project-Id-Version: Dendrila Simple Edit 0.0.1\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-11-22 15:33+0000\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/dendrila-simple-edit/\n"
+"POT-Creation-Date: 2026-11-23 21:34+0100\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.18.0\n"
 
+#: includes/class-dendrila-simple-edit-plugin.php:317
 msgid " de la sélection"
 msgstr ""
 
+#: includes/class-dendrila-simple-edit-plugin.php:318
 msgid " image sélectionnée"
 msgstr ""
 
+#: includes/class-dendrila-simple-edit-plugin.php:319
 msgid " images sélectionnées"
 msgstr ""
 
-msgid " sur 5 — "
+#: includes/class-dendrila-simple-edit-post-editor.php:471
+msgid "(nouvel onglet)"
 msgstr ""
 
+#: includes/class-dendrila-simple-edit-plugin.php:320
 msgid ". Pensez à enregistrer."
 msgstr ""
 
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:62
 msgid "1. Choisissez la mise en page"
 msgstr ""
 
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:73
 msgid "2. Personnalisez les couleurs du modèle"
 msgstr ""
 
+#: includes/class-dendrila-simple-edit-plugin.php:841
 msgid "Accueil"
 msgstr ""
 
-msgid "Actions du formulaire (également disponibles en bas)"
-msgstr ""
-
-msgid "Activer uniquement les outils nécessaires"
-msgstr ""
-
-msgid "Adresse de l’image"
-msgstr ""
-
-msgid "Adresse du lien"
-msgstr ""
-
-msgid "Aide"
-msgstr ""
-
-msgid "Ajouter cet article à la newsletter"
-msgstr ""
-
-msgid "Ajouter des images"
-msgstr ""
-
-msgid "Ajouter un élément"
-msgstr ""
-
-msgid "Alignement de cet élément"
-msgstr ""
-
-msgid "Aperçu de cet élément"
-msgstr ""
-
-msgid "Aperçu du cadre de l’image"
-msgstr ""
-
-msgid "Aperçu du contenu"
-msgstr ""
-
-msgid "Après validation, l’espace d’édition est accessible aux rôles autorisés."
-msgstr ""
-
-msgid "Ardoise"
-msgstr ""
-
-msgid ""
-"Article ajouté. Vous pouvez maintenant modifier chaque élément dans la newsletter, sans"
-" changer l’article original."
-msgstr ""
-
-msgid "Article inséré dans la newsletter."
-msgstr ""
-
-msgid "Article à présenter"
-msgstr ""
-
-msgid "Articles"
-msgstr ""
-
-msgid "Attribuer cette liste à un éditeur"
-msgstr ""
-
-msgid "Aucun article publié avec un paragraphe n’est disponible pour le moment."
-msgstr ""
-
-msgid "Aucun brouillon enregistré pour le moment."
-msgstr ""
-
-msgid "Automatique"
-msgstr ""
-
-msgid "Autorisations"
-msgstr ""
-
-msgid "Bleu"
-msgstr ""
-
-msgid "Boutique"
-msgstr ""
-
-msgid "Bouton"
-msgstr ""
-
-msgid "Boutons"
-msgstr ""
-
-msgid "Brique"
-msgstr ""
-
-msgid "Brouillon"
-msgstr ""
-
-msgid "Brouillon enregistré."
-msgstr ""
-
-msgid "Brouillons de newsletters"
-msgstr ""
-
-msgid "Campagnes préparées et envoyées"
-msgstr ""
-
-msgid "Catalogue — fiches en grille de deux colonnes"
-msgstr ""
-
-msgid "Centré"
-msgstr ""
-
-msgid "Changer la mise en page et les couleurs de ce brouillon"
-msgstr ""
-
-msgid "Changez l’ordre des liens, sans toucher à leur destination."
-msgstr ""
-
-msgid "Choisir ce que chacun peut modifier"
-msgstr ""
-
-msgid "Choisir dans la médiathèque"
-msgstr ""
-
-msgid "Choisir les images autorisées"
-msgstr ""
-
-msgid "Choisir les pages et articles modifiables"
-msgstr ""
-
-msgid "Choisir ou importer une image"
-msgstr ""
-
-msgid "Choisir un article publié"
-msgstr ""
-
-msgid "Choisir une couleur personnalisée"
-msgstr ""
-
-msgid "Choisir une image"
-msgstr ""
-
-msgid "Choisir une image autorisée"
-msgstr ""
-
-msgid "Choisissez la page à modifier et personnalisez son titre, ses textes et ses images."
-msgstr ""
-
-msgid ""
-"Choisissez les outils et les images accessibles aux comptes ayant le rôle « Édition "
-"simple »."
-msgstr ""
-
-msgid "Choisissez un article autorisé et modifiez son titre et son contenu."
-msgstr ""
-
-msgid "Choisissez un élément ci-dessus pour commencer."
-msgstr ""
-
-msgid "Classique — en-tête, contenu, bouton"
-msgstr ""
-
-msgid ""
-"Cochez uniquement les contenus que les utilisateurs « Édition simple » pourront "
-"modifier. Les pages construites avec Gutenberg, Divi, Elementor ou d’autres "
-"constructeurs restent protégées."
-msgstr ""
-
-msgid "Comprendre comment ça marche"
-msgstr ""
-
-msgid "Configuration de Dendrila Simple Edit"
-msgstr ""
-
-msgid "Configuration des envois"
-msgstr ""
-
-msgid "Configuration en cours"
-msgstr ""
-
-msgid "Configurer FluentSMTP"
-msgstr ""
-
-msgid "Connexion FluentSMTP nécessaire"
-msgstr ""
-
-msgid "Connexion détectée, vous pouvez activer le module."
-msgstr ""
-
-msgid "Connexion pour envoyer les e-mails"
-msgstr ""
-
-msgid "Consultez les changements précédents et les pages qui utilisent vos textes."
-msgstr ""
-
-msgid "Contenu"
-msgstr ""
-
-msgid "Contenu de la newsletter"
-msgstr ""
-
-msgid "Contenu soumis à validation."
-msgstr ""
-
-msgid "Contenu validé. Aucun e-mail envoyé."
-msgstr ""
-
-msgid "Contenus accessibles"
-msgstr ""
-
-msgid "Contenus en attente de validation"
-msgstr ""
-
-msgid "Continuer vers la rédaction"
-msgstr ""
-
-msgid "Copie impossible : sélectionnez le code"
-msgstr ""
-
-msgid "Copié !"
-msgstr ""
-
-msgid "Couleur automatique"
-msgstr ""
-
-msgid "Couleur du cadre"
-msgstr ""
-
-msgid "Couleur du texte ou du bouton"
-msgstr ""
-
-msgid "Couleur d’accent"
-msgstr ""
-
-msgid "Courriels et inscription lors d’une commande"
-msgstr ""
-
-msgid "Création de contenus et menu principal"
-msgstr ""
-
-msgid "Créer de nouveaux articles (brouillons)"
-msgstr ""
-
-msgid "Créer de nouvelles pages (brouillons)"
-msgstr ""
-
-msgid "Créer des catégories et sous-catégories de produits"
-msgstr ""
-
-msgid "Créer des produits variables, groupés ou externes"
-msgstr ""
-
-msgid "Créer et gérer ses listes et leurs contacts"
-msgstr ""
-
-msgid "Créer un brouillon"
-msgstr ""
-
-msgid "Créer un produit (brouillon)"
-msgstr ""
-
-msgid "Créer une nouvelle newsletter"
-msgstr ""
-
-msgid ""
-"Demandez explicitement l’inscription pendant le paiement, sans cocher la case par "
-"défaut. Les clients reçoivent une demande de confirmation. Une désinscription "
-"antérieure reste protégée."
-msgstr ""
-
-msgid "Dendrila Simple Edit doit être configuré avant utilisation."
-msgstr ""
-
-msgid "Dendrila Simple Edit est incomplet. Réinstallez le ZIP complet du plugin."
-msgstr ""
-
-msgid "Descendre : "
-msgstr ""
-
-msgid "Description de l’image"
-msgstr ""
-
-msgid "Donnez un nom à la liste. Vous pourrez ensuite y ajouter des contacts."
-msgstr ""
-
-msgid "Définir les autorisations des rôles"
-msgstr ""
-
-msgid "Déplacement annulé."
-msgstr ""
-
-msgid "Déplier"
-msgstr ""
-
-msgid "Déplier le bloc"
-msgstr ""
-
-msgid "Elle pourra confirmer son réabonnement par e-mail."
-msgstr ""
-
-msgid "En attente de validation"
-msgstr ""
-
-msgid "Enregistrement non confirmé."
-msgstr ""
-
-msgid "Enregistrer la synchronisation"
-msgstr ""
-
-msgid "Enregistrer le brouillon"
-msgstr ""
-
-msgid "Envoyez une invitation uniquement si cette personne vous l’a demandé."
-msgstr ""
-
-msgid ""
-"FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa connexion avant de"
-" lancer une newsletter."
-msgstr ""
-
-msgid ""
-"FluentSMTP doit être actif et posséder une connexion e-mail configurée avant de "
-"terminer la configuration du module Newsletters."
-msgstr ""
-
-msgid ""
-"FluentSMTP doit être installé et actif. Une connexion doit être configurée avant le "
-"premier envoi."
-msgstr ""
-
-msgid ""
-"FluentSMTP est absent ou inactif. L’activation du module Newsletters est bloquée "
-"jusqu’à son activation."
-msgstr ""
-
-msgid "FluentSMTP est obligatoire pour le mailing."
-msgstr ""
-
-msgid "FluentSMTP nécessaire"
-msgstr ""
-
-msgid "FluentSMTP requis"
-msgstr ""
-
-msgid "Fond du contenu"
-msgstr ""
-
-msgid "Fond extérieur"
-msgstr ""
-
-msgid "Grand titre"
-msgstr ""
-
-msgid "Gérer les variations des produits"
-msgstr ""
-
-msgid "Historique"
-msgstr ""
-
-msgid "Image"
-msgstr ""
-
-msgid "Image "
-msgstr ""
-
-msgid "Image choisie"
-msgstr ""
-
-msgid "Image sélectionnée"
-msgstr ""
-
-msgid "Installer FluentSMTP"
-msgstr ""
-
-msgid "Installez/activez FluentSMTP et configurez une connexion avant d’activer ce module."
-msgstr ""
-
-msgid "Insérer un article du site"
-msgstr ""
-
-msgid "Intertitre"
-msgstr ""
-
-msgid "Je souhaite recevoir la newsletter du site (confirmation par e-mail)."
-msgstr ""
-
-msgid ""
-"Le module Newsletters exige FluentSMTP installé, activé et configuré avec une connexion"
-" d’envoi. L’inscription marketing pendant la commande est facultative et décochée par "
-"défaut."
-msgstr ""
-
-msgid ""
-"Le module Newsletters nécessite FluentSMTP installé et activé. Activez FluentSMTP dans "
-"Extensions, puis reprenez cette étape."
-msgstr ""
-
-msgid "Le titre qui ouvre le message"
-msgstr ""
-
-msgid ""
-"Les administrateurs conservent leurs droits natifs. Tout autre rôle est refusé par "
-"défaut."
-msgstr ""
-
-msgid "Les couleurs des éléments individuels peuvent ensuite être personnalisées séparément."
-msgstr ""
-
-msgid ""
-"Les désinscriptions historiques doivent être migrées avant le premier envoi. Le module "
-"refuse les campagnes si cette protection échoue."
-msgstr ""
-
-msgid ""
-"Les fonctions désactivées resteront inaccessibles. Elles pourront être activées plus "
-"tard."
-msgstr ""
-
-msgid ""
-"Les images importées sont disponibles. Rechargez la page pour voir les nouvelles "
-"miniatures."
-msgstr ""
-
-msgid ""
-"Les mises en page complexes restent protégées. Ne cochez que les contenus dont "
-"l’édition est volontairement déléguée."
-msgstr ""
-
-msgid "Les modifications ultérieures se font depuis les réglages du plugin."
-msgstr ""
-
-msgid "Lien"
-msgstr ""
-
-msgid "Listes et contacts"
-msgstr ""
-
-msgid ""
-"Lors de chaque envoi, Simple Edit ajoute automatiquement un lien de désinscription "
-"individuel en bas du message. Vous n’avez rien à insérer et ce lien ne peut pas être "
-"retiré depuis l’éditeur."
-msgstr ""
-
-msgid "L’insertion n’a pas pu être terminée. Vérifiez le contenu."
-msgstr ""
-
-msgid "Magazine — une grande ouverture et des rubriques"
-msgstr ""
-
-msgid "Mailing et WooCommerce"
-msgstr ""
-
-msgid "Menu principal"
-msgstr ""
-
-msgid "Mes newsletters"
-msgstr ""
-
-msgid "Mettez à jour uniquement les informations de produits qui vous ont été confiées."
-msgstr ""
-
-msgid "Modifier des produits déjà publiés"
-msgstr ""
-
-msgid "Modifier le brouillon"
-msgstr ""
-
-msgid "Modifier le prix régulier"
-msgstr ""
-
-msgid "Modifier le stock"
-msgstr ""
-
-msgid "Modifier les articles existants autorisés"
-msgstr ""
-
-msgid "Modifier les brouillons"
-msgstr ""
-
-msgid "Modifier les catégories existantes"
-msgstr ""
-
-msgid "Modifier les pages existantes autorisées"
-msgstr ""
-
-msgid "Modifier les produits"
-msgstr ""
-
-msgid "Modifier les textes"
-msgstr ""
-
-msgid "Modifier mon site"
-msgstr ""
-
-msgid "Modifier un article"
-msgstr ""
-
-msgid "Modifier un événement"
-msgstr ""
-
-msgid "Modifier une page"
-msgstr ""
-
-msgid ""
-"Modifiez le titre, la description, les dates, les horaires et le lieu des événements "
-"autorisés."
-msgstr ""
-
-msgid "Modules"
-msgstr ""
-
-msgid "Modèle de newsletter"
-msgstr ""
-
-msgid "Monter : "
-msgstr ""
-
-msgid "Newsletters"
-msgstr ""
-
-msgid "Newsletters :"
-msgstr ""
-
-msgid "Nouvelle newsletter"
-msgstr ""
-
-msgid "Objet de la newsletter"
-msgstr ""
-
-msgid "Offrez un café au développeur"
-msgstr ""
-
-msgid "Ordre mis à jour."
-msgstr ""
-
-msgid "Ouvrir les réglages FluentSMTP"
-msgstr ""
-
-msgid "Ouvrir l’assistant"
-msgstr ""
-
-msgid "Pages"
-msgstr ""
-
-msgid "Permissions par rôle"
-msgstr ""
-
-msgid "Personnalisée :"
-msgstr ""
-
-msgid "Photo ou illustration"
-msgstr ""
-
-msgid ""
-"Pour activer le module Newsletters, installez et activez FluentSMTP, puis configurez au"
-" moins une connexion d’envoi dans ses réglages."
-msgstr ""
-
-msgid "Pour séparer deux parties"
-msgstr ""
-
-msgid "Produits WooCommerce"
-msgstr ""
-
-msgid "Proposer un réabonnement"
-msgstr ""
-
-msgid "Proposer une inscription facultative lors de la commande"
-msgstr ""
-
-msgid "Prune"
-msgstr ""
-
-msgid "Préparer et envoyer ses newsletters sans validation préalable"
-msgstr ""
-
-msgid "Préparer un envoi"
-msgstr ""
-
-msgid "Préparer une campagne"
-msgstr ""
-
-msgid "Préparer une newsletter"
-msgstr ""
-
-msgid ""
-"Préparez vos messages et, si vous disposez du droit d’envoi, choisissez vos "
-"destinataires et lancez votre campagne."
-msgstr ""
-
-msgid "Prévisualiser le contenu"
-msgstr ""
-
-msgid "Prête à préparer pour un envoi"
-msgstr ""
-
-msgid "Publier les nouveaux articles sans validation"
-msgstr ""
-
-msgid "Publier les nouvelles pages sans validation"
-msgstr ""
-
-msgid "Publier les produits sans validation"
-msgstr ""
-
-msgid "Publier sur le site immédiatement"
-msgstr ""
-
-msgid "Quatre structures différentes. Votre dernier modèle choisi est présélectionné."
-msgstr ""
-
-msgid "Que voulez-vous faire ?"
-msgstr ""
-
-msgid "Quelques repères pour modifier le site sans risque."
-msgstr ""
-
-msgid "Rechercher FluentSMTP dans les extensions"
-msgstr ""
-
-msgid "Replier"
-msgstr ""
-
-msgid "Replier : "
-msgstr ""
-
-msgid "Retirer"
-msgstr ""
-
-msgid "Retirer "
-msgstr ""
-
-msgid "Retrouver une ancienne version"
-msgstr ""
-
-msgid ""
-"Récupérez son titre et son premier paragraphe. Après insertion, ces textes sont "
-"indépendants : vous pouvez les modifier sans changer l’article d’origine."
-msgstr ""
-
-msgid "Rédiger les newsletters"
-msgstr ""
-
-msgid "Réorganiser le menu principal"
-msgstr ""
-
-msgid "Souhaitez-vous recevoir à nouveau les newsletters de cette liste ?"
-msgstr ""
-
-msgid "Soumettre pour publication après validation"
-msgstr ""
-
-msgid "Soumettre à validation"
-msgstr ""
-
-msgid "Soutenir le développement"
-msgstr ""
-
-msgid "Suivre les envois"
-msgstr ""
-
-msgid "Synchronisation WooCommerce"
-msgstr ""
-
-msgid "Texte"
-msgstr ""
-
-msgid "Titre de section"
-msgstr ""
-
-msgid "Titre principal"
-msgstr ""
-
-msgid "Tout désélectionner"
-msgstr ""
-
-msgid "Tout sélectionner"
-msgstr ""
-
-msgid ""
-"Un administrateur doit terminer la configuration de Dendrila Simple Edit avant son "
-"utilisation."
-msgstr ""
-
-msgid ""
-"Un clic sur « Lancer » n’envoie rien immédiatement : les messages seront traités par "
-"petits lots planifiés."
-msgstr ""
-
-msgid "Un lien bien visible"
-msgstr ""
-
-msgid "Un lien dans le texte"
-msgstr ""
-
-msgid "Un ou plusieurs paragraphes"
-msgstr ""
-
-msgid ""
-"Uniquement les commandes payées et consenties. Les courriels transactionnels restent "
-"gérés par WooCommerce."
-msgstr ""
-
-msgid "Utiliser aussi ce modèle par défaut pour mes prochaines newsletters"
-msgstr ""
-
-msgid "Utiliser ces images"
-msgstr ""
-
-msgid "Utiliser cette image"
-msgstr ""
-
-msgid "Validations"
-msgstr ""
-
-msgid "Valider"
-msgstr ""
-
-msgid "Valider les produits proposés"
-msgstr ""
-
-msgid "Valider un contenu"
-msgstr ""
-
-msgid "Validée, non envoyée"
-msgstr ""
-
-msgid "Vert"
-msgstr ""
-
-msgid "Vous pouvez choisir 60 images maximum. Réduisez votre sélection."
-msgstr ""
-
-msgid "Vérification"
-msgstr ""
-
-msgid "Vérification finale"
-msgstr ""
-
-msgid "Vérifiez la liste : numéros valides, 60 images maximum."
-msgstr ""
-
-msgid "Vérifiez les propositions avant qu’elles ne soient mises en ligne."
-msgstr ""
-
-msgid "connexion détectée"
-msgstr ""
-
-msgid "connexion manquante"
-msgstr ""
-
-msgid "inactif ou non configuré — veuillez corriger avant validation"
-msgstr ""
-
-msgid "nouvel onglet"
-msgstr ""
-
-msgid "prêt"
-msgstr ""
-
-msgid "À droite"
-msgstr ""
-
-msgid "À gauche"
-msgstr ""
-
-msgid "À modifier"
-msgstr ""
-
-msgid "Éditorial — lettre aérée et typographie soignée"
-msgstr ""
-
-msgid "Élément"
-msgstr ""
-
-msgid "Élément descendu."
-msgstr ""
-
-msgid "Élément remonté."
-msgstr ""
-
-msgid "Élément retiré."
-msgstr ""
-
-msgid "Étape "
-msgstr ""
-
-msgid "État FluentSMTP :"
-msgstr ""
-
-msgid "Événements"
-msgstr ""
-
-msgid "Quitter l’assistant"
-msgstr ""
-
-msgid "Outils disponibles"
-msgstr ""
-
-msgid ""
-"Choisissez les fonctions accessibles sur le site. Configurez ensuite les droits dans « "
-"Rôles et permissions »."
-msgstr ""
-
-msgid "Activé"
-msgstr ""
-
-msgid "Désactivé"
-msgstr ""
-
-msgid "FluentSMTP est requis pour les newsletters."
-msgstr ""
-
-msgid "Connexion détectée."
-msgstr ""
-
-msgid "Connexion manquante : activation impossible."
-msgstr ""
-
-msgid "Activer"
-msgstr ""
-
-msgid "Enregistrer"
-msgstr ""
-
+#: includes/class-dendrila-simple-edit-setup.php:71
 msgid "Accès refusé."
 msgstr ""
 
-msgid "Configuration réservée à l’administration."
+#: includes/class-dendrila-simple-edit-plugin.php:321
+msgid "Actions du formulaire (également disponibles en bas)"
 msgstr ""
 
-msgid "Module inconnu."
-msgstr ""
-
-msgid "Pour activer les newsletters, configurez une connexion FluentSMTP."
-msgstr ""
-
-msgid "Rôles et permissions"
-msgstr ""
-
-msgid "Validation"
-msgstr ""
-
-msgid "Assistant de configuration"
-msgstr ""
-
-msgid ""
-"Reprendre manuellement les cinq étapes sans désinstaller le plugin. Les listes et "
-"contacts sont conservés, et vous pouvez quitter le parcours à tout moment. Une mise à "
-"jour ne relancera jamais l’assistant."
-msgstr ""
-
-msgid "Relancer l’assistant de configuration"
-msgstr ""
-
-msgid "Pages, articles et événements"
-msgstr ""
-
-msgid "Images"
-msgstr ""
-
-msgid "Champs complémentaires"
-msgstr ""
-
-msgid "Textes et coordonnées"
-msgstr ""
-
-msgid ""
-"Ouvrez uniquement le module et le rôle à configurer. Les administrateurs conservent "
-"tous leurs droits."
-msgstr ""
-
+#: includes/class-dendrila-simple-edit-modules.php:275
 msgid "Activation et désactivation : rubrique « Modules »."
 msgstr ""
 
-msgid "Le menu et ses sous-menus ont été enregistrés."
+#: includes/class-dendrila-simple-edit-modules.php:243
+msgid "Activer"
 msgstr ""
 
-msgid "Aucune modification à enregistrer."
+#: includes/class-dendrila-simple-edit-setup.php:237
+msgid "Activer uniquement les outils nécessaires"
 msgstr ""
 
-msgid "Le menu a changé depuis son ouverture. Rechargez la page."
+#: includes/class-dendrila-simple-edit-plugin.php:866
+msgid "Activez les outils, puis choisissez les droits des rôles et les types de contenus."
 msgstr ""
 
-msgid "La réorganisation n’a pas été enregistrée. Réessayez."
+#: includes/class-dendrila-simple-edit-modules.php:235
+msgid "Activé"
 msgstr ""
 
-msgid "Organiser le menu principal"
+#: includes/class-dendrila-simple-edit-plugin.php:322
+msgid "Adresse de l’image"
 msgstr ""
 
-msgid ""
-"Cette navigation comporte plusieurs menus ou des blocs complexes. Vous pouvez les "
-"organiser depuis l’éditeur WordPress du site, sans risquer d’en perdre le contenu."
+#: includes/class-dendrila-simple-edit-plugin.php:314
+msgid "Adresse du lien"
 msgstr ""
 
-msgid ""
-"Glissez la poignée pour réorganiser les liens. Déposez sur « Sous-menu » pour créer un "
-"groupe, ou utilisez les boutons et la liste « Parent ». Vous pouvez également choisir "
-"si chaque groupe est ouvert ou fermé sur mobile."
-msgstr ""
-
-msgid ""
-"Votre menu est actuellement automatique : tant que vous ne créez pas de groupe, les "
-"nouvelles pages s’y ajoutent. La création d’un sous-menu le transformera en menu "
-"explicite : les nouvelles pages devront alors être ajoutées depuis WordPress."
-msgstr ""
-
-msgid "Aucun lien à organiser."
-msgstr ""
-
-msgid "↳ Sous-menu ici"
-msgstr ""
-
-#, python-format
-msgid "Monter : %s"
-msgstr ""
-
-#, python-format
-msgid "Descendre : %s"
-msgstr ""
-
-#, python-format
-msgid "Déplacer : %s"
-msgstr ""
-
-msgid "Sous-menu de"
-msgstr ""
-
-msgid "— Niveau principal —"
-msgstr ""
-
-msgid "Sur mobile"
-msgstr ""
-
-msgid "Fermé par défaut"
-msgstr ""
-
-msgid "Ouvert par défaut"
-msgstr ""
-
-msgid ""
-"Je confirme la conversion en menu manuel si je crée un sous-menu (les nouvelles pages "
-"ne seront plus ajoutées automatiquement)."
-msgstr ""
-
-msgid "Enregistrer le menu et les sous-menus"
-msgstr ""
-
+#: includes/class-dendrila-simple-edit-navigation.php:409
 msgid "Afficher ou masquer le sous-menu"
 msgstr ""
 
-msgid "Sous-menu créé. Pensez à enregistrer."
+#: includes/class-dendrila-simple-edit-plugin.php:870
+msgid "Aide"
 msgstr ""
 
-msgid "Lien replacé au premier niveau. Pensez à enregistrer."
+#: includes/class-dendrila-simple-edit-navigation.php:552
+msgid "Ajouter automatiquement au menu principal les nouvelles pages publiées"
 msgstr ""
 
+#: includes/class-dendrila-simple-edit-newsletters.php:400
+msgid "Ajouter cet article à la newsletter"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:323
+msgid "Ajouter des images"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:538
+msgid "Ajouter la page"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:539
+msgid "Ajouter le lien"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:517
+msgid "Ajouter ou retirer des liens"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:324
+msgid "Ajouter un élément"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:325
+msgid "Alignement de cet élément"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:326
+msgid "Aperçu de cet élément"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:327
+msgid "Aperçu du cadre de l’image"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:328
+msgid "Aperçu du contenu"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:302
+msgid "Après validation, l’espace d’édition est accessible aux rôles autorisés."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:329
+msgid "Ardoise"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:330
+msgid "Article ajouté. Vous pouvez maintenant modifier chaque élément dans la newsletter, sans changer l’article original."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:331
+msgid "Article inséré dans la newsletter."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:374
+msgid "Article à présenter"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-approvals.php:173
+#: includes/class-dendrila-simple-edit-plugin.php:846
+#: includes/class-dendrila-simple-edit-post-editor.php:366
+#: includes/class-dendrila-simple-edit-setup.php:276
+msgid "Articles"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1089
+msgid "Assistant de configuration"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-mailing.php:1022
+msgid "Attribuer cette liste à un éditeur"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:332
+msgid "Aucun article publié avec un paragraphe n’est disponible pour le moment."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:283
+msgid "Aucun brouillon enregistré pour le moment."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:464
+msgid "Aucun lien à organiser."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:445
+msgid "Aucune modification à enregistrer."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:333
+msgid "Automatique"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:864
+msgid "Autorisations"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:334
+msgid "Bleu"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:858
+msgid "Boutique"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:335
+msgid "Bouton"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:76
+msgid "Boutons"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:336
+msgid "Brique"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:292
+msgid "Brouillon"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:258
+msgid "Brouillon enregistré."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:24
+msgid "Brouillons de newsletters"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-mailing.php:1161
+msgid "Campagnes préparées et envoyées"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:15
+msgid "Catalogue — fiches en grille de deux colonnes"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:99
+msgid "Ce contenu contient des blocs Gutenberg avancés que Simple Edit ne sait pas encore modifier."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:102
+msgid "Ce contenu contient un code court que Simple Edit ne peut pas préserver."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:337
+msgid "Centré"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:457
+msgid "Cette navigation comporte plusieurs menus ou des blocs complexes. Vous pouvez les organiser depuis l’éditeur WordPress du site, sans risquer d’en perdre le contenu."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:448
+msgid "Cette page figure déjà dans le menu."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1098
+msgid "Champs complémentaires"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:64
+msgid "Changer la mise en page et les couleurs de ce brouillon"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:851
+msgid "Changez l’ordre des liens, sans toucher à leur destination."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:865
+msgid "Choisir ce que chacun peut modifier"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:338
+#: includes/class-dendrila-simple-edit-post-editor.php:172
+msgid "Choisir dans la médiathèque"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:339
+msgid "Choisir les images autorisées"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:272
+msgid "Choisir les types de contenus modifiables"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:340
+msgid "Choisir ou importer une image"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:376
+msgid "Choisir un article publié"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:341
+msgid "Choisir une couleur personnalisée"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:342
+msgid "Choisir une image"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:51
+msgid "Choisir une image autorisée"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:845
+msgid "Choisissez la page à modifier et personnalisez son titre, ses textes et ses images."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:227
+msgid "Choisissez les fonctions accessibles sur le site. Configurez ensuite les droits dans « Rôles et permissions »."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:848
+msgid "Choisissez un article autorisé et modifiez son titre et son contenu."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:386
 msgid "Choisissez un parent du premier niveau, sans créer de troisième niveau."
 msgstr ""
 
+#: includes/class-dendrila-simple-edit-plugin.php:343
+msgid "Choisissez un élément ci-dessus pour commencer."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:12
+msgid "Classique — en-tête, contenu, bouton"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:871
+msgid "Comprendre comment ça marche"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:224
+msgid "Configuration de Dendrila Simple Edit"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:231
+msgid "Configuration des envois"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:219
+msgid "Configuration en cours"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:197
+msgid "Configuration réservée à l’administration."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:239
+msgid "Configurer FluentSMTP"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:199
+msgid "Connexion FluentSMTP nécessaire"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:238
+msgid "Connexion détectée."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:238
+msgid "Connexion manquante : activation impossible."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:863
+msgid "Consultez les changements précédents et les pages qui utilisent vos textes."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1064
+#: includes/class-dendrila-simple-edit-plugin.php:315
+msgid "Contenu"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:258
+msgid "Contenu soumis à validation."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:259
+msgid "Contenu validé. Aucun e-mail envoyé."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:868
+msgid "Contenus en attente de validation"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:456
+msgid "Contenus à ouvrir dans WordPress"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:85
+msgid "Continuer vers la rédaction"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:344
+msgid "Copie impossible : sélectionnez le code"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:345
+msgid "Copié !"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:346
+msgid "Couleur automatique"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:347
+msgid "Couleur du cadre"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:348
+msgid "Couleur du texte ou du bouton"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:76
+msgid "Couleur d’accent"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:284
+msgid "Courriels et inscription lors d’une commande"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:16
+msgid "Création de contenus et menu principal"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:23
+msgid "Créer de nouveaux articles (brouillons)"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:19
+msgid "Créer de nouvelles pages (brouillons)"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:49
+msgid "Créer des catégories et sous-catégories de produits"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:47
+msgid "Créer des produits variables, groupés ou externes"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:37
+msgid "Créer et gérer ses listes et leurs contacts"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:32
+msgid "Créer un brouillon"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:44
+msgid "Créer un produit (brouillon)"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:323
+msgid "Créer une nouvelle newsletter"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-woo-mailing.php:70
+msgid "Demandez explicitement l’inscription pendant le paiement, sans cocher la case par défaut. Les clients reçoivent une demande de confirmation. Une désinscription antérieure reste protégée."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:88
+msgid "Dendrila Simple Edit doit être configuré avant utilisation."
+msgstr ""
+
+#: dendrila-simple-edit.php:45
+msgid "Dendrila Simple Edit est incomplet. Réinstallez le ZIP complet du plugin."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:312
+msgid "Descendre : "
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:480
+msgid "Descendre : %s"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:349
+msgid "Description de l’image"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-mailing.php:1115
+msgid "Donnez un nom à la liste. Vous pourrez ensuite y ajouter des contacts."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:252
+msgid "Définir les autorisations des rôles"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:350
+msgid "Déplacement annulé."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:482
+msgid "Déplacer : %s"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:387
 msgid "Déplacez ce lien. Déposez sur « Sous-menu » pour grouper."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:449
+msgid "Déplacez ou retirez les sous-menus avant de retirer leur parent."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:351
+msgid "Déplier"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:352
+msgid "Déplier le bloc"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:235
+msgid "Désactivé"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:531
+msgid "Emplacement"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:292
+msgid "En attente de validation"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:261
+msgid "Enregistrement non confirmé."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:244
+msgid "Enregistrer"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:553
+msgid "Enregistrer cette préférence"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:502
+msgid "Enregistrer le menu et les sous-menus"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:493
+msgid "Fermé par défaut"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-mailing.php:1001
+msgid "FluentSMTP assure l’envoi des messages depuis WordPress. Vérifiez sa connexion avant de lancer une newsletter."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:199
+msgid "FluentSMTP doit être actif et posséder une connexion e-mail configurée avant de terminer la configuration du module Newsletters."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:237
+msgid "FluentSMTP est requis pour les newsletters."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:125
+msgid "FluentSMTP nécessaire"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:75
+msgid "Fond du contenu"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:75
+msgid "Fond extérieur"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:460
+msgid "Glissez la poignée pour réorganiser les liens. Déposez sur « Sous-menu » pour créer un groupe, ou utilisez les boutons et la liste « Parent ». Vous pouvez également choisir si chaque groupe est ouvert ou fermé sur mobile."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:353
+msgid "Grand titre"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:48
+msgid "Gérer les variations des produits"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:861
+#: includes/class-dendrila-simple-edit-plugin.php:914
+msgid "Historique"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:354
+msgid "Image"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:355
+msgid "Image "
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:356
+msgid "Image choisie"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:357
+msgid "Image sélectionnée"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1097
+msgid "Images"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:370
+msgid "Insérer un article du site"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:358
+msgid "Intertitre"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:500
+msgid "Je confirme la conversion en menu manuel si je crée un sous-menu (les nouvelles pages ne seront plus ajoutées automatiquement)."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-woo-mailing.php:101
+#: includes/class-dendrila-simple-edit-woo-mailing.php:90
+msgid "Je souhaite recevoir la newsletter du site (confirmation par e-mail)."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:447
+msgid "La réorganisation n’a pas été enregistrée. Réessayez."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:446
+msgid "Le menu a changé depuis son ouverture. Rechargez la page."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:450
+msgid "Le menu automatique se gère dans les pages WordPress."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:444
+msgid "Le menu et ses sous-menus ont été enregistrés."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:125
+msgid "Le module Newsletters nécessite FluentSMTP installé et activé. Activez FluentSMTP dans Extensions, puis reprenez cette étape."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:359
+msgid "Le titre qui ouvre le message"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:252
+msgid "Les administrateurs conservent leurs droits natifs. Tout autre rôle est refusé par défaut."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:80
+msgid "Les couleurs des éléments individuels peuvent ensuite être personnalisées séparément."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:287
+msgid "Les désinscriptions historiques doivent être migrées avant le premier envoi. Le module refuse les campagnes si cette protection échoue."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:237
+msgid "Les fonctions désactivées resteront inaccessibles. Elles pourront être activées plus tard."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:360
+msgid "Les images importées sont disponibles. Rechargez la page pour voir les nouvelles miniatures."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:307
+msgid "Les modifications ultérieures se font depuis les réglages du plugin."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:458
+msgid "Leur mise en page ne peut pas encore être conservée par Simple Edit. Ils n’ont pas été modifiés."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:361
+msgid "Lien"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:385
+msgid "Lien replacé au premier niveau. Pensez à enregistrer."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:226
+msgid "Listes et contacts"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:430
+msgid "Lors de chaque envoi, Simple Edit ajoute automatiquement un lien de désinscription individuel en bas du message. Vous n’avez rien à insérer et ce lien ne peut pas être retiré depuis l’éditeur."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:362
+msgid "L’insertion n’a pas pu être terminée. Vérifiez le contenu."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:13
+msgid "Magazine — une grande ouverture et des rubriques"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:223
+msgid "Mailing et WooCommerce"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:531
+#: includes/class-dendrila-simple-edit-plugin.php:849
+msgid "Menu principal"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:860
+msgid "Mettez à jour uniquement les informations de produits qui vous ont été confiées."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:92
+msgid "Mise en page Elementor : ouvrez ce contenu dans WordPress."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:96
+msgid "Mise en page créée avec un constructeur : elle reste protégée."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:55
+msgid "Modifier des produits déjà publiés"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:409
+msgid "Modifier le brouillon"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:53
+msgid "Modifier le prix régulier"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:54
+msgid "Modifier le stock"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:21
+msgid "Modifier les articles existants autorisés"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:33
+msgid "Modifier les brouillons"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:52
+msgid "Modifier les catégories existantes"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:18
+msgid "Modifier les pages existantes autorisées"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:859
+msgid "Modifier les produits"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:50
+msgid "Modifier les textes"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:22
+msgid "Modifier les événements existants"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:265
+#: includes/class-dendrila-simple-edit-plugin.php:266
+#: includes/class-dendrila-simple-edit-plugin.php:891
+msgid "Modifier mon site"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:847
+#: includes/class-dendrila-simple-edit-plugin.php:909
+msgid "Modifier un article"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:853
+#: includes/class-dendrila-simple-edit-plugin.php:910
+msgid "Modifier un événement"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:844
+#: includes/class-dendrila-simple-edit-plugin.php:908
+msgid "Modifier une page"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:854
+msgid "Modifiez le titre, la description, les dates, les horaires et le lieu des événements autorisés."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:202
+msgid "Module inconnu."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1063
+#: includes/class-dendrila-simple-edit-setup.php:223
+msgid "Modules"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:66
+msgid "Modèle de newsletter"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:313
+msgid "Monter : "
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:478
+msgid "Monter : %s"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-approvals.php:173
+#: includes/class-dendrila-simple-edit-modules.php:30
+#: includes/class-dendrila-simple-edit-plugin.php:855
+msgid "Newsletters"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:409
+msgid "Nouvelle newsletter"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1193
+msgid "Offrez un café au développeur"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:363
+msgid "Ordre mis à jour."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:454
+msgid "Organiser le menu principal"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:226
+msgid "Outils disponibles"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:494
+msgid "Ouvert par défaut"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1170
+msgid "Ouvrez uniquement le module et le rôle à configurer. Les administrateurs conservent tous leurs droits."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:470
+msgid "Ouvrir dans WordPress"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:90
+msgid "Ouvrir l’assistant"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:522
+msgid "Page existante"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-approvals.php:173
+#: includes/class-dendrila-simple-edit-plugin.php:843
+#: includes/class-dendrila-simple-edit-post-editor.php:366
+#: includes/class-dendrila-simple-edit-setup.php:276
+msgid "Pages"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1096
+msgid "Pages, articles et événements"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1169
+#: includes/class-dendrila-simple-edit-setup.php:223
+msgid "Permissions par rôle"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:364
+msgid "Personnalisée :"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:365
+msgid "Photo ou illustration"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:207
+msgid "Pour activer les newsletters, configurez une connexion FluentSMTP."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:366
+msgid "Pour séparer deux parties"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:42
+msgid "Produits WooCommerce"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-mailing.php:1077
+msgid "Proposer un réabonnement"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:367
+msgid "Prune"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:36
+msgid "Préparer et envoyer ses newsletters sans validation préalable"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:228
+msgid "Préparer un envoi"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-mailing.php:1128
+msgid "Préparer une campagne"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:856
+#: includes/class-dendrila-simple-edit-plugin.php:912
+msgid "Préparer une newsletter"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:857
+msgid "Préparez vos messages et, si vous disposez du droit d’envoi, choisissez vos destinataires et lancez votre campagne."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:300
+msgid "Prévisualiser le contenu"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:290
+msgid "Prête à préparer pour un envoi"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:24
+msgid "Publier les nouveaux articles sans validation"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:20
+msgid "Publier les nouvelles pages sans validation"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:45
+msgid "Publier les produits sans validation"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:430
+msgid "Publier sur le site immédiatement"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:62
+msgid "Quatre structures différentes. Votre dernier modèle choisi est présélectionné."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:842
+msgid "Que voulez-vous faire ?"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:872
+msgid "Quelques repères pour modifier le site sans risque."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:310
+msgid "Quitter l’assistant"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1093
+msgid "Relancer l’assistant de configuration"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:368
+msgid "Replier"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:311
+msgid "Replier : "
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1090
+msgid "Reprendre manuellement les cinq étapes sans désinstaller le plugin. Les listes et contacts sont conservés, et vous pouvez quitter le parcours à tout moment. Une mise à jour ne relancera jamais l’assistant."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:316
+msgid "Retirer"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:369
+msgid "Retirer "
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:545
+msgid "Retirer ce lien du menu sans supprimer sa page ?"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:540
+msgid "Retirer du menu"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:545
+msgid "Retirer le lien"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:862
+msgid "Retrouver une ancienne version"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:372
+msgid "Récupérez son titre et son premier paragraphe. Après insertion, ces textes sont indépendants : vous pouvez les modifier sans changer l’article d’origine."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:225
+msgid "Rédiger les newsletters"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:25
+#: includes/class-dendrila-simple-edit-plugin.php:850
+msgid "Réorganiser le menu principal"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1065
+msgid "Rôles et permissions"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:104
+msgid "Sa mise en forme ne peut pas encore être conservée par Simple Edit."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:465
+msgid "Sans titre"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-mailing.php:516
+msgid "Souhaitez-vous recevoir à nouveau les newsletters de cette liste ?"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-post-editor.php:432
+msgid "Soumettre pour publication après validation"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:34
+#: includes/class-dendrila-simple-edit-newsletters.php:316
+msgid "Soumettre à validation"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:384
+msgid "Sous-menu créé. Pensez à enregistrer."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:485
+msgid "Sous-menu de"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1190
+msgid "Soutenir le développement"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:229
+msgid "Suivre les envois"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:492
+msgid "Sur mobile"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:76
+#: includes/class-dendrila-simple-edit-plugin.php:370
+msgid "Texte"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1099
+msgid "Textes et coordonnées"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:371
+msgid "Titre de section"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:529
+msgid "Titre du lien personnalisé"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:372
+msgid "Titre principal"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:282
+#: includes/class-dendrila-simple-edit-setup.php:261
+msgid "Tout désélectionner"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:281
+#: includes/class-dendrila-simple-edit-setup.php:260
+msgid "Tout sélectionner"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:223
+msgid "Types de contenus"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:530
+msgid "URL du lien personnalisé"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:219
+msgid "Un administrateur doit terminer la configuration de Dendrila Simple Edit avant son utilisation."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-mailing.php:1191
+msgid "Un clic sur « Lancer » n’envoie rien immédiatement : les messages seront traités par petits lots planifiés."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:373
+msgid "Un lien bien visible"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:374
+msgid "Un lien dans le texte"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:375
+msgid "Un ou plusieurs paragraphes"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-woo-mailing.php:83
+msgid "Uniquement les commandes payées et consenties. Les courriels transactionnels restent gérés par WooCommerce."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:376
+msgid "Utiliser ces images"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:377
+msgid "Utiliser cette image"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1066
+msgid "Validation"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:867
+msgid "Validations"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:313
+msgid "Valider"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:46
+msgid "Valider les produits proposés"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-modules.php:35
+msgid "Valider un contenu"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletters.php:291
+msgid "Validée, non envoyée"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:378
+msgid "Vert"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:462
+msgid "Votre menu est actuellement automatique : tant que vous ne créez pas de groupe, les nouvelles pages s’y ajoutent. La création d’un sous-menu le transformera en menu explicite : les nouvelles pages devront alors être ajoutées depuis WordPress."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:379
+msgid "Vous pouvez choisir 60 images maximum. Réduisez votre sélection."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:223
+msgid "Vérification"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-setup.php:302
+msgid "Vérification finale"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:380
+msgid "Vérifiez la liste : numéros valides, 60 images maximum."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:869
+msgid "Vérifiez les propositions avant qu’elles ne soient mises en ligne."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:1194
+msgid "nouvel onglet"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:381
+msgid "À droite"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:382
+msgid "À gauche"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-newsletter-templates.php:14
+msgid "Éditorial — lettre aérée et typographie soignée"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:383
+msgid "Élément"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:388
+msgid "Élément descendu."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:389
+msgid "Élément remonté."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:390
+msgid "Élément retiré."
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-plugin.php:852
+#: includes/class-dendrila-simple-edit-post-editor.php:367
+#: includes/class-dendrila-simple-edit-setup.php:277
+msgid "Événements"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:486
+msgid "— Niveau principal —"
+msgstr ""
+
+#: includes/class-dendrila-simple-edit-navigation.php:475
+msgid "↳ Sous-menu ici"
+msgstr ""
+
+msgid "Citation"
+msgstr ""
+
+msgid "Éléments présentés en liste"
+msgstr ""
+
+msgid "Un texte mis en valeur"
+msgstr ""
+
+msgid "Modifiez les textes ici ; la structure des blocs WordPress sera conservée."
+msgstr ""
+
+msgid "Liste"
 msgstr ""
 
