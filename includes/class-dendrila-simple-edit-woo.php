@@ -483,7 +483,7 @@ final class Dendrila_Simple_Edit_Woo
         $notices = array('published' => 'Produit publié.', 'saved' => 'Produit enregistré.', 'unchanged' => 'Aucun changement nécessaire.',
             'conflict' => 'Produit modifié entre-temps : rechargez cette page.',
             'error' => 'L’enregistrement du produit a échoué.');
-        $notice = isset($_GET['dendrila_simple_edit_pnotice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_pnotice'])) : '';
+        $notice = Dendrila_Simple_Edit_Plugin::screen_key('dendrila_simple_edit_pnotice', '');
         if (is_string($notice) && isset($notices[$notice])) {
             echo '<p role="status">' . esc_html($notices[$notice]) . '</p>';
         }
