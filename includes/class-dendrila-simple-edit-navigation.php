@@ -107,6 +107,15 @@ final class Dendrila_Simple_Edit_Navigation
             'content'=>'', 'modified'=>wp_json_encode($items));
     }
 
+    private static function is_heading($menu, $id)
+    {
+        if ($menu['type'] === 'classic') {
+            return get_post_meta($id, '_dendrila_simple_edit_nav_heading', true) === '1';
+        }
+        return isset($menu['sources'][$id]['attrs']['className']) &&
+            strpos(' ' . $menu['sources'][$id]['attrs']['className'] . ' ', ' ' . self::TITLE_ONLY . ' ') !== false;
+    }
+
     public static function fingerprint($menu)
     {
         return $menu ? hash('sha256', wp_json_encode(array($menu['type'], $menu['target'],
@@ -197,6 +206,7 @@ final class Dendrila_Simple_Edit_Navigation
             }
             $id=(int)$v; $parent=(int)$parents[$i];
             if (!isset($old[$id]) || isset($values[$id]) || $id === $parent ||
+                ($parent && self::is_heading($menu, $id)) ||
                 ($parent && !isset($old[$parent]))) { wp_die('Lien ou parent inconnu.', 'Requête incorrecte', array('response'=>400)); }
             $order[]=$id; $values[$id]=array('parent'=>$parent, 'mobile'=>$mobile[$i]);
         }
@@ -490,7 +500,7 @@ final class Dendrila_Simple_Edit_Navigation
         echo '<ol class="dendrila-simple-edit-nav-sort-list" data-dendrila-simple-edit-nav-sort>';
         foreach ($menu['items'] as $entry) {
             $id=$entry['id']; $parent=$entry['parent'];
-            echo '<li class="dendrila-simple-edit-nav-sort-item'.($parent?' is-child':'').'" data-dendrila-simple-edit-nav-id="'.(int)$id.'">';
+            echo '<li class="dendrila-simple-edit-nav-sort-item'.($parent?' is-child':'').'" data-dendrila-simple-edit-nav-id="'.(int)$id.'"'.(self::is_heading($menu, $id) ? ' data-dendrila-simple-edit-nav-heading="1"' : '').'>';
             echo '<input type="hidden" name="dendrila_simple_edit_nav_ids[]" value="'.(int)$id.'">';
             echo '<span class="dendrila-simple-edit-nav-sort-label">'.esc_html($entry['label']).'</span>';
             echo '<span class="dendrila-simple-edit-nav-group-drop" data-dendrila-simple-edit-nav-group-drop aria-hidden="true">' . esc_html__('↳ Placer en sous-page', 'dendrila-simple-edit') . '</span>';
@@ -503,7 +513,7 @@ final class Dendrila_Simple_Edit_Navigation
             echo '<label>' . esc_html__('Sous-menu de', 'dendrila-simple-edit') . ' <select name="dendrila_simple_edit_nav_parents[]" data-dendrila-simple-edit-nav-parent>';
             echo '<option value="0">' . esc_html__('— Niveau principal —', 'dendrila-simple-edit') . '</option>';
             foreach ($menu['items'] as $candidate) {
-                if ($candidate['id'] === $id) { continue; }
+                if ($candidate['id'] === $id || self::is_heading($menu, $id)) { continue; }
                 echo '<option value="'.(int)$candidate['id'].'"'.selected($candidate['id'], $parent, false).'>'.esc_html($candidate['label']).'</option>';
             }
             echo '</select></label>';
