@@ -12,11 +12,21 @@ function esc_attr($value) { return htmlspecialchars((string)$value, ENT_QUOTES, 
 function wp_strip_all_tags($value) { return strip_tags((string)$value); }
 function parse_blocks($content) {
     $blocks = array();
-    preg_match_all('~<!-- wp:(paragraph|heading)(?: (\\{[^>]+\\}))? -->([\\s\\S]*?)<!-- /wp:\\1 -->~', $content, $matches, PREG_SET_ORDER);
+    preg_match_all('~<!-- wp:(paragraph|heading|list)(?: (\\{[^>]+\\}))? -->([\\s\\S]*?)<!-- /wp:\\1 -->~', $content, $matches, PREG_SET_ORDER);
     foreach ($matches as $match) {
         $attrs = !empty($match[2]) ? json_decode($match[2], true) : array();
+        $inner = $match[3];
+        $children = array();
+        if ($match[1] === 'list' && preg_match_all('~<!-- wp:list-item(?: \\{[^>]+\\})? -->([\\s\\S]*?)<!-- /wp:list-item -->~', $inner, $items)) {
+            foreach ($items[1] as $item) {
+                if (preg_match('~<li(?:\\s+[^>]*)?>[\\s\\S]*?</li>~i', $item, $li)) {
+                    $children[] = array('blockName'=>'core/list-item','attrs'=>array(),'innerBlocks'=>array(),'innerHTML'=>$li[0]);
+                }
+            }
+            $inner = preg_replace('~<!-- wp:list-item(?: \\{[^>]+\\})? -->[\\s\\S]*?<!-- /wp:list-item -->~', '', $inner);
+        }
         $blocks[] = array('blockName' => 'core/' . $match[1], 'attrs' => is_array($attrs) ? $attrs : array(),
-            'innerBlocks' => array(), 'innerHTML' => $match[3]);
+            'innerBlocks' => $children, 'innerHTML' => $inner);
     }
     return $blocks;
 }
@@ -63,6 +73,7 @@ verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($generated_art
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>Ordinary paragraph</p>'), 'Simple HTML remains editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'Simple Gutenberg paragraph is editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2>Intertitre</h2><!-- /wp:heading -->'), 'Simple Gutenberg heading is editable');
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2 class="wp-block-heading">Overview</h2><!-- /wp:heading --><!-- wp:paragraph --><p><b>This is a sample page.</b></p><!-- /wp:paragraph --><!-- wp:list --><ul class="wp-block-list"><!-- wp:list-item --><li>Gift cards</li><!-- /wp:list-item --><!-- wp:list-item --><li>Downloadable software products</li><!-- /wp:list-item --></ul><!-- /wp:list -->'), 'WooCommerce policy page headings, paragraphs and native list items stay editable');
 verify_case(strpos(Dendrila_Simple_Edit_Block_Editor::gutenberg_editor_content('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'data-dendrila-simple-edit-block="text"') !== false, 'Simple Gutenberg paragraph is converted into a visual editor block');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p><strong>Texte riche</strong></p><!-- /wp:paragraph -->'), 'Rich Gutenberg paragraph can be edited without rewriting unchanged markup');
 verify_case(!Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:columns --><div class="wp-block-columns"></div><!-- /wp:columns -->'), 'Complex Gutenberg layout stays protected');
