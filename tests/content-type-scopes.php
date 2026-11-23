@@ -54,6 +54,12 @@ $old = '<div data-dse-block="heading" data-dse-align="center"><h2 data-dse-color
     '<div data-dse-block="button" data-dse-align="center"><a href="https://example.test/" class="dse-newsletter-cta" data-dse-color="green">Découvrir le laboratoire</a></div>' . "\n" .
     '<div data-dse-block="link"><a href="https://example.test/">Retour au laboratoire</a></div>';
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($old), 'Legacy Simple Edit pages with headings, text, buttons and links remain editable');
+$generated_article = '<div data-dse-block="heading"><h2>Une initiative locale fictive</h2></div>' . "\n" .
+    '<div data-dse-block="text"><p>Cette actualité a été créée pour tester l’édition simple d’un article publié.</p></div>' . "\n" .
+    '<div data-dse-block="text"><p>Les participants imaginent une programmation ouverte à toutes et tous.</p></div>' . "\n" .
+    '<div data-dse-block="heading"><h2>Les prochaines étapes</h2></div>' . "\n" .
+    '<div data-dse-block="text"><p data-dse-color="plum">Recueillir les idées, planifier une rencontre et partager les résultats.</p></div>';
+verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($generated_article), 'Previously generated test articles remain editable with their exact legacy markup');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<p>Ordinary paragraph</p>'), 'Simple HTML remains editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:paragraph --><p>Gutenberg</p><!-- /wp:paragraph -->'), 'Simple Gutenberg paragraph is editable');
 verify_case(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor('<!-- wp:heading --><h2>Intertitre</h2><!-- /wp:heading -->'), 'Simple Gutenberg heading is editable');
