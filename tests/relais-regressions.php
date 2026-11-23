@@ -72,6 +72,7 @@ class Dendrila_Simple_Edit_Modules {
 class Dendrila_Simple_Edit_Approvals { public static function required($type) { return false; } }
 class Dendrila_Simple_Edit_Block_Editor {
     public static function is_safe_for_editor($body) { return strpos($body, '<!-- wp:') === false; }
+    public static function gutenberg_editor_content($body) { return $body; }
 }
 class Dendrila_Simple_Edit_Newsletters {
     const TYPE='dendrila_simple_edit';
