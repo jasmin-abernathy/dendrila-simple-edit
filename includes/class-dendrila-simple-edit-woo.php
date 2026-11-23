@@ -488,7 +488,7 @@ final class Dendrila_Simple_Edit_Woo
             echo '<p role="status">' . esc_html($notices[$notice]) . '</p>';
         }
         if ($rights['create']) {
-            echo '<details class="dendrila-simple-edit-product-item"><summary>Ajouter un produit</summary>';
+            echo '<details class="dendrila-simple-edit-product-item dendrila-simple-edit-product-create"><summary><span class="dendrila-simple-edit-product-create-title">Ajouter un produit</span><span class="dendrila-simple-edit-product-create-note">Créer une nouvelle fiche brouillon</span></summary>';
             self::form(null, $rights);
             echo '</details>';
         }
