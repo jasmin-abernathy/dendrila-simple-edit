@@ -19,6 +19,7 @@ final class Dendrila_Simple_Edit_Woo_Mailing
         if (get_option(Dendrila_Simple_Edit_Mailing::DB_OPTION) !== Dendrila_Simple_Edit_Mailing::DB_VERSION ||
             !Dendrila_Simple_Edit_Suppressions::ready()) { return array(); }
         $table = $wpdb->prefix . 'dendrila_simple_edit_ml_lists';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Reads the plugin-owned list table using a bounded prepared query; ownership is checked separately.
         return (array) $wpdb->get_results($wpdb->prepare('SELECT id,name FROM %i ORDER BY name ASC LIMIT 150', $table));
     }
 

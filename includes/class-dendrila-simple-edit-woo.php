@@ -409,6 +409,7 @@ final class Dendrila_Simple_Edit_Woo
                 self::redirect('conflict');
             }
         }
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The nonce is checked above; clean_changes accepts only the authorized product-field schema and sanitizes each field by type.
         $submitted = isset($_POST['dendrila_simple_edit_pfields']) ? wp_unslash($_POST['dendrila_simple_edit_pfields']) : array();
         if (is_array($submitted) && isset($submitted['manage_stock']) && $submitted['manage_stock'] !== '1') {
             unset($submitted['stock_quantity']);
