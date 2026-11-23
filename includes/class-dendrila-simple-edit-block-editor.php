@@ -421,6 +421,12 @@ final class Dendrila_Simple_Edit_Block_Editor
     private static function replace_block_text($source_html, $tag, $text)
     {
         $tag = preg_quote($tag, '~');
+        // Preserve a simple inline emphasis wrapped around the entire paragraph
+        // or heading instead of silently dropping it when the text is edited.
+        if (preg_match('~^(<' . $tag . '(?:\\s+[^>]*)?>)(<(strong|b|em|i)(?:\\s+[^>]*)?>)[\\s\\S]*(</\\3>)(</' . $tag . '>)$~i',
+            trim((string) $source_html), $formatted)) {
+            return $formatted[1] . $formatted[2] . esc_html($text) . $formatted[4] . $formatted[5];
+        }
         if (preg_match('~^(<' . $tag . '(?:\\s+[^>]*)?>)[\\s\\S]*(</' . $tag . '>)$~i', trim((string) $source_html), $parts)) {
             return $parts[1] . esc_html($text) . $parts[2];
         }
