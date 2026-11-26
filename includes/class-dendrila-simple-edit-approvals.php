@@ -126,7 +126,8 @@ final class Dendrila_Simple_Edit_Approvals
         }
         if ($decision === 'approve') {
             if (!in_array($proposal['target_status'], array('draft','publish'), true) ||
-                !Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($proposal['body']) ||
+                !(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($proposal['body']) ||
+                    Dendrila_Simple_Edit_Gutenberg::is_safe_transition($post->post_content, $proposal['body'])) ||
                 !Dendrila_Simple_Edit_Post_Editor::is_layout_safe($post)) {
                 self::redirect('invalid');
             }
