@@ -40,6 +40,7 @@ final class Dendrila_Simple_Edit_Navigation
         foreach ($blocks as $block) {
             if (empty($block['blockName']) || !in_array($block['blockName'],
                 array('core/navigation-link', 'core/navigation-submenu'), true)) { return false; }
+            if (trim($block['innerHTML'] ?? '') !== '') { return false; }
             $kind = $block['blockName'];
             $children = isset($block['innerBlocks']) && is_array($block['innerBlocks']) ? $block['innerBlocks'] : array();
             if (($kind === 'core/navigation-link' && $children) || ($depth === 1 && $children)) { return false; }
@@ -63,19 +64,27 @@ final class Dendrila_Simple_Edit_Navigation
         if (count($navs) === 1) {
             $nav = $navs[0];
             $blocks = parse_blocks($nav->post_content);
+            foreach ($blocks as $block) {
+                if (empty($block['blockName']) && trim($block['innerHTML'] ?? '') !== '') { return false; }
+            }
             $blocks = array_values(array_filter($blocks, static function ($block) { return !empty($block['blockName']); }));
             if (count($blocks) === 1 && $blocks[0]['blockName'] === 'core/page-list') {
-                $pages = get_pages(array('parent'=>0, 'sort_column'=>'menu_order,post_title',
+                if (!empty($blocks[0]['attrs']) || !empty($blocks[0]['innerBlocks'])) { return false; }
+                $pages = get_pages(array('hierarchical'=>true, 'sort_column'=>'menu_order,post_title',
                     'sort_order'=>'ASC', 'post_status'=>'publish'));
                 $items = array();
+                $roots = array();
                 foreach ($pages as $page) {
+                    $parent = (int) ($page->post_parent ?? 0);
+                    if ($parent && !isset($roots[$parent])) { return false; }
+                    if (!$parent) { $roots[(int) $page->ID] = true; }
                     $items[] = array('id'=>(int)$page->ID, 'label'=>$page->post_title,
-                        'parent'=>0, 'mobile'=>'closed');
+                        'parent'=>$parent, 'mobile'=>'closed');
                 }
                 return array('type'=>'page-list', 'target'=>(int)$nav->ID, 'items'=>$items,
                     'content'=>$nav->post_content, 'modified'=>$nav->post_modified_gmt);
             }
-            if ($blocks) {
+            if ($blocks || trim($nav->post_content) === '') {
                 $items = array(); $sources = array();
                 if (self::flatten_blocks($blocks, $items, $sources)) {
                     return array('type'=>'block-links', 'target'=>(int)$nav->ID, 'items'=>$items,
@@ -90,7 +99,7 @@ final class Dendrila_Simple_Edit_Navigation
         $menu_id = isset($locations['primary']) ? (int)$locations['primary'] : (int)reset($locations);
         if (!$menu_id) { return false; }
         $all = wp_get_nav_menu_items($menu_id);
-        if (!$all || is_wp_error($all)) { return false; }
+        if (!is_array($all)) { return false; }
         $items = array(); $prefs = get_option(self::CLASSIC_PREFS, array());
         $ids = array();
         foreach ($all as $item) { $ids[(int)$item->ID] = true; }
@@ -168,6 +177,7 @@ final class Dendrila_Simple_Edit_Navigation
                     if (!$child) { return false; }
                     $child['blockName'] = 'core/navigation-link';
                     $child['innerBlocks'] = array();
+                    $child['innerContent'] = array();
                     $item['innerBlocks'][] = $child;
                     $item['innerContent'][] = null;
                 }
@@ -175,7 +185,8 @@ final class Dendrila_Simple_Edit_Navigation
                 $item['blockName'] = 'core/navigation-link';
                 $item['attrs'] = $attrs;
                 $item['innerBlocks'] = array();
-                // Keep existing link markup; WordPress can render its attributes dynamically.
+                $item['innerContent'] = array();
+                $item['innerHTML'] = '';
             }
             $result[] = $item;
         }
@@ -230,16 +241,16 @@ final class Dendrila_Simple_Edit_Navigation
                 $changed = true;
             }
         }
-        if (!$changed) { self::redirect('unchanged'); }
+        $convert = $menu['type'] === 'page-list' && isset($_POST['dendrila_simple_edit_nav_convert_confirm']) &&
+            wp_unslash($_POST['dendrila_simple_edit_nav_convert_confirm']) === '1';
+        if (!$changed && !$convert) { self::redirect('unchanged'); }
         $has_submenus = false;
         foreach ($values as $entry) { if ($entry['parent']) { $has_submenus=true; break; } }
-        if ($menu['type'] === 'page-list' && $has_submenus &&
-            (!isset($_POST['dendrila_simple_edit_nav_convert_confirm']) ||
-            sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nav_convert_confirm'])) !== '1')) {
+        if ($menu['type'] === 'page-list' && !$convert && ($has_submenus || array_filter(array_column($menu['items'], 'parent')))) {
             wp_die('Confirmez la conversion du menu automatique avant de créer des sous-menus.',
                 'Confirmation nécessaire', array('response'=>400));
         }
-        if ($menu['type'] === 'page-list' && !$has_submenus) {
+        if ($menu['type'] === 'page-list' && !$convert) {
             foreach ($order as $position=>$id) {
                 $updated=wp_update_post(array('ID'=>$id, 'menu_order'=>($position+1)*10), true);
                 if (is_wp_error($updated) || !$updated) { self::redirect('error'); }
@@ -263,6 +274,7 @@ final class Dendrila_Simple_Edit_Navigation
             $sources=isset($menu['sources']) ? $menu['sources'] : array();
             $blocks=self::block_tree($order, $values, $sources);
             if (!$blocks) { self::redirect('error'); }
+            if ($convert && is_wp_error(wp_save_post_revision($post->ID))) { self::redirect('error'); }
             $updated=wp_update_post(array('ID'=>$post->ID,
                 'post_content'=>wp_slash(serialize_blocks($blocks))), true);
             if (is_wp_error($updated) || !$updated) { self::redirect('error'); }
@@ -492,9 +504,9 @@ final class Dendrila_Simple_Edit_Navigation
         }
         echo '<p>' . esc_html__('Glissez la poignée pour réorganiser les liens. Déposez sur « Sous-menu » pour créer un groupe, ou utilisez les boutons et la liste « Parent ». Vous pouvez également choisir si chaque groupe est ouvert ou fermé sur mobile.', 'dendrila-simple-edit') . '</p>';
         if ($menu['type'] === 'page-list') {
-            echo '<p class="description">' . esc_html__('Votre menu est actuellement automatique : tant que vous ne créez pas de groupe, les nouvelles pages s’y ajoutent. La création d’un sous-menu le transformera en menu explicite : les nouvelles pages devront alors être ajoutées depuis WordPress.', 'dendrila-simple-edit') . '</p>';
+            echo '<p class="description">' . esc_html__('Les nouvelles pages apparaissent automatiquement dans ce menu. Pour retirer un lien ou modifier les groupes, cochez la conversion en menu manuel puis enregistrez.', 'dendrila-simple-edit') . '</p>';
         }
-        if (!$menu['items']) { echo '<p>' . esc_html__('Aucun lien à organiser.', 'dendrila-simple-edit') . '</p></section>'; return; }
+        if (!$menu['items']) { echo '<p>' . esc_html__('Aucun lien à organiser.', 'dendrila-simple-edit') . '</p>'; }
         echo '<form class="dendrila-simple-edit-nav-reorder" method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
         echo '<input type="hidden" name="action" value="dendrila_simple_edit_nav_reorder">';
         echo '<input type="hidden" name="dendrila_simple_edit_nav_version" value="'.esc_attr(self::fingerprint($menu)).'">';
@@ -549,7 +561,7 @@ final class Dendrila_Simple_Edit_Navigation
         echo '</ol>';
         echo '<p role="status" class="dendrila-simple-edit-nav-sort-status" data-dendrila-simple-edit-nav-status aria-live="polite"></p>';
         if ($menu['type'] === 'page-list') {
-            echo '<label class="dendrila-simple-edit-nav-convert"><input type="checkbox" name="dendrila_simple_edit_nav_convert_confirm" value="1"> ' . esc_html__('Je confirme la conversion en menu manuel si je crée un sous-menu (les nouvelles pages ne seront plus ajoutées automatiquement).', 'dendrila-simple-edit') . '</label>';
+            echo '<label class="dendrila-simple-edit-nav-convert"><input type="checkbox" name="dendrila_simple_edit_nav_convert_confirm" value="1"> ' . esc_html__('Convertir en menu manuel. Les nouvelles pages ne seront plus ajoutées automatiquement.', 'dendrila-simple-edit') . '</label>';
         }
         echo '<p><button type="submit" class="button button-primary">' . esc_html__('Enregistrer le menu et les sous-menus', 'dendrila-simple-edit') . '</button></p></form>';
         // Buttons on the cards target nonce-checked forms outside the reorder form.
@@ -580,7 +592,7 @@ final class Dendrila_Simple_Edit_Navigation
                     $taken[] = (int)$menu['sources'][$entry['id']]['attrs']['id'];
                 }
             }
-            echo '<h3>'.esc_html__('Ajouter ou retirer des liens', 'dendrila-simple-edit').'</h3>';
+            echo '<h3>'.esc_html__('Ajouter des liens', 'dendrila-simple-edit').'</h3>';
             echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
             wp_nonce_field('dendrila_simple_edit_nav_edit');
             echo '<input type="hidden" name="action" value="dendrila_simple_edit_nav_edit">';

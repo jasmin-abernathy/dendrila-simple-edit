@@ -88,3 +88,26 @@ function fixture(reducedMotion, clipboardMode) {
     }
     console.log('OK: full admin script, newsletter focus, reduced motion, translated clipboard feedback, fallback cleanup and scoped permissions');
 }()).catch(error => { console.error(error); process.exitCode = 1; });
+
+// A card button is nested visually in the reorder form but its HTML form owner
+// is the separate removal form. It must never become a reorder submit button.
+{
+    const foreign = {form: {}, closest() { return form; }};
+    const form = {
+        children: [],
+        querySelector(selector) {
+            if (selector === 'input[name="action"]') return {value: 'dendrila_simple_edit_nav_reorder'};
+            return selector.startsWith('input:not') ? {} : null;
+        },
+        querySelectorAll(selector) { return selector.startsWith('input:not') ? [{},{},{},{}] : [foreign]; }
+    };
+    const document = {
+        readyState: 'loading', addEventListener() {},
+        querySelectorAll() { return [form]; },
+        createElement() { throw new Error('A removal button was copied into the reorder form'); }
+    };
+    const source = script.replace('function initTopFormActions() {', 'window.testTopActions = function initTopFormActions() {');
+    const window = {};
+    vm.runInNewContext(source, {window, document});
+    window.testTopActions();
+}

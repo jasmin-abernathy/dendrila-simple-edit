@@ -25,10 +25,10 @@ $source = <<<'HTML'
 <!-- /wp:group -->
 HTML;
 $blocks=Dendrila_Simple_Edit_Gutenberg::editable_blocks($source);
-verify(count($blocks)===2,'Plain Gutenberg text eligible; formatted and Woo blocks protected');
+verify(count($blocks)===5,'Plain and formatted text eligible; Woo blocks protected');
 verify(Dendrila_Simple_Edit_Gutenberg::supports($source),'Existing Gutenberg content recognized');
 $updated=Dendrila_Simple_Edit_Gutenberg::apply_edits($source,array(
-    'Bonjour & bienvenue','Un nouveau titre'));
+    'Bonjour & bienvenue','Un nouveau titre','Paragraphe ','en gras',' à préserver.'));
 verify(is_string($updated),'Gutenberg edit accepted');
 verify(strpos($updated,'<p>Bonjour &amp; bienvenue</p>')!==false,'HTML escaped');
 verify(strpos($updated,'<h2 class="wp-block-heading">Un nouveau titre</h2>')!==false,'Wrapper retained');
@@ -39,8 +39,30 @@ verify(!Dendrila_Simple_Edit_Gutenberg::is_safe_transition($source,str_replace('
 verify(Dendrila_Simple_Edit_Gutenberg::apply_edits($source,array(0=>'missing another'))===false,'Missing value rejected');
 verify(Dendrila_Simple_Edit_Gutenberg::apply_edits($source,array(0=>'a',1=>array('b')))===false,'Array injection rejected');
 verify(Dendrila_Simple_Edit_Gutenberg::apply_edits($source,array(0=>'a',1=>'b',2=>'x'))===false,'Extra value rejected');
-verify(Dendrila_Simple_Edit_Gutenberg::apply_edits($source,array('Bonjour tout le monde !','Titre original'))===$source,'Unchanged bytes retained');
+verify(Dendrila_Simple_Edit_Gutenberg::apply_edits($source,array_column($blocks,'text'))===$source,'Unchanged bytes retained');
 verify(!Dendrila_Simple_Edit_Gutenberg::supports('<!-- wp:woocommerce/checkout --><div>Cart</div><!-- /wp:woocommerce/checkout -->'),'Layout-only page protected');
 $listing='<!-- wp:list --><ul class="wp-block-list"><!-- wp:list-item --><li>Premier point</li><!-- /wp:list-item --></ul><!-- /wp:list -->';
 verify(count(Dendrila_Simple_Edit_Gutenberg::editable_blocks($listing))===1,'List-item text supported');
+verify(strpos($updated,'<strong>en gras</strong>')!==false,'Formatted text changed');
+$rich = '<!-- wp:buttons --><!-- wp:button --><div class="wp-block-button"><a href="/a?b=1&amp;c=2"> Lire %20 </a></div><!-- /wp:button --><!-- /wp:buttons -->' .
+    '<!-- wp:image --><figure><img src="/x.jpg"/><figcaption>Une <em>image</em></figcaption></figure><!-- /wp:image -->';
+$texts = array_column(Dendrila_Simple_Edit_Gutenberg::editable_blocks($rich),'text');
+verify($texts === array(' Lire %20 ', 'Une ', 'image'),'Button and formatted caption');
+verify(Dendrila_Simple_Edit_Gutenberg::apply_edits($rich,$texts)===$rich,'Preserve spaces and percent escapes');
+verify(Dendrila_Simple_Edit_Gutenberg::apply_edits($rich,array('[demo]','', 'photo')) ===
+    str_replace(array(' Lire %20 ', 'Une ', '>image<'),array('&#91;demo]', '', '>photo<'),$rich),'Escaping and deleting segments');
+foreach (array('woocommerce/cart','vendor/layout','html','code','query') as $protected) {
+    verify(!Dendrila_Simple_Edit_Gutenberg::supports("<!-- wp:$protected -->".$rich."<!-- /wp:$protected -->"),'Protected subtree');
+}
+$bound = '<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"core/post-meta"}}}} --><p>Bound</p><!-- /wp:paragraph -->';
+verify(!Dendrila_Simple_Edit_Gutenberg::supports($bound),'Bound text protected');
+verify(!Dendrila_Simple_Edit_Gutenberg::is_safe_transition($rich,str_replace('/a?', '/b?', $rich)),'Link target protected');
 echo "OK: Gutenberg simple text edits preserve surrounding blocks and reject manipulation\n";
+foreach (array('[dendrila_privacy_legal_notice]', '[dendrila_privacy_cookies]', '<!-- wp:create-block/ea-blocks {"width":"100%"} /-->',
+    '<!-- wp:woocommerce/cart /-->', '<!-- wp:woocommerce/checkout /-->', '<!-- wp:shortcode -->[woocommerce_my_account]<!-- /wp:shortcode -->') as $dynamic) {
+    verify(Dendrila_Simple_Edit_Gutenberg::uses_block_fields($dynamic), 'Dynamic page can be opened');
+    $result = Dendrila_Simple_Edit_Gutenberg::edit_page($dynamic, array(), 'Bienvenue', 'Merci');
+    verify(strpos($result, $dynamic) !== false && Dendrila_Simple_Edit_Gutenberg::is_safe_transition($dynamic, $result), 'Introduction and closing paragraph survive approval');
+    verify(!Dendrila_Simple_Edit_Gutenberg::is_safe_transition($dynamic, str_replace($dynamic, '[another_plugin]', $result)), 'Original functional content cannot be exchanged');
+    verify(!Dendrila_Simple_Edit_Gutenberg::is_safe_transition($dynamic, str_replace('Bienvenue', '[another_plugin]', $result)), 'New raw shortcode cannot be submitted for approval');
+}

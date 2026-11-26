@@ -902,7 +902,7 @@ final class Dendrila_Simple_Edit_Plugin
         if (!isset($tabs[$tab])) { $tab = 'accueil'; }
 
         echo '<div class="wrap dendrila-simple-edit-wrap"><header class="dendrila-simple-edit-intro">';
-        echo '<div class="dendrila-simple-edit-brand"><img src="' . esc_url(plugins_url('assets/icon-128x128.png', DENDRILA_SIMPLE_EDIT_PLUGIN_FILE)) . '" width="30" height="30" alt="" aria-hidden="true"> Dendrila Simple Edit <span class="dendrila-simple-edit-version">' . esc_html(DENDRILA_SIMPLE_EDIT_VERSION) . '</span></div>';
+        echo '<div class="dendrila-simple-edit-brand"><img src="' . esc_url(plugins_url('assets/admin-brand.png', DENDRILA_SIMPLE_EDIT_PLUGIN_FILE)) . '" width="30" height="30" alt="" aria-hidden="true"> Dendrila Simple Edit <span class="dendrila-simple-edit-version">' . esc_html(DENDRILA_SIMPLE_EDIT_VERSION) . '</span></div>';
         echo '<h1>' . esc_html__('Modifier mon site', 'dendrila-simple-edit') . '</h1></header>';
         self::notices();
         echo '<nav class="dendrila-simple-edit-nav-tabs" aria-label="Rubriques de Modifier mon site">';

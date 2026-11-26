@@ -41,6 +41,7 @@ final class Dendrila_Simple_Edit_Approvals
 
     public static function is_reviewer()
     {
+        if (current_user_can('manage_options')) { return true; }
         foreach (array('page', 'post', 'newsletter', 'product') as $kind) {
             if (self::can_approve($kind)) { return true; }
         }
@@ -79,10 +80,10 @@ final class Dendrila_Simple_Edit_Approvals
     }
 
     /** Store a proposal without altering the published page or article. */
-    public static function submit($post, $title, $body, $target_status = null, $image = null)
+    public static function submit($post, $title, $body, $target_status = null, $image = null, $shortcodes = null)
     {
         if (!$post || !in_array($post->post_type, array('page','post'), true) ||
-            !self::required($post->post_type) || !is_string($title) || !is_string($body)) {
+            (!self::required($post->post_type) && $shortcodes === null) || !is_string($title) || !is_string($body)) {
             return false;
         }
         $status = $target_status === 'publish' ? 'publish' : $post->post_status;
@@ -96,10 +97,20 @@ final class Dendrila_Simple_Edit_Approvals
             'user' => get_current_user_id(),
             'created_at' => current_time('mysql', true),
         );
+        if ($shortcodes !== null) { $proposal['shortcodes'] = $shortcodes; }
         $existing = get_post_meta($post->ID, self::PENDING, true);
         if ($existing === $proposal) { return true; }
         // WordPress unslashes metadata; Gutenberg block JSON needs its escaping preserved.
         return (bool) update_post_meta($post->ID, self::PENDING, wp_slash($proposal));
+    }
+
+    private static function can_review_proposal($post, $proposal)
+    {
+        if (is_array($proposal) && isset($proposal['shortcodes'])) {
+            return current_user_can('manage_options') ||
+                (self::can_approve($post->post_type) && current_user_can('edit_post', $post->ID));
+        }
+        return self::can_approve($post->post_type);
     }
 
     public static function decide()
@@ -110,10 +121,10 @@ final class Dendrila_Simple_Edit_Approvals
         $id = absint(wp_unslash($_POST['dendrila_simple_edit_approval_post']));
         check_admin_referer('dendrila_simple_edit_approve_content_' . $id);
         $post = get_post($id);
-        if (!$post || !self::can_approve($post->post_type)) {
+        $proposal = get_post_meta($id, self::PENDING, true);
+        if (!$post || !self::can_review_proposal($post, $proposal)) {
             wp_die('Validation non autorisée.', 'Accès refusé', array('response' => 403));
         }
-        $proposal = get_post_meta($id, self::PENDING, true);
         if (!is_array($proposal) || !isset($proposal['origin'], $proposal['title'], $proposal['body'], $proposal['target_status']) ||
             !is_string($proposal['origin']) || !hash_equals(
                 Dendrila_Simple_Edit_Post_Editor::fingerprint($post), $proposal['origin'])) {
@@ -125,9 +136,13 @@ final class Dendrila_Simple_Edit_Approvals
             wp_die('Décision invalide.', 'Requête incorrecte', array('response' => 400));
         }
         if ($decision === 'approve') {
+            $source = isset($proposal['shortcodes']) ?
+                Dendrila_Simple_Edit_Gutenberg::replace_shortcodes($post->post_content, $proposal['shortcodes']) : $post->post_content;
+            if ($source === false) { self::redirect('invalid'); }
             if (!in_array($proposal['target_status'], array('draft','publish'), true) ||
-                !(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($proposal['body']) ||
-                    Dendrila_Simple_Edit_Gutenberg::is_safe_transition($post->post_content, $proposal['body'])) ||
+                !(Dendrila_Simple_Edit_Gutenberg::uses_block_fields($post->post_content) ?
+                    Dendrila_Simple_Edit_Gutenberg::is_safe_transition($source, $proposal['body']) :
+                    Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($proposal['body'])) ||
                 !Dendrila_Simple_Edit_Post_Editor::is_layout_safe($post)) {
                 self::redirect('invalid');
             }
@@ -139,10 +154,11 @@ final class Dendrila_Simple_Edit_Approvals
                     self::redirect('invalid');
                 }
             }
-            $done = wp_update_post(array('ID' => $id,
+            $update = array('ID' => $id,
                 'post_title' => wp_slash($proposal['title']),
                 'post_content' => wp_slash($proposal['body']),
-                'post_status' => $proposal['target_status']), true);
+                'post_status' => $proposal['target_status']);
+            $done = Dendrila_Simple_Edit_Gutenberg::uses_block_fields($post->post_content) ? Dendrila_Simple_Edit_Gutenberg::update_post($update) : wp_update_post($update, true);
             if (is_wp_error($done) || !$done) { self::redirect('error'); }
             if ($post->post_type === 'post' && isset($proposal['image']) && is_array($proposal['image'])) {
                 Dendrila_Simple_Edit_Post_Editor::apply_illustration($id, $proposal['image']);
@@ -207,13 +223,22 @@ final class Dendrila_Simple_Edit_Approvals
         echo '<section class="dendrila-simple-edit-card"><h3>Pages et articles en attente</h3>';
         $count = 0;
         foreach ($posts as $post) {
-            if (!self::can_approve($post->post_type)) { continue; }
             $pending = get_post_meta($post->ID, self::PENDING, true);
+            if (!self::can_review_proposal($post, $pending)) { continue; }
             if (!is_array($pending) || !isset($pending['title'], $pending['body'])) { continue; }
             $count++;
             echo '<article class="dendrila-simple-edit-subcard"><h4>' . esc_html($pending['title']) .
                 ' <small>(' . esc_html($post->post_type === 'page' ? 'page' : 'article') . ')</small></h4>';
             echo '<p>Demande déposée le ' . esc_html($pending['created_at'] ?? '') . '</p>';
+            if (isset($pending['shortcodes'])) {
+                $current = Dendrila_Simple_Edit_Gutenberg::shortcode_sources($post->post_content)['fields'];
+                foreach ($pending['shortcodes'] as $index => $value) {
+                    if (isset($current[$index]) && $current[$index]['code'] !== $value) {
+                        echo '<p>Shortcode actuel <code>' . esc_html($current[$index]['code']) . '</code><br>Shortcode proposé <code>' .
+                            esc_html($value) . '</code></p>';
+                    }
+                }
+            }
             echo '<details><summary>Lire le contenu proposé</summary><div class="dendrila-simple-edit-preview">' .
                 wp_kses_post($pending['body']) . '</div></details>';
             echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';

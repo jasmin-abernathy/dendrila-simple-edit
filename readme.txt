@@ -5,7 +5,7 @@ Tags: editor, permissions, newsletter, content, woocommerce
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.0.2
+Stable tag: 0.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ Dendrila Simple Edit provides a restricted editing interface where site owners c
 Features:
 
 * Guided editing by content type (pages, posts and events), with permissions per WordPress role, safe content blocks, image selection and optional approval before publication. Administrators keep their native access.
-* Safe, selective Gutenberg editing: change plain text in supported paragraph, heading and list-item blocks without reserializing the surrounding group, theme or WooCommerce blocks. Inline-rich and unsupported blocks remain untouched.
+* Safe, selective Gutenberg editing: edit text fragments in supported paragraphs, headings, list items, buttons and image captions without reserializing the surrounding group, theme or WooCommerce blocks. Link targets, inline formatting and unsupported blocks are preserved.
 * Role-based permissions with a five-step wizard shown on first installation only (never automatically on update or reactivation), inline mailing-list creation and an optional manual configuration review without erasing contacts or lists.
 * Compact administration settings: enable or disable modules (including newsletters) independently, manage content types and media under Content, and configure per-role permissions in collapsible groups.
 * Select additional active plugins under Permissions > Plugin access for the Simple Editing role. Registered plugin menus, owned custom content, dedicated Settings API forms and plugin permission checks are supported without assigning the administrator role or permanent global capabilities.
@@ -67,7 +67,7 @@ A database migration searches earlier mailing tables and records unsubscribed ad
 Yes. Each module is optional. Checkout opt-in is disabled by default and requires a mailing list and an email transport.
 
 = Can I edit existing Gutenberg pages and posts? =
-Yes, when they contain supported plain-text Paragraph, Heading or List Item blocks. Simple Edit updates only those text nodes and preserves other serialized Gutenberg blocks unchanged, including WooCommerce layouts. Blocks with inline links, rich formatting and unsupported/custom layouts are not yet editable here; they remain intact and can be edited in the native WordPress editor. Delegated permissions, content versions and optional approval still apply.
+Yes. Each field edits one text fragment in a supported paragraph, heading, list item, button or image caption. Formatting and link targets stay in place. Dynamic blocks, bound text and custom layouts remain in the native editor. Delegated permissions, content versions and optional approval still apply.
 
 = Is a Divi layout editable? =
 Not automatically. Unsupported layouts remain protected; administrators can choose safe shortcode placements, while native Divi content may need Divi's original editor.
@@ -79,6 +79,13 @@ No. Simple Edit changes only the navigation structure, not the parent or permali
 The plugin's administration includes an optional link to https://app.lepotager.org/soutenir/. No donation is required to use the extension.
 
 == Changelog ==
+
+= 0.0.4 =
+* Edit Gutenberg and shortcode pages directly from Pages, including pages composed entirely of dynamic blocks.
+
+= 0.0.3 =
+* Edit formatted Gutenberg text, button labels and image captions while preserving layout.
+* Convert an automatic page list explicitly and preserve supported child pages.
 
 = 0.0.2 =
 * Administrator selection of additional active plugins for simple editors, with detected menu labels and immediate revocation.

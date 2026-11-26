@@ -13,10 +13,24 @@ $admin = get_user_by('login', 'menu_admin');
 $editor = get_user_by('login', 'menu_simple');
 gt_assert($admin && $editor, 'Fixture users');
 wp_set_current_user($admin->ID);
+// Read and edit source without invoking the shortcode or serializing other blocks.
+add_shortcode('dse_fixture', static function () { throw new RuntimeException('Shortcode executed by editor'); });
+foreach (array('[dse_fixture]', '<!-- wp:shortcode -->[dse_fixture]<!-- /wp:shortcode -->',
+    '<p>[dse_fixture]</p>') as $sample) {
+    $fields = Dendrila_Simple_Edit_Gutenberg::shortcode_sources($sample);
+    gt_assert(count($fields['fields'])===1 && !$fields['other'], 'Standalone shortcode identified');
+    gt_assert(Dendrila_Simple_Edit_Gutenberg::replace_shortcodes($sample, array('[dse_fixture mode="test"]')) ===
+        str_replace('[dse_fixture]', '[dse_fixture mode="test"]', $sample), 'Shortcode edited in place');
+}
+$sample = '<!-- wp:paragraph --><p>Bienvenue</p><!-- /wp:paragraph --><!-- wp:shortcode -->[dse_fixture]<!-- /wp:shortcode -->';
+gt_assert(Dendrila_Simple_Edit_Gutenberg::shortcode_sources($sample)['other'], 'Mixed page retains its other blocks');
+gt_assert(!Dendrila_Simple_Edit_Gutenberg::shortcode_sources('<code>[dse_fixture]</code> [[dse_fixture]]')['fields'], 'Literal examples excluded');
+gt_assert(false === Dendrila_Simple_Edit_Gutenberg::replace_shortcodes($sample,array('[dse_fixture]<p>extra</p>')), 'Exactly one shortcode required');
+remove_shortcode('dse_fixture');
 $source = '<!-- wp:group {"layout":{"type":"constrained"}} -->' . "\n" .
     '<div class="wp-block-group">' . "\n" .
     '<!-- wp:paragraph --><p>Bienvenue sur le site</p><!-- /wp:paragraph -->' . "\n" .
-    '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading">Nos services</h2><!-- /wp:heading -->' . "\n" .
+    '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><strong>Nos services</strong></h2><!-- /wp:heading -->' . "\n" .
     '<!-- wp:woocommerce/checkout --><div class="checkout-protected">Contenu Woo préservé</div><!-- /wp:woocommerce/checkout -->' . "\n" .
     '</div><!-- /wp:group -->';
 $id = wp_insert_post(array('post_type'=>'page','post_title'=>'Gutenberg test',
@@ -37,10 +51,18 @@ $updated = Dendrila_Simple_Edit_Gutenberg::apply_edits($source,
 gt_assert($updated!==false && strpos($updated,'<div class="checkout-protected">')!==false,
     'Surgical text change');
 wp_set_current_user($editor->ID);
-$done = wp_update_post(array('ID'=>$id,'post_content'=>wp_slash($updated)),true);
+$update = array('ID'=>$id,'post_content'=>wp_slash($updated));
+$done = Dendrila_Simple_Edit_Gutenberg::update_post($update);
 gt_assert(!is_wp_error($done) && $done,'Native write as delegated account');
 $post = get_post($id);
 gt_assert($post->post_content === $updated,'WordPress persists the exact Gutenberg markup');
+gt_assert(in_array($source, wp_list_pluck(wp_get_post_revisions($id),'post_content'), true), 'Original revision available');
+gt_assert(serialize_blocks(parse_blocks($updated)) === serialize_blocks(parse_blocks($post->post_content)), 'Native block structure persisted');
+$rewrite = static function ($data) { $data['post_content'] .= ' changed'; return $data; };
+add_filter('wp_insert_post_data', $rewrite);
+$refused = Dendrila_Simple_Edit_Gutenberg::update_post(array('ID'=>$id,'post_content'=>wp_slash($source)));
+remove_filter('wp_insert_post_data', $rewrite);
+gt_assert(is_wp_error($refused) && get_post($id)->post_content === $updated, 'Filter rewrite aborted before storage');
 wp_set_current_user($admin->ID);
 update_option(Dendrila_Simple_Edit_Approvals::OPTION,array('require_page'=>true),false);
 $proposal = Dendrila_Simple_Edit_Gutenberg::apply_edits($updated,

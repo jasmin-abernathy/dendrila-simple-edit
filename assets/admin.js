@@ -581,7 +581,7 @@
             var submits = Array.prototype.filter.call(
                 form.querySelectorAll('button[type="submit"], input[type="submit"]'),
                 function (button) {
-                    return button.closest('form') === form &&
+                    return button.form === form &&
                         !button.closest('.dendrila-simple-edit-form-actions-top');
                 }
             );
@@ -640,6 +640,16 @@
     }
 
     function init() {
+        document.querySelectorAll('[data-dse-native-editor]').forEach(function (panel) {
+            panel.addEventListener('toggle', function () {
+                var slot = panel.querySelector('[data-editor-url]');
+                if (!panel.open || slot.firstChild) { return; }
+                var frame = document.createElement('iframe');
+                frame.src = slot.dataset.editorUrl;
+                frame.title = slot.dataset.editorTitle;
+                slot.appendChild(frame);
+            });
+        });
         revealSelectedTab();
         initListCreator();
         initBulkRolePermissions();
