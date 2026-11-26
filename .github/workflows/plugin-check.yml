@@ -1,0 +1,42 @@
+name: WordPress Plugin Check (packaged archive)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'includes/**'
+      - 'dendrila-simple-edit.php'
+      - 'readme.txt'
+      - '.github/workflows/plugin-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  plugin-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Assemble the exact installable tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/dendrila-simple-edit
+          cp dendrila-simple-edit.php readme.txt LICENSE.txt dist/dendrila-simple-edit/
+          cp -R includes assets languages dist/dendrila-simple-edit/
+      - name: Official WordPress Plugin Check (report all findings)
+        id: plugin_check
+        continue-on-error: true
+        uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: './dist/dendrila-simple-edit'
+          slug: dendrila-simple-edit
+      - name: Surface audit outcome
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          echo 'Plugin Check outcome: ${{ steps.plugin_check.outcome }}' >> "$GITHUB_STEP_SUMMARY"
+          if [ '${{ steps.plugin_check.outcome }}' != 'success' ]; then
+            echo 'Review the Plugin Check artifact and job annotations; an infrastructure error is not a plugin finding.' >> "$GITHUB_STEP_SUMMARY"
+          fi
