@@ -1027,9 +1027,14 @@ final class Dendrila_Simple_Edit_Mailing
             // Only the permitted lists from self::lists() are rendered below.
             $list_counts = array();
             if ($lists) {
-                $rows = $wpdb->get_results($wpdb->prepare(
-                    'SELECT m.list_id,COUNT(*) AS total FROM %i m JOIN %i c ON c.id=m.contact_id WHERE c.status=%s AND m.status=%s GROUP BY m.list_id',
-                    self::table('members'), self::table('contacts'), 'confirmed', 'confirmed'));
+                $list_ids = array();
+                foreach ($lists as $list) { $list_ids[] = (int) $list->id; }
+                $placeholders = implode(',', array_fill(0, count($list_ids), '%d'));
+                // Limit the aggregate to lists visible to the current editor.
+                $sql = 'SELECT m.list_id,COUNT(*) AS total FROM %i m JOIN %i c ON c.id=m.contact_id ' .
+                    'WHERE c.status=%s AND m.status=%s AND m.list_id IN (' . $placeholders . ') GROUP BY m.list_id';
+                $rows = $wpdb->get_results($wpdb->prepare($sql, array_merge(
+                    array(self::table('members'), self::table('contacts'), 'confirmed', 'confirmed'), $list_ids)));
                 foreach ((array) $rows as $row) {
                     $list_counts[(int) $row->list_id] = (int) $row->total;
                 }
