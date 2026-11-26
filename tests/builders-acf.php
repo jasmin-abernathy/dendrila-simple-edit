@@ -132,4 +132,11 @@ check_it(Dendrila_Simple_Edit_Builders::elementor_shortcode_locations('hidden') 
 check_it(Dendrila_Simple_Edit_Builders::elementor_shortcode_locations('zone_footer') === array(),
     'Different enabled field does not falsely match existing widget');
 check_it($wpdb->query_count === 1, 'Multiple enabled fields reuse the single builder candidate SQL scan');
+$queries_before_locations = $wpdb->query_count;
+$public_locations = Dendrila_Simple_Edit_Plugin::public_locations('zone_intro');
+check_it(is_array($public_locations) && count($public_locations) === 1, 'Public shortcode search returns candidate rows');
+check_it($wpdb->query_count === $queries_before_locations + 1, 'First public shortcode lookup queries database');
+Dendrila_Simple_Edit_Plugin::public_locations('zone_intro');
+check_it($wpdb->query_count === $queries_before_locations + 1, 'Repeat public shortcode search reuses short-lived cache');
+
 echo "OK — ACF mapping, post status, nested types, formatting, Elementor shortcode search\n";
