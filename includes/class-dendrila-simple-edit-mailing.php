@@ -974,6 +974,35 @@ final class Dendrila_Simple_Edit_Mailing
         }
     }
 
+    /**
+     * Confirmed member counts for the caller's mailing-list scope.
+     * No caching: subscriber status is live and cannot be used if stale.
+     * Both queries are fixed SQL literals, never interpolated placeholder lists.
+     */
+    private static function confirmed_list_counts($admin)
+    {
+        global $wpdb;
+        if ($admin) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Prepared read of custom mailing tables; live consent counts cannot be cached.
+            $rows = $wpdb->get_results($wpdb->prepare(
+                'SELECT m.list_id,COUNT(*) AS total FROM %i m INNER JOIN %i c ON c.id=m.contact_id INNER JOIN %i l ON l.id=m.list_id WHERE c.status=%s AND m.status=%s GROUP BY m.list_id',
+                self::table('members'), self::table('contacts'), self::table('lists'),
+                'confirmed', 'confirmed'));
+        } else {
+            // The database enforces ownership before aggregation.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Prepared read scoped to owner and custom mailing tables.
+            $rows = $wpdb->get_results($wpdb->prepare(
+                'SELECT m.list_id,COUNT(*) AS total FROM %i m INNER JOIN %i c ON c.id=m.contact_id INNER JOIN %i l ON l.id=m.list_id WHERE c.status=%s AND m.status=%s AND l.owner_user_id=%d GROUP BY m.list_id',
+                self::table('members'), self::table('contacts'), self::table('lists'),
+                'confirmed', 'confirmed', get_current_user_id()));
+        }
+        $counts = array();
+        foreach ((array) $rows as $row) {
+            $counts[(int) $row->list_id] = (int) $row->total;
+        }
+        return $counts;
+    }
+
     public static function render_admin($section = 'envois')
     {
         $admin = current_user_can('manage_options');
@@ -1040,26 +1069,7 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<h2>Mes listes</h2><a href="#dendrila-simple-edit-add-list" class="button dendrila-simple-edit-list-add-shortcut" ';
             echo 'aria-label="Ajouter une liste" title="Ajouter une liste" data-dendrila-simple-edit-list-open>+</a></div>';
             if (!$lists) { echo '<p>Aucune liste pour le moment. Utilisez « Ajouter une liste » ci-dessous.</p>'; }
-            // Count all visible lists in one query. Each branch uses literal
-            // SQL passed directly to prepare(): no assembled SQL or dynamic IN.
-            $list_counts = array();
-            if ($lists) {
-                if ($admin) {
-                    $count_rows = $wpdb->get_results($wpdb->prepare(
-                        'SELECT m.list_id,COUNT(*) AS total FROM %i m INNER JOIN %i c ON c.id=m.contact_id INNER JOIN %i l ON l.id=m.list_id WHERE c.status=%s AND m.status=%s GROUP BY m.list_id',
-                        self::table('members'), self::table('contacts'), self::table('lists'),
-                        'confirmed', 'confirmed'));
-                } else {
-                    // Never aggregate counts for another editor's lists.
-                    $count_rows = $wpdb->get_results($wpdb->prepare(
-                        'SELECT m.list_id,COUNT(*) AS total FROM %i m INNER JOIN %i c ON c.id=m.contact_id INNER JOIN %i l ON l.id=m.list_id WHERE c.status=%s AND m.status=%s AND l.owner_user_id=%d GROUP BY m.list_id',
-                        self::table('members'), self::table('contacts'), self::table('lists'),
-                        'confirmed', 'confirmed', get_current_user_id()));
-                }
-                foreach ((array) $count_rows as $count_row) {
-                    $list_counts[(int) $count_row->list_id] = (int) $count_row->total;
-                }
-            }
+            $list_counts = $lists ? self::confirmed_list_counts($admin) : array();
             // The administrator assignment choices are identical for every
             // list; avoid running get_users() again inside every list card.
             $assignment_users = $admin && $lists ?
