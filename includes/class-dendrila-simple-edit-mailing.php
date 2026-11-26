@@ -1023,10 +1023,19 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<h2>Mes listes</h2><a href="#dendrila-simple-edit-add-list" class="button dendrila-simple-edit-list-add-shortcut" ';
             echo 'aria-label="Ajouter une liste" title="Ajouter une liste" data-dendrila-simple-edit-list-open>+</a></div>';
             if (!$lists) { echo '<p>Aucune liste pour le moment. Utilisez « Ajouter une liste » ci-dessous.</p>'; }
+            // One indexed aggregate replaces one COUNT query per list (N+1).
+            // Only the permitted lists from self::lists() are rendered below.
+            $list_counts = array();
+            if ($lists) {
+                $rows = $wpdb->get_results($wpdb->prepare(
+                    'SELECT m.list_id,COUNT(*) AS total FROM %i m JOIN %i c ON c.id=m.contact_id WHERE c.status=%s AND m.status=%s GROUP BY m.list_id',
+                    self::table('members'), self::table('contacts'), 'confirmed', 'confirmed'));
+                foreach ((array) $rows as $row) {
+                    $list_counts[(int) $row->list_id] = (int) $row->total;
+                }
+            }
             foreach ($lists as $list) {
-                $count = (int) $wpdb->get_var($wpdb->prepare(
-                    'SELECT COUNT(*) FROM %i m JOIN %i c ON c.id=m.contact_id WHERE m.list_id=%d AND c.status=%s AND m.status=%s',
-                    self::table('members'), self::table('contacts'), $list->id, 'confirmed', 'confirmed'));
+                $count = isset($list_counts[(int)$list->id]) ? $list_counts[(int)$list->id] : 0;
                 echo '<details class="dendrila-simple-edit-subcard dendrila-simple-edit-list-card"><summary><strong>' .
                     esc_html($list->name) . '</strong> · ' . esc_html((string)$count) .
                     ($count === 1 ? ' abonné confirmé' : ' abonnés confirmés') . '</summary>';
