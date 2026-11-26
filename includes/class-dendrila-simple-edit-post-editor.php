@@ -102,7 +102,7 @@ final class Dendrila_Simple_Edit_Post_Editor
         return hash('sha256', $post->ID . '|' . $post->post_title . '|' . $post->post_content . '|' . $post->post_status . '|' . $post->post_modified_gmt);
     }
 
-    private static function can_modify($type = null)
+    public static function can_modify($type = null)
     {
         if (current_user_can('manage_options')) { return true; }
         if (!self::type_enabled($type)) { return false; }

@@ -24,7 +24,7 @@ final class Dendrila_Simple_Edit_Event_Editor
         return function_exists('tribe_update_event') && function_exists('tribe_get_event') && post_type_exists('tribe_events');
     }
 
-    private static function can_modify_events()
+    public static function can_modify_events()
     {
         return current_user_can('manage_options') ||
             (Dendrila_Simple_Edit_Post_Editor::type_enabled('tribe_events') &&

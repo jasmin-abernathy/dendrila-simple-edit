@@ -859,7 +859,17 @@ final class Dendrila_Simple_Edit_Plugin
                 'title' => 'Anciens textes et informations complémentaires',
                 'intro' => 'Réglages avancés des textes partagés et champs complémentaires.'),
         );
-        if (!$is_admin) { unset($tabs['reglages'], $tabs['contenus']); }
+        if (!$is_admin) {
+            unset($tabs['reglages'], $tabs['contenus']);
+            foreach (array('pages' => 'page', 'articles' => 'post') as $key => $type) {
+                if (!Dendrila_Simple_Edit_Post_Editor::can_modify($type) && !Dendrila_Simple_Edit_Post_Editor::can_create_type($type)) {
+                    unset($tabs[$key]);
+                }
+            }
+            if (!Dendrila_Simple_Edit_Event_Editor::available() || !Dendrila_Simple_Edit_Event_Editor::can_modify_events()) {
+                unset($tabs['evenements']);
+            }
+        }
         if (!Dendrila_Simple_Edit_Approvals::is_reviewer()) { unset($tabs['validations']); }
         if (!self::can_edit() && !Dendrila_Simple_Edit_Modules::has_any_grant(null, 'editorial') &&
             Dendrila_Simple_Edit_Approvals::is_reviewer()) {
@@ -868,6 +878,8 @@ final class Dendrila_Simple_Edit_Plugin
         if (!Dendrila_Simple_Edit_Navigation::allowed()) { unset($tabs['menu']); }
         if (!self::module_visible('newsletters')) { unset($tabs['newsletters']); }
         if (!self::module_visible('products')) { unset($tabs['boutique']); }
+
+        if (!isset($tabs[$tab])) { $tab = 'accueil'; }
 
         echo '<div class="wrap dendrila-simple-edit-wrap"><header class="dendrila-simple-edit-intro">';
         echo '<div class="dendrila-simple-edit-brand"><img src="' . esc_url(plugins_url('assets/icon-128x128.png', DENDRILA_SIMPLE_EDIT_PLUGIN_FILE)) . '" width="30" height="30" alt="" aria-hidden="true"> Dendrila Simple Edit <span class="dendrila-simple-edit-version">' . esc_html(DENDRILA_SIMPLE_EDIT_VERSION) . '</span></div>';
