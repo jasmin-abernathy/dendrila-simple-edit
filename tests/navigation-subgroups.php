@@ -31,6 +31,12 @@ function is_wp_error($e) { return false; }
 function check_admin_referer($a) { return true; }
 function wp_unslash($a) { return $a; }
 function sanitize_text_field($s) { return trim(strip_tags($s)); }
+function map_deep($value, $callback) {
+    if (is_array($value)) { return array_map(function ($item) use ($callback) {
+        return map_deep($item, $callback);
+    }, $value); }
+    return call_user_func($callback, $value);
+}
 function sanitize_key($s) { return preg_replace('/[^a-z0-9_\-]/','',strtolower($s)); }
 function esc_attr($s) { return htmlspecialchars($s, ENT_QUOTES); }
 function esc_html($s) { return htmlspecialchars($s, ENT_QUOTES); }
