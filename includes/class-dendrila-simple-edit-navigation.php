@@ -521,17 +521,12 @@ final class Dendrila_Simple_Edit_Navigation
             }
             if ($menu['type'] !== 'page-list') {
                 $form_id = 'dendrila-simple-edit-nav-remove-' . (int) $id;
-                $remove_forms[] = '<form id="' . esc_attr($form_id) . '" method="post" action="' .
-                    esc_url(admin_url('admin-post.php')) . '">' .
-                    wp_nonce_field('dendrila_simple_edit_nav_edit', '_wpnonce', true, false) .
-                    '<input type="hidden" name="action" value="dendrila_simple_edit_nav_edit">' .
-                    '<input type="hidden" name="dendrila_simple_edit_nav_operation" value="remove">' .
-                    '<input type="hidden" name="dendrila_simple_edit_nav_version" value="' . esc_attr(self::fingerprint($menu)) . '">' .
-                    '<input type="hidden" name="dendrila_simple_edit_nav_item" value="' . (int) $id . '"></form>';
+                $remove_forms[] = (int) $id;
                 /* translators: %s: nom du lien de navigation à retirer. */
+                $remove_label = sprintf(__('Retirer %s du menu', 'dendrila-simple-edit'), $entry['label']);
                 echo '<button type="submit" form="' . esc_attr($form_id) . '" class="dendrila-simple-edit-nav-remove" ' .
                     'data-dendrila-simple-edit-nav-remove data-nav-label="' . esc_attr($entry['label']) . '" ' .
-                    'aria-label="' . esc_attr(sprintf(__('Retirer %s du menu', 'dendrila-simple-edit'), $entry['label'])) . '"' .
+                    'aria-label="' . esc_attr($remove_label) . '"' .
                     ($has_children ? ' disabled title="Retirez ou déplacez ses sous-menus avant ce lien"' : '') . '>' .
                     '<span class="dashicons dashicons-trash" aria-hidden="true"></span><span>Retirer</span></button>';
             }
@@ -558,7 +553,16 @@ final class Dendrila_Simple_Edit_Navigation
         }
         echo '<p><button type="submit" class="button button-primary">' . esc_html__('Enregistrer le menu et les sous-menus', 'dendrila-simple-edit') . '</button></p></form>';
         // Buttons on the cards target nonce-checked forms outside the reorder form.
-        foreach ($remove_forms as $remove_form) { echo $remove_form; }
+        foreach ($remove_forms as $remove_id) {
+            $form_id = 'dendrila-simple-edit-nav-remove-' . $remove_id;
+            echo '<form id="' . esc_attr($form_id) . '" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            wp_nonce_field('dendrila_simple_edit_nav_edit');
+            echo '<input type="hidden" name="action" value="dendrila_simple_edit_nav_edit">';
+            echo '<input type="hidden" name="dendrila_simple_edit_nav_operation" value="remove">';
+            echo '<input type="hidden" name="dendrila_simple_edit_nav_version" value="' . esc_attr(self::fingerprint($menu)) . '">';
+            echo '<input type="hidden" name="dendrila_simple_edit_nav_item" value="' . (int) $remove_id . '">';
+            echo '</form>';
+        }
         echo '<details class="dendrila-simple-edit-nav-customization">';
         echo '<summary>' . esc_html__('Personnaliser le menu', 'dendrila-simple-edit') .
             '<span>Ajouter des pages, des liens, des regroupements et régler les préférences</span></summary>';
