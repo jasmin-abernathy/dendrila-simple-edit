@@ -77,7 +77,12 @@ try {
     wp_cache_delete('dse_lab_booking_title','options');
     http_check(get_option('dse_lab_booking_title')==='Native save','Native Settings API sanitizer ran and selected option saved');
     $noNonce=lab_http('/wp-admin/options.php',$simpleCookies,array('option_page'=>'dse_lab_booking_group','action'=>'update','_wpnonce'=>'invalid','dse_lab_booking_title'=>'Forbidden write'));
-    http_check($noNonce['status']===403,'Native Settings API still validates nonce');
+    http_check($noNonce['status']===403 ||
+        ($noNonce['status']===302 && strpos($noNonce['location'],'page=dendrila-simple-edit')!==false),
+        'Invalid Settings API nonce is rejected before saving');
+    wp_cache_delete('dse_lab_booking_title','options');
+    http_check(get_option('dse_lab_booking_title')==='Native save',
+        'Rejected settings nonce cannot overwrite saved option');
     $reportsSave=lab_http('/wp-admin/options.php',$simpleCookies,array('option_page'=>'dse_lab_reports_group','action'=>'update','_wpnonce'=>$pluginNonce,'dse_lab_reports_title'=>'Forbidden write'));
     http_check($reportsSave['status']===302 && strpos($reportsSave['location'],'page=dendrila-simple-edit')!==false,'Unselected native options group is redirected before mutation');
     wp_cache_delete('dse_lab_reports_title','options');
