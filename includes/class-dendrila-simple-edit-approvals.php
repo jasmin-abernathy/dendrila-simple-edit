@@ -98,7 +98,8 @@ final class Dendrila_Simple_Edit_Approvals
         );
         $existing = get_post_meta($post->ID, self::PENDING, true);
         if ($existing === $proposal) { return true; }
-        return (bool) update_post_meta($post->ID, self::PENDING, $proposal);
+        // WordPress unslashes metadata; Gutenberg block JSON needs its escaping preserved.
+        return (bool) update_post_meta($post->ID, self::PENDING, wp_slash($proposal));
     }
 
     public static function decide()
