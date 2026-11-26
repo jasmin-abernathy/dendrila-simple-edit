@@ -6,6 +6,10 @@ final class Dendrila_Simple_Edit_Suppressions
 {
     const OPTION = 'dendrila_simple_edit_ml_suppression_migrated_v1';
 
+    // Cache only successful table-existence probes for this PHP request.
+    // Suppression status and consent are NEVER cached.
+    private static $existing_tables = array();
+
     public static function table()
     {
         global $wpdb;
@@ -20,8 +24,13 @@ final class Dendrila_Simple_Edit_Suppressions
     private static function exists($name)
     {
         global $wpdb;
-        return (string) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',
+        if (isset(self::$existing_tables[$name])) { return true; }
+        // Only a positive probe is memoized. A missing table may be created
+        // later by dbDelta() in the same request and must be checked again.
+        $exists = (string) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',
             $wpdb->esc_like($name))) === $name;
+        if ($exists) { self::$existing_tables[$name] = true; }
+        return $exists;
     }
 
     public static function ready()
