@@ -276,7 +276,7 @@ final class Dendrila_Simple_Edit_Admin_Access
             wp_die(esc_html__('Accès refusé.', 'dendrila-simple-edit'), '', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_plugins');
-        $submitted = isset($_POST['dendrila_simple_edit_plugins']) ? wp_unslash($_POST['dendrila_simple_edit_plugins']) : array();
+        $submitted = isset($_POST['dendrila_simple_edit_plugins']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_plugins']), 'sanitize_text_field') : array();
         $catalog = get_option(self::CATALOG_OPTION, array());
         $active = self::active_plugins(); $selected = array();
         if (!is_array($submitted) || count($submitted) > count($active)) {
