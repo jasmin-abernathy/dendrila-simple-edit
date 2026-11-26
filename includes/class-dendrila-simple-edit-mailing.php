@@ -171,6 +171,12 @@ final class Dendrila_Simple_Edit_Mailing
         return trim(sanitize_textarea_field(wp_unslash($_POST[$key])));
     }
 
+    /** An explicit, checked consent value is required; mere presence is not consent. */
+    private static function explicit_optin($key)
+    {
+        return self::input($key) === '1';
+    }
+
     private static function id($key)
     {
         $raw = self::input($key);
@@ -357,7 +363,7 @@ final class Dendrila_Simple_Edit_Mailing
         self::require_lists('import', $list_id);
         $origin = sanitize_text_field(self::input('origin'));
         $raw = self::input('emails');
-        if (!self::list_exists($list_id) || !isset($_POST['consent_confirmed']) ||
+        if (!self::list_exists($list_id) || !self::explicit_optin('consent_confirmed') ||
             strlen($origin) < 8 || strlen($origin) > 255) { self::redirect('consent_required'); }
         $lines = preg_split('/[\r\n;,]+/', $raw);
         if (count($lines) > 200) { self::redirect('too_many'); }
