@@ -1040,13 +1040,28 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<h2>Mes listes</h2><a href="#dendrila-simple-edit-add-list" class="button dendrila-simple-edit-list-add-shortcut" ';
             echo 'aria-label="Ajouter une liste" title="Ajouter une liste" data-dendrila-simple-edit-list-open>+</a></div>';
             if (!$lists) { echo '<p>Aucune liste pour le moment. Utilisez « Ajouter une liste » ci-dessous.</p>'; }
-            // An individually prepared query preserves the per-list access boundary.
-            // Dynamic SQL placeholder lists are rejected by Plugin Check and
-            // must not be substituted for a fixed, reviewed query.
+            // Count all visible lists in one query. Each branch uses literal
+            // SQL passed directly to prepare(): no assembled SQL or dynamic IN.
+            $list_counts = array();
+            if ($lists) {
+                if ($admin) {
+                    $count_rows = $wpdb->get_results($wpdb->prepare(
+                        'SELECT m.list_id,COUNT(*) AS total FROM %i m INNER JOIN %i c ON c.id=m.contact_id INNER JOIN %i l ON l.id=m.list_id WHERE c.status=%s AND m.status=%s GROUP BY m.list_id',
+                        self::table('members'), self::table('contacts'), self::table('lists'),
+                        'confirmed', 'confirmed'));
+                } else {
+                    // Never aggregate counts for another editor's lists.
+                    $count_rows = $wpdb->get_results($wpdb->prepare(
+                        'SELECT m.list_id,COUNT(*) AS total FROM %i m INNER JOIN %i c ON c.id=m.contact_id INNER JOIN %i l ON l.id=m.list_id WHERE c.status=%s AND m.status=%s AND l.owner_user_id=%d GROUP BY m.list_id',
+                        self::table('members'), self::table('contacts'), self::table('lists'),
+                        'confirmed', 'confirmed', get_current_user_id()));
+                }
+                foreach ((array) $count_rows as $count_row) {
+                    $list_counts[(int) $count_row->list_id] = (int) $count_row->total;
+                }
+            }
             foreach ($lists as $list) {
-                $count = (int) $wpdb->get_var($wpdb->prepare(
-                    'SELECT COUNT(*) FROM %i m JOIN %i c ON c.id=m.contact_id WHERE m.list_id=%d AND c.status=%s AND m.status=%s',
-                    self::table('members'), self::table('contacts'), $list->id, 'confirmed', 'confirmed'));
+                $count = isset($list_counts[(int) $list->id]) ? $list_counts[(int) $list->id] : 0;
                 echo '<details class="dendrila-simple-edit-subcard dendrila-simple-edit-list-card"><summary><strong>' .
                     esc_html($list->name) . '</strong> · ' . esc_html((string)$count) .
                     ($count === 1 ? ' abonné confirmé' : ' abonnés confirmés') . '</summary>';
