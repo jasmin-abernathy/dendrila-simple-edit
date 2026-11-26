@@ -68,9 +68,6 @@ jobs:
           --health-interval=5s
           --health-timeout=3s
           --health-retries=20
-    env:
-      DSE_WP_ROOT: ${{ runner.temp }}/dse-wordpress
-      DSE_TEST_OUTPUT: ${{ runner.temp }}/dse-plugin-access-results
     steps:
       - uses: actions/checkout@v6
         with:
@@ -81,6 +78,11 @@ jobs:
           extensions: mysqli
           tools: wp-cli
           coverage: none
+      - name: Set isolated integration paths
+        shell: bash
+        run: |
+          printf 'DSE_WP_ROOT=%s/dse-wordpress\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'DSE_TEST_OUTPUT=%s/dse-plugin-access-results\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Prepare disposable WordPress
         shell: bash
         run: |
