@@ -18,8 +18,16 @@ final class Dendrila_Simple_Edit_Woo_Mailing
         global $wpdb;
         if (get_option(Dendrila_Simple_Edit_Mailing::DB_OPTION) !== Dendrila_Simple_Edit_Mailing::DB_VERSION ||
             !Dendrila_Simple_Edit_Suppressions::ready()) { return array(); }
+        $key = 'woo_mailing_lists';
+        $cached = wp_cache_get($key, 'dendrila_simple_edit');
+        if (is_array($cached)) { return $cached; }
         $table = $wpdb->prefix . 'dendrila_simple_edit_ml_lists';
-        return (array) $wpdb->get_results($wpdb->prepare('SELECT id,name FROM %i ORDER BY name ASC LIMIT 150', $table));
+        // Custom mailing tables have no WordPress query API; this is a bounded,
+        // prepared and cached read, not an unbounded uncached database scan.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom mailing table requires $wpdb.
+        $lists = (array) $wpdb->get_results($wpdb->prepare('SELECT id,name FROM %i ORDER BY name ASC LIMIT 150', $table));
+        wp_cache_set($key, $lists, 'dendrila_simple_edit', 60);
+        return $lists;
     }
 
     public static function valid_list($id)
