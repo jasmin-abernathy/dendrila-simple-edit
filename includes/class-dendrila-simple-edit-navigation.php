@@ -499,6 +499,7 @@ final class Dendrila_Simple_Edit_Navigation
         echo '<input type="hidden" name="action" value="dendrila_simple_edit_nav_reorder">';
         echo '<input type="hidden" name="dendrila_simple_edit_nav_version" value="'.esc_attr(self::fingerprint($menu)).'">';
         wp_nonce_field('dendrila_simple_edit_nav_reorder');
+        $remove_forms = array();
         echo '<ol class="dendrila-simple-edit-nav-sort-list" data-dendrila-simple-edit-nav-sort>';
         foreach ($menu['items'] as $entry) {
             $id=$entry['id']; $parent=$entry['parent'];
@@ -513,7 +514,30 @@ final class Dendrila_Simple_Edit_Navigation
             echo '<button type="button" class="dendrila-simple-edit-nav-move" data-dendrila-simple-edit-nav-move="down" aria-label="'.esc_attr(sprintf(esc_html__('Descendre : %s', 'dendrila-simple-edit'), $entry['label'])).'">↓</button>';
             /* translators: %s: nom du lien de navigation à déplacer. */
             echo '<button type="button" class="dendrila-simple-edit-nav-drag-handle" data-dendrila-simple-edit-nav-handle aria-label="'.esc_attr(sprintf(esc_html__('Déplacer : %s', 'dendrila-simple-edit'), $entry['label'])).'" aria-keyshortcuts="ArrowUp ArrowDown" title="Maintenir pour déplacer">';
-            echo '<span class="dashicons dashicons-move" aria-hidden="true"></span></button></div>';
+            echo '<span class="dashicons dashicons-move" aria-hidden="true"></span></button>';
+            $has_children = false;
+            foreach ($menu['items'] as $candidate) {
+                if ((int) $candidate['parent'] === (int) $id) { $has_children = true; break; }
+            }
+            if ($menu['type'] !== 'page-list') {
+                $form_id = 'dendrila-simple-edit-nav-remove-' . (int) $id;
+                $remove_forms[] = '<form id="' . esc_attr($form_id) . '" method="post" action="' .
+                    esc_url(admin_url('admin-post.php')) . '">' .
+                    wp_nonce_field('dendrila_simple_edit_nav_edit', '_wpnonce', true, false) .
+                    '<input type="hidden" name="action" value="dendrila_simple_edit_nav_edit">' .
+                    '<input type="hidden" name="dendrila_simple_edit_nav_operation" value="remove">' .
+                    '<input type="hidden" name="dendrila_simple_edit_nav_version" value="' . esc_attr(self::fingerprint($menu)) . '">' .
+                    '<input type="hidden" name="dendrila_simple_edit_nav_item" value="' . (int) $id . '"></form>';
+                /* translators: %s: nom du lien de navigation à retirer. */
+                echo '<button type="submit" form="' . esc_attr($form_id) . '" class="dendrila-simple-edit-nav-remove" ' .
+                    'data-dendrila-simple-edit-nav-remove data-nav-label="' . esc_attr($entry['label']) . '" ' .
+                    'aria-label="' . esc_attr(sprintf(__('Retirer %s du menu', 'dendrila-simple-edit'), $entry['label'])) . '"' .
+                    ($has_children ? ' disabled title="Retirez ou déplacez ses sous-menus avant ce lien"' : '') . '>' .
+                    '<span class="dashicons dashicons-trash" aria-hidden="true"></span><span>Retirer</span></button>';
+            }
+            echo '</div>';
+            echo '<details class="dendrila-simple-edit-nav-options"><summary>' .
+                esc_html__('Options du lien', 'dendrila-simple-edit') . '</summary>';
             echo '<div class="dendrila-simple-edit-nav-advanced">';
             echo '<label>' . esc_html__('Sous-menu de', 'dendrila-simple-edit') . ' <select name="dendrila_simple_edit_nav_parents[]" data-dendrila-simple-edit-nav-parent>';
             echo '<option value="0">' . esc_html__('— Niveau principal —', 'dendrila-simple-edit') . '</option>';
@@ -525,7 +549,7 @@ final class Dendrila_Simple_Edit_Navigation
             echo '<label data-dendrila-simple-edit-nav-mobile-wrap>' . esc_html__('Sur mobile', 'dendrila-simple-edit') . ' <select name="dendrila_simple_edit_nav_mobile[]" data-dendrila-simple-edit-nav-mobile>';
             echo '<option value="closed"'.selected($entry['mobile'], 'closed', false).'>' . esc_html__('Fermé par défaut', 'dendrila-simple-edit') . '</option>';
             echo '<option value="open"'.selected($entry['mobile'], 'open', false).'>' . esc_html__('Ouvert par défaut', 'dendrila-simple-edit') . '</option>';
-            echo '</select></label></div></li>';
+            echo '</select></label></div></details></li>';
         }
         echo '</ol>';
         echo '<p role="status" class="dendrila-simple-edit-nav-sort-status" data-dendrila-simple-edit-nav-status aria-live="polite"></p>';
