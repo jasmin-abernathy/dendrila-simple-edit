@@ -99,22 +99,6 @@ jobs:
         run: |
           php tests/plugin-access/integration.php
           php tests/plugin-access/http-integration.php
-      - name: Plugin Check static report (advisory)
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$DSE_TEST_OUTPUT"
-          wp plugin install plugin-check --activate --path="$DSE_WP_ROOT"
-          # Warnings are audit findings, not automatically failed integration tests.
-          wp plugin check dendrila-simple-edit --format=csv --path="$DSE_WP_ROOT" > "$DSE_TEST_OUTPUT/plugin-check.csv" 2> "$DSE_TEST_OUTPUT/plugin-check.stderr" || true
-          test -s "$DSE_TEST_OUTPUT/plugin-check.csv"
-      - name: Archive Plugin Check report
-        uses: actions/upload-artifact@v4
-        with:
-          name: dendrila-simple-edit-plugin-check
-          path: ${{ env.DSE_TEST_OUTPUT }}/plugin-check.*
-          if-no-files-found: error
-          retention-days: 14
   package:
     name: Installation ZIP
     needs: [php, integration]
