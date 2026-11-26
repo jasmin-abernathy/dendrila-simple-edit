@@ -285,7 +285,7 @@ final class Dendrila_Simple_Edit_Post_Editor
             }
             $submitted = isset($_POST['dendrila_simple_edit_gutenberg_text']) &&
                 is_array($_POST['dendrila_simple_edit_gutenberg_text']) ?
-                wp_unslash($_POST['dendrila_simple_edit_gutenberg_text']) : null;
+                map_deep(wp_unslash($_POST['dendrila_simple_edit_gutenberg_text']), 'sanitize_text_field') : null;
             $clean = Dendrila_Simple_Edit_Gutenberg::apply_edits($post->post_content, $submitted);
             if ($clean === false) {
                 wp_die('Les blocs transmis sont invalides. Aucun contenu n’a été modifié.',
