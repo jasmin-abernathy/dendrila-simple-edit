@@ -1185,8 +1185,22 @@ final class Dendrila_Simple_Edit_Mailing
             $campaigns = array();
         }
         echo '<section class="dendrila-simple-edit-card"><h2>' . esc_html__('Campagnes préparées et envoyées', 'dendrila-simple-edit') . '</h2>';
+        // Batch the per-campaign status counts rather than issuing N queries.
+        $campaign_counts = array();
+        if ($campaigns) {
+            $campaign_ids = array();
+            foreach ((array) $campaigns as $campaign) { $campaign_ids[] = (int) $campaign->id; }
+            $placeholders = implode(',', array_fill(0, count($campaign_ids), '%d'));
+            $sql = 'SELECT campaign_id,status,COUNT(*) AS total FROM %i WHERE campaign_id IN (' .
+                $placeholders . ') GROUP BY campaign_id,status';
+            $rows = $wpdb->get_results($wpdb->prepare($sql, array_merge(
+                array(self::table('queue')), $campaign_ids)));
+            foreach ((array) $rows as $row) {
+                $campaign_counts[(int) $row->campaign_id][] = $row;
+            }
+        }
         foreach ((array) $campaigns as $c) {
-            $counts = $wpdb->get_results($wpdb->prepare('SELECT status,COUNT(*) as total FROM %i WHERE campaign_id=%d GROUP BY status', self::table('queue'), $c->id));
+            $counts = isset($campaign_counts[(int) $c->id]) ? $campaign_counts[(int) $c->id] : array();
             $queue_labels = array(
                 'queued' => 'en attente',
                 'processing' => 'en cours de traitement',
