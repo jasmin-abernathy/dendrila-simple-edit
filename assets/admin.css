@@ -615,3 +615,46 @@
 /* Plugin access: labels and long extension names remain readable on mobile. */
 .dendrila-simple-edit-plugin-access-item{padding:14px 0;border-bottom:1px solid #dce6df;overflow-wrap:anywhere}
 .dendrila-simple-edit-plugin-access-item .description{margin:6px 0 0 28px}
+
+/* Gutenberg text-only edition: complex blocks and theme layout are untouched. */
+.dendrila-simple-edit-wrap .dendrila-simple-edit-gutenberg-text{display:grid;gap:12px;margin:18px 0;padding:16px;min-width:0;border:1px solid #cbdccc;border-radius:12px;background:#f4f9f5}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-gutenberg-text legend{padding:0 8px;color:#24543b;font-size:17px;font-weight:750}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-gutenberg-text>.description{margin:0 0 4px;line-height:1.5}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-gutenberg-text-card{display:grid;gap:8px;min-width:0;padding:13px 14px;border:1px solid #d8e4d9;border-radius:10px;background:#fff}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-gutenberg-text-card label{font-size:14px;color:#255235}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-gutenberg-text-card textarea{width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin:0;line-height:1.5}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-gutenberg-text-card:focus-within{border-color:#408c54;box-shadow:0 0 0 2px rgba(41,114,61,.12)}
+
+/* Navigation: remove links from their own card; customization stays folded below. */
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-item{background:#fff;border-color:#d2e2d6;border-radius:12px;box-shadow:0 1px 3px rgba(24,61,36,.05)}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-label{font-size:15px;color:#25462e}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-remove{display:inline-flex;gap:5px;align-items:center;justify-content:center;min-height:44px;padding:8px 10px;color:#8e302f;background:#fff;border:1px solid #dba7a7;border-radius:8px;cursor:pointer;font-weight:650}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-remove:hover,.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-remove:focus-visible{color:#6b2020;background:#fff0ef;border-color:#bc5a56}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-remove:disabled{opacity:.5;cursor:not-allowed}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-remove:focus-visible{outline:2px solid #245b38;outline-offset:2px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-remove .dashicons{font-size:17px;width:18px;height:18px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-options{flex:1 0 100%;min-width:0;border-top:1px solid #e4ede5;padding-top:7px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-options>summary{cursor:pointer;color:#366148;font-size:13px;font-weight:650;padding:7px 4px;min-height:24px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-options[open]>.dendrila-simple-edit-nav-advanced{margin-top:10px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-options>summary:focus-visible{outline:2px solid #276b39;outline-offset:2px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization{margin-top:24px;border:1px solid #d0dfd1;border-radius:14px;background:#f7faf7;overflow:hidden}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization>summary{display:block;list-style:none;position:relative;cursor:pointer;padding:17px 50px 17px 18px;font-size:17px;font-weight:750;color:#24543b}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization>summary::-webkit-details-marker{display:none}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization>summary::after{content:'+';position:absolute;right:18px;top:calc(50% - 13px);font-size:26px;line-height:26px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization[open]>summary::after{content:'−'}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization>summary span{display:block;font-weight:400;font-size:13px;color:#66756a;line-height:1.5;margin-top:3px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization>summary:focus-visible{outline:3px solid #327647;outline-offset:-3px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization-body{padding:16px 18px 20px;border-top:1px solid #dbe7dc;background:#fff}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization-body>form{display:grid;gap:10px;min-width:0}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization-body>form+form{margin-top:20px;padding-top:20px;border-top:1px solid #dbe7dc}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization-body label{display:grid;gap:5px;min-width:0}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization-body input:not([type="checkbox"]),.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization-body select{width:100%;max-width:100%;box-sizing:border-box;min-height:44px}
+.dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization-body .button{min-height:44px;white-space:normal}
+@media(max-width:600px){
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-label{flex-basis:100%}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-sort-actions{width:100%;justify-content:flex-start}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-remove{margin-left:auto}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-customization-body{padding:14px}
+ .dendrila-simple-edit-wrap .dendrila-simple-edit-gutenberg-text{padding:12px}
+}
