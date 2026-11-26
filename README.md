@@ -1,56 +1,22 @@
-# Dendrila Simple Edit
+# Dendrila Simple Edit pour WordPress
 
-Plugin WordPress autonome pour la modification guidée de contenus, inspiré de la séparation des rôles et des champs déclaratifs de Dendrila CMS.
+Dendrila Simple Edit donne à chaque rôle WordPress un espace de travail pour modifier les contenus qui lui sont confiés. L’administrateur choisit les types de contenus, les modules et les actions autorisées. La version de laboratoire est **0.0.1**, pour WordPress 6.5 ou ultérieur et PHP 7.4 ou ultérieur.
 
-**Version de travail : 0.2.0 — champs reliés et premiers modules délégués.** Pas encore une prise en charge générale de l’édition des pages WordPress.
+## Installation et premier essai
 
-## Installation (environnement de test)
-Copier le répertoire à partir de la racine de ce dépôt dans wp-content/plugins/dendrila-simple-edit/ puis activer l’extension. WordPress 6.5+ et PHP 7.4+ requis.
+1. Sur un site de test, installer le ZIP **dendrila-simple-edit-installation** fourni par le [workflow de vérification](https://github.com/jasmin-abernathy/dendrila-simple-edit/actions/workflows/check.yml). Télécharger l’artefact d’une exécution réussie et en extraire le ZIP installable.
+2. Dans **Extensions → Ajouter une extension → Téléverser**, choisir ce ZIP et activer l’extension. Avant de remplacer une version existante, sauvegarder les fichiers et la base, notamment si des listes de diffusion existent.
+3. Ouvrir **Modifier mon site** et suivre les cinq étapes de configuration. Activer les modules utiles et attribuer les actions aux rôles concernés. Une mise à jour conserve les réglages. L’assistant peut être rouvert depuis les réglages des modules.
+4. Avec un compte de test du rôle choisi, préparer une modification et vérifier le circuit de validation ainsi que le résultat sur le site.
 
-Un nouveau rôle **Responsable du site** est créé à l'activation, sans compte ni attribution automatique. Dans Utilisateurs, un administrateur peut attribuer ce rôle explicitement à un compte qui ne possède pas déjà des privilèges étendus.
+## Parcours disponibles
 
-Dans **Modifier mon site**, l'administrateur coche les informations qu'il souhaite déléguer. Il peut ensuite insérer les raccourcis dans les contenus et modèles compatibles :
+- **Contenus** — édition guidée des pages, articles et événements autorisés, images approuvées et champs ACF compatibles. Les mises en page complexes créées avec un constructeur doivent être vérifiées avec les extensions du site.
+- **Navigation** — organisation du menu principal à la souris, au toucher ou avec les commandes clavier. Une confirmation est demandée avant de convertir une liste automatique de pages en menu manuel.
+- **Boutique** — WooCommerce apporte les produits. Les actions sur leur contenu, leurs variations, le stock et la publication se délèguent séparément. Les commandes et les paiements restent dans WooCommerce.
+- **Newsletters** — préparation et aperçu des campagnes, listes, file d’envoi et désinscription. L’envoi nécessite FluentSMTP actif avec une connexion configurée. Pour essayer le module, utiliser une liste de test.
+- **Champs reliés** — placer par exemple `[dse_text field="phone"]` dans un bloc Code court. Un cache de page peut retarder l’affichage d’une modification.
 
-- [dendrila_simple_edit field="phone"]
-- [dendrila_simple_edit field="hours"]
-- [dendrila_simple_edit field="address"]
-- [dendrila_simple_edit field="presentation"]
+Le [descriptif livré avec l’extension](readme.txt) détaille les prérequis, les données stockées et les limites. Le [bilan de la version 0.0.1](docs/RELEASE-AUDIT-0.0.1.md) et le [protocole pour un site pilote](docs/ESSAI-SITE-LIVE.md) distinguent les contrôles isolés des essais avec les extensions d’un site réel.
 
-Le rôle délégué n’a accès qu’aux champs cochés. Les pages ne sont **pas** inspectées ni modifiées automatiquement. Un champ absent du thème tant que son shortcode n’a pas été placé ne s’affichera nulle part. La modification alimente immédiatement les shortcodes reliés côté WordPress, mais un cache pleine page ou CDN peut retarder sa visibilité publique. Un événement dse_fields_updated permet de raccorder les purges de caches du site.
-
-## Fonctionnalités du premier lot
-- Formulaire lisible sur mobile, sauvegarde explicite, retours d’erreur et libellés accessibles.
-- Création par l’administrateur de 20 zones de contenu personnalisées supplémentaires (titre ou texte multiligne), nommées automatiquement et accessibles par shortcode.
-- Repérage partiel des pages/articles publics contenant les shortcodes, plus diagnostic dédié des widgets Elementor Shortcode sur des pages publiées (sans éditer leur JSON).
-- Photo principale : sélection parmi les pièces jointes image que l’administrateur a explicitement autorisées. Aucun droit général à la médiathèque, aucun téléversement par le rôle délégué.
-- Connexion optionnelle à Advanced Custom Fields : un administrateur peut rechercher les champs existants d’un contenu public puis autoriser un champ de texte, URL ou e-mail précis d’une page, d’un article ou d’un type de contenu public. Le responsable le modifie sans droits natifs d’édition des pages. Les autorisations sont révocables.
-- Rôle dédié et contrôle de permissions côté serveur (incluant les POST directs).
-- Liste blanche des champs. Aucun accès natif aux éditeurs Gutenberg / Divi / Elementor.
-- Échappement public, assainissement des valeurs et stockage dans les options WordPress.
-- Comparaison atomique de version, historique des 15 versions précédentes et restauration strictement limitée aux champs encore autorisés.
-- Aucun compte créé, aucune connexion externe, aucun tracking.
-
-## Modules délégués (en développement)
-
-Une configuration administrateur distincte permet d'activer individuellement les modules Newsletters et WooCommerce et d'attribuer des actions précises à chaque Responsable du site. Aucune capacité native WooCommerce, MailPoet ou WordPress n'est ajoutée au rôle.
-
-Le premier parcours newsletters produit des brouillons éditoriaux privés, prévisualisables et soumis à validation, **sans accès aux abonnés ni expédition**. Le module WooCommerce utilise l'API CRUD pour créer des produits simples non publiés et modifier les champs explicitement accordés ; l'édition des produits déjà publiés demande une autorisation supplémentaire. Ni publication de produits, ni variation, ni commandes, ni données de paiement ne sont accessibles depuis ces modules. Ce ne sont pas des campagnes MailPoet. L'intégration officielle avec un fournisseur d'envoi reste à développer.
-
-La matrice des droits, les limitations et les phases WooCommerce figurent dans [la feuille de route des modules](docs/MODULES-DELEGUES.md).
-
-## Limites et travaux suivants
-C’est le premier adaptateur **champs globaux reliés**. Les zones Gutenberg sélectionnables, l'aperçu réel, les médias, le workflow de validation et les adaptateurs Divi/Elementor viendront ensuite. Les shortcodes doivent être ajoutés par un administrateur. Les champs cachés à l'éditeur peuvent rester affichés publiquement lorsque le shortcode correspondant est déjà utilisé.
-
-Voir [le plan](docs/PLAN.md) et [l'architecture](docs/ARCHITECTURE.md). Ne pas installer directement en production sans essai complet du site concerné.
-
-## Essai sur un site actif
-
-Un essai de production limité est possible uniquement avec une sauvegarde des fichiers et de la base, un compte de test sans privilèges et une validation progressive **sans publication initiale**. Le ZIP installable est produit comme artefact par GitHub Actions, après réussite des contrôles. Il ne faut pas installer l'archive ZIP du dépôt lui-même : elle inclut des fichiers de développement et un dossier racine inadapté.
-
-Consulter le [protocole d'essai contrôlé et de retour arrière](docs/ESSAI-SITE-LIVE.md). Le [parcours du site pilote Les 2 Rives](docs/ESSAI-LES-2-RIVES.md) précise les vérifications OVHcloud et Elementor. Le lot 0.2.0 n'est pas un feu vert pour installer les modules sur un site actif sans essais WordPress et WooCommerce isolés. Les essais réels Divi, Elementor, Gutenberg et ACF n'ont pas encore été réalisés sur un site pilote.
-
-## Qualité
-Exécuter php -l sur les fichiers PHP et php tests/smoke.php. Les tests livrés couvrent le contrat des champs et des autorisations avec des doubles de WordPress ; une installation réelle reste nécessaire pour vérifier les formulaires, rôles, caches et rendus.
-
-## Licence
-GPL-2.0-or-later pour ce plugin, entièrement écrit pour WordPress. Aucun code de Dendrila CMS n'a été copié.
+[Présentation du projet](https://dendrila.lepotager.org/projets/simple-edit/) · [Signaler un problème](https://github.com/jasmin-abernathy/dendrila-simple-edit/issues) · [Licence GPL v2 ou ultérieure](LICENSE.txt)

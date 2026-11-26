@@ -530,6 +530,11 @@
         });
     }
 
+    function scrollToEditorField(element, block) {
+        var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        element.scrollIntoView({behavior: reduceMotion ? 'instant' : 'smooth', block: block});
+    }
+
     function initListCreator() {
         Array.prototype.forEach.call(document.querySelectorAll('[data-dendrila-simple-edit-list-open]'), function (link) {
             link.addEventListener('click', function (event) {
@@ -537,7 +542,7 @@
                 if (!details) { return; }
                 event.preventDefault();
                 details.open = true;
-                details.scrollIntoView({behavior: 'smooth', block: 'start'});
+                scrollToEditorField(details, 'start');
                 var field = details.querySelector('[data-dendrila-simple-edit-new-list-name]');
                 if (field) { field.focus({preventScroll: true}); }
             });
@@ -740,7 +745,10 @@ document.addEventListener('click', async function(event) {
                     step.classList.add('is-finished');
                     next.hidden=true;
                     var subject=compose.querySelector('input[name="dendrila_simple_edit_nsubject"]');
-                    if(subject){subject.focus({preventScroll:true});subject.scrollIntoView({behavior:'smooth',block:'center'});}
+                    if (subject) {
+                        subject.focus({preventScroll: true});
+                        scrollToEditorField(subject, 'center');
+                    }
                 });
             }
             function syncColors(){
