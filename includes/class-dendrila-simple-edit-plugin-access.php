@@ -309,8 +309,12 @@ final class Dendrila_Simple_Edit_Plugin_Access
         }
         // options.php reads $_REQUEST. Conflicting GET/cookie values must not
         // make its selected group/action differ from our validated POST request.
-        if ((isset($_REQUEST['option_page']) && $_REQUEST['option_page'] !== $_POST['option_page']) ||
-            (isset($_REQUEST['action']) && $_REQUEST['action'] !== 'update')) { return false; }
+        if ((isset($_REQUEST['option_page']) &&
+                (!is_string($_REQUEST['option_page']) ||
+                    sanitize_text_field(wp_unslash($_REQUEST['option_page'])) !== $group)) ||
+            (isset($_REQUEST['action']) &&
+                (!is_string($_REQUEST['action']) ||
+                    sanitize_text_field(wp_unslash($_REQUEST['action'])) !== 'update'))) { return false; }
         return true;
     }
 
