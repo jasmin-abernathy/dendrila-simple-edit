@@ -255,7 +255,7 @@ final class Dendrila_Simple_Edit_Plugin
             'dendrila-simple-edit',
             array(__CLASS__, 'render'),
             'dashicons-edit-page',
-            25
+            26
         );
     }
 
