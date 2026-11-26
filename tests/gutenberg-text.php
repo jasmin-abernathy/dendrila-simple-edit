@@ -58,3 +58,11 @@ $bound = '<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"core/p
 verify(!Dendrila_Simple_Edit_Gutenberg::supports($bound),'Bound text protected');
 verify(!Dendrila_Simple_Edit_Gutenberg::is_safe_transition($rich,str_replace('/a?', '/b?', $rich)),'Link target protected');
 echo "OK: Gutenberg simple text edits preserve surrounding blocks and reject manipulation\n";
+foreach (array('[dendrila_privacy_legal_notice]', '[dendrila_privacy_cookies]', '<!-- wp:create-block/ea-blocks {"width":"100%"} /-->',
+    '<!-- wp:woocommerce/cart /-->', '<!-- wp:woocommerce/checkout /-->', '<!-- wp:shortcode -->[woocommerce_my_account]<!-- /wp:shortcode -->') as $dynamic) {
+    verify(Dendrila_Simple_Edit_Gutenberg::uses_block_fields($dynamic), 'Dynamic page can be opened');
+    $result = Dendrila_Simple_Edit_Gutenberg::edit_page($dynamic, array(), 'Bienvenue', 'Merci');
+    verify(strpos($result, $dynamic) !== false && Dendrila_Simple_Edit_Gutenberg::is_safe_transition($dynamic, $result), 'Introduction and closing paragraph survive approval');
+    verify(!Dendrila_Simple_Edit_Gutenberg::is_safe_transition($dynamic, str_replace($dynamic, '[another_plugin]', $result)), 'Original functional content cannot be exchanged');
+    verify(!Dendrila_Simple_Edit_Gutenberg::is_safe_transition($dynamic, str_replace('Bienvenue', '[another_plugin]', $result)), 'New raw shortcode cannot be submitted for approval');
+}

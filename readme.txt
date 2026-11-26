@@ -5,7 +5,7 @@ Tags: editor, permissions, newsletter, content, woocommerce
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.0.3
+Stable tag: 0.0.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -79,6 +79,9 @@ No. Simple Edit changes only the navigation structure, not the parent or permali
 The plugin's administration includes an optional link to https://app.lepotager.org/soutenir/. No donation is required to use the extension.
 
 == Changelog ==
+
+= 0.0.4 =
+* Edit Gutenberg and shortcode pages directly from Pages, including pages composed entirely of dynamic blocks.
 
 = 0.0.3 =
 * Edit formatted Gutenberg text, button labels and image captions while preserving layout.

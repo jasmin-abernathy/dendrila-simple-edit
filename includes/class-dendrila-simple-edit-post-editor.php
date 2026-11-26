@@ -80,7 +80,7 @@ final class Dendrila_Simple_Edit_Post_Editor
     private static function compatible($post)
     {
         return $post && (Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($post->post_content) ||
-            Dendrila_Simple_Edit_Gutenberg::supports($post->post_content)) &&
+            Dendrila_Simple_Edit_Gutenberg::uses_block_fields($post->post_content)) &&
             get_post_meta($post->ID, '_elementor_edit_mode', true) !== 'builder' &&
             !get_post_meta($post->ID, '_elementor_data', true) &&
             get_post_meta($post->ID, '_et_pb_use_builder', true) !== 'on';
@@ -279,20 +279,22 @@ final class Dendrila_Simple_Edit_Post_Editor
         }
         if (!hash_equals(self::fingerprint($post), $expected)) { self::redirect('conflict', $id); }
         if ($is_gutenberg_request) {
-            if (!Dendrila_Simple_Edit_Gutenberg::supports($post->post_content)) {
+            if (!Dendrila_Simple_Edit_Gutenberg::uses_block_fields($post->post_content)) {
                 wp_die('Ce contenu ne possède pas de bloc de texte Gutenberg modifiable.',
                     'Format non pris en charge', array('response' => 400));
             }
             $submitted = isset($_POST['dendrila_simple_edit_gutenberg_text']) &&
                 is_array($_POST['dendrila_simple_edit_gutenberg_text']) ?
-                wp_unslash($_POST['dendrila_simple_edit_gutenberg_text']) : null;
-            $clean = Dendrila_Simple_Edit_Gutenberg::apply_edits($post->post_content, $submitted);
+                wp_unslash($_POST['dendrila_simple_edit_gutenberg_text']) : array();
+            $clean = Dendrila_Simple_Edit_Gutenberg::edit_page($post->post_content, $submitted,
+                wp_unslash($_POST['dendrila_simple_edit_before'] ?? ''),
+                wp_unslash($_POST['dendrila_simple_edit_after'] ?? ''));
             if ($clean === false) {
                 wp_die('Les blocs transmis sont invalides. Aucun contenu n’a été modifié.',
                     'Requête incorrecte', array('response' => 400));
             }
         } else {
-            if (has_blocks($post->post_content)) {
+            if (Dendrila_Simple_Edit_Gutenberg::uses_block_fields($post->post_content)) {
                 wp_die('Le contenu Gutenberg doit être enregistré par ses champs de texte.',
                     'Requête incorrecte', array('response' => 400));
             }
@@ -462,16 +464,6 @@ final class Dendrila_Simple_Edit_Post_Editor
         $selected = isset($_GET['dendrila_simple_edit_paged_id']) ? absint($_GET['dendrila_simple_edit_paged_id']) : 0;
         echo '<section class="dendrila-simple-edit-content-list" aria-label="Contenus modifiables">';
         $shown = 0;
-        if ($protected) {
-            echo '<section class="dendrila-simple-edit-card"><h3>Contenus dont la mise en page est protégée</h3>';
-            echo '<p>Ces contenus ne possèdent pas encore de texte modifiable sans risque. Leurs blocs complexes ou leurs constructeurs restent intacts. Les blocs de texte Gutenberg simples sont éditables ci-dessous.</p><ul>';
-            foreach ($protected as $locked) {
-                $edit_url = get_edit_post_link($locked->ID, '');
-                echo '<li>' . esc_html($locked->post_title) . ' — ' . esc_html($locked->post_status) .
-                    ($edit_url ? ' <a href="' . esc_url($edit_url) . '" target="_blank" rel="noopener noreferrer">Modifier dans WordPress</a>' : '') . '</li>';
-            }
-            echo '</ul></section>';
-        }
         foreach ($ids as $id) {
             $post = self::permitted_post($id);
             if (!$post || $post->post_type !== $type || !self::compatible($post)) { continue; }
@@ -481,6 +473,18 @@ final class Dendrila_Simple_Edit_Post_Editor
                 ($selected === $id ? ' open' : '') . '>';
             echo '<summary>' . esc_html($post->post_title) .
                 ($post->post_status === 'draft' ? ' <span class="dendrila-simple-edit-status">(brouillon)</span>' : '') . '</summary>';
+            $block_page = Dendrila_Simple_Edit_Gutenberg::uses_block_fields($post->post_content);
+            if ($block_page && current_user_can('edit_post', $id) &&
+                (current_user_can('manage_options') || !Dendrila_Simple_Edit_Approvals::required($type)) &&
+                use_block_editor_for_post($post)) {
+                $url = get_edit_post_link($id, 'raw');
+                if ($url) {
+                    echo '<details class="dendrila-simple-edit-native" data-dse-native-editor><summary>Éditer les blocs avec Gutenberg</summary>';
+                    echo '<a href="' . esc_url($url) . '">Ouvrir en plein écran</a>';
+                    echo '<div data-editor-url="' . esc_url($url) . '" data-editor-title="' .
+                        esc_attr('Gutenberg — ' . $post->post_title) . '"></div></details>';
+                }
+            }
             if ($post->post_status === 'publish') {
                 echo '<p><a class="dendrila-simple-edit-live-link" href="' . esc_url(get_permalink($post)) . '" target="_blank" rel="noopener noreferrer">Voir sur le site <span class="screen-reader-text">(nouvel onglet)</span></a></p>';
             }
@@ -508,12 +512,15 @@ final class Dendrila_Simple_Edit_Post_Editor
                 echo '</select></div>';
             }
             if ($type === 'post') { self::illustration_form($post); }
-            if (Dendrila_Simple_Edit_Gutenberg::supports($post->post_content)) {
+            if (Dendrila_Simple_Edit_Gutenberg::uses_block_fields($post->post_content)) {
                 echo '<input type="hidden" name="dendrila_simple_edit_gutenberg_mode" value="text">';
                 echo '<fieldset class="dendrila-simple-edit-gutenberg-text"><legend>' .
                     esc_html__('Textes des blocs Gutenberg', 'dendrila-simple-edit') . '</legend>';
-                echo '<p class="description">Chaque champ correspond à un fragment de texte. Les liens, le gras et les sauts de ligne séparent les fragments. Les adresses des liens et la mise en page sont conservées.</p>';
-                foreach (Dendrila_Simple_Edit_Gutenberg::editable_blocks($post->post_content) as $block) {
+                $runs = Dendrila_Simple_Edit_Gutenberg::editable_blocks($post->post_content);
+                if (!$runs) { echo '<p>Le contenu central est fourni par les blocs ou les extensions de cette page. Vous pouvez ajouter du texte avant et après.</p>'; }
+                else { echo '<p class="description">Chaque champ correspond à un fragment de texte. Les liens, le gras et les sauts de ligne séparent les fragments. Les adresses des liens et la mise en page sont conservées.</p>'; }
+                echo '<label>Ajouter un paragraphe avant le contenu<textarea name="dendrila_simple_edit_before" rows="2" maxlength="10000"></textarea></label>';
+                foreach ($runs as $block) {
                     $field_id = 'dendrila-simple-edit-gutenberg-' . $suffix . '-' . $block['id'];
                     $label = $block['kind'] === 'heading' ? 'Titre H' . $block['level'] :
                         array('list-item' => 'Élément de liste', 'paragraph' => 'Paragraphe', 'button' => 'Bouton', 'image' => 'Légende')[$block['kind']];
@@ -523,7 +530,7 @@ final class Dendrila_Simple_Edit_Post_Editor
                         (int) $block['id'] . ']" rows="' . ($block['kind'] === 'heading' ? '2' : '3') . '" maxlength="10000">' .
                         "\n" . esc_textarea($block['text']) . '</textarea></div>';
                 }
-                echo '</fieldset>';
+                echo '<label>Ajouter un paragraphe après le contenu<textarea name="dendrila_simple_edit_after" rows="2" maxlength="10000"></textarea></label></fieldset>';
             } else {
                 echo '<div class="dendrila-simple-edit-block-editor" data-dendrila-simple-edit-block-editor data-allow-title="0">';
                 echo '<label for="dendrila-simple-edit-paged-body-' . esc_attr((string) $suffix) . '">' . esc_html($content_label) . '</label>';
@@ -544,6 +551,16 @@ final class Dendrila_Simple_Edit_Post_Editor
                 echo '</ul></details>';
             }
             echo '</details>';
+        }
+        if ($protected) {
+            echo '<section class="dendrila-simple-edit-card"><h3>Contenus dont la mise en page est protégée</h3>';
+            echo '<p>Ces contenus ne possèdent pas encore de texte modifiable sans risque. Leurs blocs complexes ou leurs constructeurs restent intacts. Les blocs de texte Gutenberg simples sont éditables ci-dessous.</p><ul>';
+            foreach ($protected as $locked) {
+                $edit_url = get_edit_post_link($locked->ID, '');
+                echo '<li>' . esc_html($locked->post_title) . ' — ' . esc_html($locked->post_status) .
+                    ($edit_url ? ' <a href="' . esc_url($edit_url) . '" target="_blank" rel="noopener noreferrer">Modifier dans WordPress</a>' : '') . '</li>';
+            }
+            echo '</ul></section>';
         }
         if (!$shown) { echo '<p class="notice notice-warning">Aucun contenu compatible accessible dans cette rubrique.</p>'; }
         echo '</section>';

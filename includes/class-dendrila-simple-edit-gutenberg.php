@@ -107,6 +107,34 @@ final class Dendrila_Simple_Edit_Gutenberg
         return count(self::editable_blocks($content)) > 0;
     }
 
+    /** WordPress also stores plugin-generated pages as a single classic shortcode. */
+    public static function uses_block_fields($content)
+    {
+        return is_string($content) && (strpos($content, '<!-- wp:') !== false ||
+            preg_match('~^\s*\[[a-zA-Z][\w-]*(?:\s+[^\[\]<>]*)?/?\]\s*$~D', $content));
+    }
+
+    private static function paragraph($text)
+    {
+        return '<!-- wp:paragraph --><p>' .
+            str_replace('[', '&#91;', htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) .
+            '</p><!-- /wp:paragraph -->';
+    }
+
+    public static function edit_page($original, $fields, $before, $after)
+    {
+        foreach (array($before, $after) as $text) {
+            if (!is_string($text) || strlen($text) > self::MAX_TEXT || strpos($text, "\0") !== false ||
+                !preg_match('//u', $text)) { return false; }
+        }
+        $body = self::editable_blocks($original) ? self::apply_edits($original, $fields) :
+            ($fields === array() ? $original : false);
+        if ($body === false) { return false; }
+        $result = ($before === '' ? '' : self::paragraph($before) . "\n\n") . $body .
+            ($after === '' ? '' : "\n\n" . self::paragraph($after));
+        return strlen($result) <= 1000000 ? $result : false;
+    }
+
     /** Return false for invalid submissions; otherwise preserve all non-text bytes. */
     public static function apply_edits($original, $submitted)
     {
@@ -156,6 +184,27 @@ final class Dendrila_Simple_Edit_Gutenberg
 
     /** Verify approved content changes only text nodes of the original leaf blocks. */
     public static function is_safe_transition($original, $proposed)
+    {
+        if (!is_string($original) || !is_string($proposed) || strlen($proposed) > 1000000) { return false; }
+        $variants = array($proposed);
+        $paragraph = '<!-- wp:paragraph --><p>([^<]*)</p><!-- /wp:paragraph -->';
+        foreach (array('~^(' . $paragraph . ')\n\n~', '~\n\n(' . $paragraph . ')$~D') as $pattern) {
+            foreach ($variants as $body) {
+                if (!preg_match($pattern, $body, $match, PREG_OFFSET_CAPTURE)) { continue; }
+                $text = html_entity_decode($match[2][0], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                if (strlen($text) <= self::MAX_TEXT && strpos($text, "\0") === false &&
+                    self::paragraph($text) === $match[1][0]) {
+                    $variants[] = substr_replace($body, '', $match[0][1], strlen($match[0][0]));
+                }
+            }
+        }
+        foreach ($variants as $body) {
+            if ($original === $body || self::text_transition($original, $body)) { return true; }
+        }
+        return false;
+    }
+
+    private static function text_transition($original, $proposed)
     {
         if (!is_string($original) || !is_string($proposed) || strlen($proposed) > 1000000) {
             return false;

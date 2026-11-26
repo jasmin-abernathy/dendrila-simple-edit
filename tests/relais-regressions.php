@@ -36,6 +36,7 @@ function get_post_meta($id, $key, $single = true) {
     if ($key === '_dendrila_simple_edit_created_by_simple_edit') return $id <= 125 ? '1' : '';
     return '';
 }
+function use_block_editor_for_post($post) { return true; }
 function get_edit_post_link($id, $context = '') { return '/wp-admin/post.php?post=' . (int)$id; }
 function esc_html($x) { return htmlspecialchars((string)$x, ENT_QUOTES, 'UTF-8'); }
 function esc_attr($x) { return esc_html($x); }
@@ -137,8 +138,8 @@ dse_assert((bool)array_filter($GLOBALS['dse_queries'],static function($q){return
 $GLOBALS['dse_admin']=true;
 $GLOBALS['dse_types']=array();
 ob_start();Dendrila_Simple_Edit_Post_Editor::render('page');$admin_html=ob_get_clean();
-dse_assert(strpos($admin_html,'Protected Gutenberg')!==false && strpos($admin_html,'Modifier dans WordPress')!==false,'administrator cannot see protected content');
-dse_assert(substr_count($admin_html,'class="dendrila-simple-edit-card dendrila-simple-edit-post-item"')===125,'administrator cannot access all compatible drafts');
+dse_assert(strpos($admin_html,'Protected Gutenberg')!==false && strpos($admin_html,'Éditer les blocs avec Gutenberg')!==false,'administrator cannot see protected content');
+dse_assert(substr_count($admin_html,'class="dendrila-simple-edit-card dendrila-simple-edit-post-item"')===126,'administrator cannot access all compatible drafts');
 $GLOBALS['dse_admin']=false;
 $GLOBALS['dse_newsletters'][2000]=(object)array('ID'=>2000,'post_type'=>'dendrila_simple_edit','post_author'=>7);
 for($i=451;$i<=600;$i++) $GLOBALS['dse_newsletters'][$i+1000]=(object)array('ID'=>$i+1000,'post_type'=>'dendrila_simple_edit','post_author'=>9);

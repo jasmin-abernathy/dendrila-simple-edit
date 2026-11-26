@@ -640,6 +640,16 @@
     }
 
     function init() {
+        document.querySelectorAll('[data-dse-native-editor]').forEach(function (panel) {
+            panel.addEventListener('toggle', function () {
+                var slot = panel.querySelector('[data-editor-url]');
+                if (!panel.open || slot.firstChild) { return; }
+                var frame = document.createElement('iframe');
+                frame.src = slot.dataset.editorUrl;
+                frame.title = slot.dataset.editorTitle;
+                slot.appendChild(frame);
+            });
+        });
         revealSelectedTab();
         initListCreator();
         initBulkRolePermissions();
