@@ -422,6 +422,7 @@ final class Dendrila_Simple_Edit_Post_Editor
                 'L’administrateur choisit les contenus accessibles dans Autorisations.') . '</p></section>';
             return;
         }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $notice = isset($_GET['dendrila_simple_edit_paged_notice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_paged_notice'])) : '';
         $notices = array('saved' => 'Modifications enregistrées.', 'created' => 'Contenu créé et enregistré.',
             'permissions' => 'Autorisations mises à jour.',
@@ -429,6 +430,7 @@ final class Dendrila_Simple_Edit_Post_Editor
             'forbidden' => 'Ce contenu ne peut pas être modifié ici.', 'conflict' => 'Cette page a changé depuis votre ouverture : rechargez-la.',
             'unchanged' => 'Aucun changement.', 'error' => 'Enregistrement impossible.');
         if (isset($notices[$notice])) { echo '<p class="notice notice-info" role="status">' . esc_html($notices[$notice]) . '</p>'; }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $selected = isset($_GET['dendrila_simple_edit_paged_id']) ? absint($_GET['dendrila_simple_edit_paged_id']) : 0;
         echo '<section class="dendrila-simple-edit-content-list" aria-label="Contenus modifiables">';
         $shown = 0;

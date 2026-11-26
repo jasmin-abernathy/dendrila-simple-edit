@@ -169,7 +169,9 @@ final class Dendrila_Simple_Edit_Plugin
         // their own nonces and capability checks. Profile allows password changes.
         if (in_array($pagenow, array('admin-ajax.php', 'admin-post.php',
             'async-upload.php', 'profile.php'), true)) { return; }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         if ($pagenow === 'admin.php' && isset($_GET['page']) &&
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             $_GET['page'] === 'dendrila-simple-edit') { return; }
         if (Dendrila_Simple_Edit_Admin_Access::allows_current_page()) { return; }
         wp_safe_redirect(admin_url('admin.php?page=dendrila-simple-edit'));
@@ -450,6 +452,7 @@ final class Dendrila_Simple_Edit_Plugin
         global $wpdb;
         $old_raw = maybe_serialize($old);
         $new_raw = maybe_serialize($new);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic revision compare-and-swap; invalidates options cache.
         $affected = $wpdb->query($wpdb->prepare(
             "UPDATE {$wpdb->options}
              SET option_value = %s
@@ -565,7 +568,9 @@ final class Dendrila_Simple_Edit_Plugin
     {
         self::require_editor('dendrila_simple_edit_save');
         $expected = self::submitted_revision('dendrila_simple_edit_save');
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- require_editor validates capability and nonce before submitted fields.
         $input = isset($_POST['dendrila_simple_edit_fields']) && is_array($_POST['dendrila_simple_edit_fields']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- require_editor validates capability and nonce before submitted fields.
             wp_unslash($_POST['dendrila_simple_edit_fields']) : array();
         // validate_changes() only permits configured keys and sanitizes every value
         // by its declared type. Sanitizing the whole payload here would erase
@@ -582,8 +587,11 @@ final class Dendrila_Simple_Edit_Plugin
     {
         self::require_editor('dendrila_simple_edit_restore');
         $expected = self::submitted_revision('dendrila_simple_edit_restore');
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- require_editor validates capability and nonce before submitted fields.
         $raw = isset($_POST['dendrila_simple_edit_restore_revision']) &&
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- require_editor validates capability and nonce before submitted fields.
             is_string($_POST['dendrila_simple_edit_restore_revision']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- require_editor validates capability and nonce before submitted fields.
             sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_restore_revision'])) : null;
         if (!is_string($raw) || !ctype_digit($raw)) {
             wp_die('Révision incorrecte.', 'Requête incorrecte', array('response' => 400));
@@ -693,7 +701,9 @@ final class Dendrila_Simple_Edit_Plugin
 
     private static function notices()
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $notice = isset($_GET['dendrila_simple_edit_notice']) && is_string($_GET['dendrila_simple_edit_notice']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_notice'])) : '';
         $messages = array(
             'saved' => array('updated', 'Modifications enregistrées. Vérifiez le site public : un cache peut retarder l’affichage.'),
@@ -739,6 +749,7 @@ final class Dendrila_Simple_Edit_Plugin
         if (is_array($cached)) { return $cached; }
         $needle = '%' . $wpdb->esc_like('[dse_text') . '%';
         $field_needle = '%' . $wpdb->esc_like('field="' . $field . '"') . '%';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded readonly diagnostic with 30-second cache.
         $pages = $wpdb->get_results($wpdb->prepare(
             "SELECT ID, post_title FROM %i
              WHERE post_status = 'publish'
@@ -772,16 +783,23 @@ final class Dendrila_Simple_Edit_Plugin
     /** Simple navigation: each tab is its own URL, so it also works without JavaScript. */
     private static function active_tab()
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $raw = isset($_GET['dendrila_simple_edit_tab']) && is_string($_GET['dendrila_simple_edit_tab']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_tab'])) : '';
         if ($raw === '') {
             // Preserve the right tab after actions performed by older plugin versions.
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             if (isset($_GET['dendrila_simple_edit_nnotice'])) { $raw = 'newsletters'; }
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             elseif (isset($_GET['dendrila_simple_edit_pnotice'])) { $raw = 'boutique'; }
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             elseif (isset($_GET['dendrila_simple_edit_notice']) && is_string($_GET['dendrila_simple_edit_notice']) &&
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
                 in_array(sanitize_key(wp_unslash($_GET['dendrila_simple_edit_notice'])),
                     array('configured', 'field_added', 'media_configured', 'module_configured'), true)) {
                 $raw = 'reglages';
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             } else { $raw = isset($_GET['dendrila_simple_edit_notice']) ? 'pages' : 'accueil'; }
         }
         if (!in_array($raw, array('accueil', 'contenus', 'pages', 'articles', 'evenements', 'menu', 'newsletters', 'boutique', 'historique', 'reglages', 'validations', 'aide'), true)) {
@@ -1063,12 +1081,16 @@ final class Dendrila_Simple_Edit_Plugin
             'plugins' => __('Accès aux plugins', 'dendrila-simple-edit'),
             'validations' => __('Validation', 'dendrila-simple-edit'),
         );
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $section = isset($_GET['dendrila_simple_edit_settings_section']) && is_string($_GET['dendrila_simple_edit_settings_section']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_settings_section'])) : 'general';
         // Preserve old links/bookmarks without keeping redundant settings tabs.
         $legacy_content = array('textes'=>'textes', 'contenus'=>'pages', 'images'=>'images',
             'acf'=>'acf', 'evenements'=>'pages');
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $content_section = isset($_GET['dendrila_simple_edit_content_section']) && is_string($_GET['dendrila_simple_edit_content_section']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_content_section'])) : 'pages';
         if (isset($legacy_content[$section])) {
             $content_section = $legacy_content[$section];
@@ -1131,7 +1153,9 @@ final class Dendrila_Simple_Edit_Plugin
             if ($contact_page) { echo '<p><a class="button" href="' . esc_url(get_edit_post_link($contact_page[0]->ID, '')) . '" target="_blank" rel="noopener noreferrer">Modifier la page Contact (nouvel onglet)</a></p>'; }
             echo '<p class="description">Vérifiez aussi le pied de page et les autres pages : les coordonnées peuvent y être écrites directement et ne pas dépendre des textes partagés.</p>';
             echo '</form>';
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             $created = isset($_GET['dendrila_simple_edit_created']) && is_string($_GET['dendrila_simple_edit_created']) ?
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
                 sanitize_key(wp_unslash($_GET['dendrila_simple_edit_created'])) : '';
             $shared = array_filter($definitions, static function ($key) {
                 return strpos($key, 'zone_') === 0;

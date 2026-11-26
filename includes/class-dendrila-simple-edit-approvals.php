@@ -189,7 +189,9 @@ final class Dendrila_Simple_Edit_Approvals
     public static function render()
     {
         if (!self::is_reviewer()) { return; }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $message = isset($_GET['dendrila_simple_edit_approval_notice']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_approval_notice'])) : '';
         $notices = array('approved' => 'Modification validée et appliquée.',
             'rejected' => 'Demande refusée.', 'conflict' => 'Le contenu a changé : demande à examiner de nouveau.',

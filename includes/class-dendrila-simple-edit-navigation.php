@@ -470,7 +470,9 @@ final class Dendrila_Simple_Edit_Navigation
     public static function render()
     {
         if (!self::allowed()) { wp_die('Accès refusé.', 'Accès refusé', array('response'=>403)); }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $notice=isset($_GET['dendrila_simple_edit_nav_notice']) && is_string($_GET['dendrila_simple_edit_nav_notice']) ?
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             sanitize_key(wp_unslash($_GET['dendrila_simple_edit_nav_notice'])) : '';
         $messages=array('saved'=>__('Le menu et ses sous-menus ont été enregistrés.', 'dendrila-simple-edit'),
             'unchanged'=>__('Aucune modification à enregistrer.', 'dendrila-simple-edit'),

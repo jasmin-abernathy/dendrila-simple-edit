@@ -209,10 +209,13 @@ final class Dendrila_Simple_Edit_Admin_Access
     {
         global $pagenow;
         foreach (array('page', 'post', 'post_type', 'taxonomy', 'revision', 'tag_ID') as $key) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only native routing; core checks nonce in write handler.
             if (isset($_GET[$key]) && !is_string($_GET[$key])) { return false; }
         }
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only route ownership, not a POST mutation.
         if (isset($_POST['post_ID']) && !is_string($_POST['post_ID'])) { return false; }
         if ($pagenow === 'options.php') { return Dendrila_Simple_Edit_Plugin_Access::allows_settings_request(); }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only native routing; core checks nonce in write handler.
         $page = self::request_string($_GET, 'page');
         if ($page !== '') {
             foreach (self::$routes as $routes) {
@@ -230,10 +233,13 @@ final class Dendrila_Simple_Edit_Admin_Access
             return false;
         }
         if (in_array($pagenow, array('edit.php', 'post-new.php'), true)) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only native routing; core checks nonce in write handler.
             return self::owns_type(self::request_string($_GET, 'post_type', 'post'));
         }
         if ($pagenow === 'post.php') {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only native routing; core checks nonce in write handler.
             $get_id = self::request_string($_GET, 'post');
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Read-only route ownership, not a POST mutation.
             $post_id = self::request_string($_POST, 'post_ID');
             if (($get_id !== '' && !ctype_digit($get_id)) || ($post_id !== '' && !ctype_digit($post_id)) ||
                 ($get_id !== '' && $post_id !== '' && $get_id !== $post_id)) { return false; }
@@ -242,6 +248,7 @@ final class Dendrila_Simple_Edit_Admin_Access
             return $post && self::owns_type($post->post_type);
         }
         if ($pagenow === 'revision.php') {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only native routing; core checks nonce in write handler.
             $id = self::request_string($_GET, 'revision');
             if (!ctype_digit($id) || (int) $id < 1) { return false; }
             $revision = get_post((int) $id);
@@ -249,9 +256,11 @@ final class Dendrila_Simple_Edit_Admin_Access
             return $post && self::owns_type($post->post_type);
         }
         if (in_array($pagenow, array('edit-tags.php', 'term.php'), true)) {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only native routing; core checks nonce in write handler.
             $taxonomy = self::request_string($_GET, 'taxonomy');
             $taxonomies = Dendrila_Simple_Edit_Plugin_Access::owned_taxonomies();
             if ($pagenow === 'term.php') {
+                // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only native routing; core checks nonce in write handler.
                 $id = self::request_string($_GET, 'tag_ID');
                 if (!ctype_digit($id) || (int) $id < 1) { return false; }
                 $term = get_term((int) $id);
@@ -271,11 +280,13 @@ final class Dendrila_Simple_Edit_Admin_Access
     public static function maybe_save()
     {
         if (self::request_string($_SERVER, 'REQUEST_METHOD') !== 'POST' ||
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Action detection only; check_admin_referer precedes update_option.
             self::request_string($_POST, 'dendrila_simple_edit_plugins_action') !== 'save') { return; }
         if (self::is_restricted_user() || !current_user_can('manage_options')) {
             wp_die(esc_html__('Accès refusé.', 'dendrila-simple-edit'), '', array('response' => 403));
         }
         check_admin_referer('dendrila_simple_edit_plugins');
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Action detection only; check_admin_referer precedes update_option.
         $submitted = isset($_POST['dendrila_simple_edit_plugins']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_plugins']), 'sanitize_text_field') : array();
         $catalog = get_option(self::CATALOG_OPTION, array());
         $active = self::active_plugins(); $selected = array();
@@ -302,6 +313,7 @@ final class Dendrila_Simple_Edit_Admin_Access
         echo '<section class="dendrila-simple-edit-card"><h2>' . esc_html__('Accès aux plugins', 'dendrila-simple-edit') . '</h2>';
         echo '<p>' . esc_html__('Choisissez les extensions que les comptes « Édition simple » pourront utiliser depuis leur administration, en plus de Simple Edit.', 'dendrila-simple-edit') . '</p>';
         echo '<p class="description">' . esc_html__('L’accès concerne les écrans et les actions du plugin choisi. Les extensions de gestion des utilisateurs, de sauvegarde ou de code peuvent donner des pouvoirs importants sur le site.', 'dendrila-simple-edit') . '</p>';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         if (self::request_string($_GET, 'dendrila_simple_edit_plugins_saved') === '1') {
             echo '<div class="notice notice-success inline" role="status"><p>' . esc_html__('Les accès aux plugins ont été enregistrés.', 'dendrila-simple-edit') . '</p></div>';
         }

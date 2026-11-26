@@ -55,7 +55,9 @@ final class Dendrila_Simple_Edit_Setup
         global $pagenow;
         // Respect the admin-post handler and AJAX requests while activation finishes.
         if (in_array($pagenow, array('admin-post.php', 'admin-ajax.php'), true)) { return; }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         if ($pagenow === 'admin.php' && isset($_GET['page']) &&
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             sanitize_key(wp_unslash($_GET['page'])) === 'dendrila-simple-edit') {
             delete_option(self::REDIRECT_OPTION);
             return;
@@ -83,6 +85,7 @@ final class Dendrila_Simple_Edit_Setup
     public static function notice()
     {
         if (self::completed() || !self::can_configure() ||
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             (isset($_GET['page']) && $_GET['page'] === 'dendrila-simple-edit')) { return; }
         echo '<div class="notice notice-warning"><p>' .
             esc_html__('Dendrila Simple Edit doit être configuré avant utilisation.', 'dendrila-simple-edit') .
@@ -93,6 +96,7 @@ final class Dendrila_Simple_Edit_Setup
     private static function step()
     {
         $saved = (int) get_option(self::STEP_OPTION, 1);
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $requested = isset($_GET['dendrila_simple_edit_setup_step']) ? absint($_GET['dendrila_simple_edit_setup_step']) : $saved;
         return max(1, min(5, min($requested, max(1, $saved))));
     }
@@ -176,11 +180,13 @@ final class Dendrila_Simple_Edit_Setup
                 }
                 global $wpdb;
                 $table = $wpdb->prefix . 'dendrila_simple_edit_ml_lists';
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom-table duplicate check or insert; use current DB state.
                 $existing = (int)$wpdb->get_var($wpdb->prepare(
                     'SELECT id FROM %i WHERE LOWER(name)=LOWER(%s) ORDER BY id ASC LIMIT 1', $table, $new_name));
                 if ($existing) {
                     $list = $existing; // Prefer an existing list to a duplicate.
                 } else {
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom-table duplicate check or insert; use current DB state.
                     $ok = $wpdb->insert($table, array('name'=>$new_name,'owner_user_id'=>0,
                         'created_at'=>current_time('mysql',true)), array('%s','%d','%s'));
                     if (!$ok || !$wpdb->insert_id) { wp_die('Création de la liste impossible.', 'Configuration', array('response'=>500)); }

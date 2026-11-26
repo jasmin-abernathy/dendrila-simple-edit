@@ -164,10 +164,12 @@ final class Dendrila_Simple_Edit_Mailing
 
     private static function input($key)
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Sanitizing reader only; writing callers verify nonce/capability.
         if (!is_string($key) || !isset($_POST[$key]) || !is_string($_POST[$key])) {
             return '';
         }
         // Callers that modify mailing data verify their nonce and capability.
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Sanitizing reader only; writing callers verify nonce/capability.
         return trim(sanitize_textarea_field(wp_unslash($_POST[$key])));
     }
 
@@ -211,6 +213,7 @@ final class Dendrila_Simple_Edit_Mailing
             $cached = function_exists('wp_cache_get') ?
                 wp_cache_get($cache_key, 'dendrila_simple_edit') : false;
             if (is_array($cached)) { return $cached; }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Cached admin catalog; uncached editor ownership is security-sensitive.
             $lists = $wpdb->get_results($wpdb->prepare(
                 'SELECT id,name,owner_user_id FROM %i ORDER BY name ASC', $table));
             if (is_array($lists) && function_exists('wp_cache_set')) {
@@ -221,6 +224,7 @@ final class Dendrila_Simple_Edit_Mailing
         // Assigned lists can be used by send-only accounts without exposing others.
         if (!Dendrila_Simple_Edit_Newsletters::can_send() &&
             !Dendrila_Simple_Edit_Modules::allowed('newsletters', 'manage_lists')) { return array(); }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Cached admin catalog; uncached editor ownership is security-sensitive.
         return $wpdb->get_results($wpdb->prepare(
             'SELECT id,name,owner_user_id FROM %i WHERE owner_user_id=%d ORDER BY name ASC',
             $table, get_current_user_id()));
@@ -231,6 +235,7 @@ final class Dendrila_Simple_Edit_Mailing
         if ($id < 1) { return false; }
         if (current_user_can('manage_options')) { return self::list_exists($id); }
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Permission/existence must be checked against live custom table.
         return (bool)$wpdb->get_var($wpdb->prepare(
             'SELECT id FROM %i WHERE id=%d AND owner_user_id=%d',
             self::table('lists'), $id,get_current_user_id()));
@@ -260,6 +265,7 @@ final class Dendrila_Simple_Edit_Mailing
         $name = sanitize_text_field(self::input('name'));
         if ($name === '' || strlen($name) > 160) { self::redirect('bad_list'); }
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $wpdb->insert(self::table('lists'), array('name' => $name,
             'owner_user_id' => current_user_can('manage_options') ? 0 : get_current_user_id(),
             'created_at' => current_time('mysql', true)), array('%s', '%d', '%s'));
@@ -285,6 +291,7 @@ final class Dendrila_Simple_Edit_Mailing
         }
         if (!self::list_exists($list_id)) { self::redirect('invalid_contact'); }
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $updated = $wpdb->update(self::table('lists'),
             array('owner_user_id'=>(int)$owner),array('id'=>$list_id),array('%d'),array('%d'));
         if ($updated !== false && function_exists('wp_cache_delete')) {
@@ -296,6 +303,7 @@ final class Dendrila_Simple_Edit_Mailing
     private static function list_exists($id)
     {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Permission/existence must be checked against live custom table.
         return $id > 0 && (bool) $wpdb->get_var($wpdb->prepare(
             'SELECT id FROM %i WHERE id=%d', self::table('lists'), $id));
     }
@@ -308,9 +316,11 @@ final class Dendrila_Simple_Edit_Mailing
         if (!Dendrila_Simple_Edit_Suppressions::ready()) { return false; }
         if (!is_email($email)) { return false; }
         if ($verified && Dendrila_Simple_Edit_Suppressions::is_blocked($email)) { return false; }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE email=%s', $table, $email));
         $now = current_time('mysql', true);
         if (!$contact) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->insert($table, array('email' => $email,
                 'status' => $verified ? 'confirmed' : 'pending',
                 'consent_source' => $verified ? $origin : '',
@@ -322,6 +332,7 @@ final class Dendrila_Simple_Edit_Mailing
             // Keep the global unsubscribe active until a new opt-in is confirmed.
             // In particular imports may never change this suppression status.
             if ($verified && $contact->status === 'pending') {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
                 $wpdb->update($table, array('status' => 'confirmed',
                     'consent_source' => $origin, 'consent_at' => $now), array('id' => $cid));
             }
@@ -331,25 +342,30 @@ final class Dendrila_Simple_Edit_Mailing
         // The contact stays globally suppressed until the new link is clicked.
         if ($self_subscribed) {
             $challenge = bin2hex(random_bytes(24));
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->update($table, array('confirm_hash' => hash('sha256', $challenge)),
                 array('id' => $cid));
             set_transient('dendrila_simple_edit_ml_confirmation_' . $cid . '_' . $list_id,
                 hash('sha256', $challenge), 2 * DAY_IN_SECONDS);
         }
         $members = self::table('members');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $membership = $wpdb->get_row($wpdb->prepare(
             'SELECT id,status FROM %i WHERE list_id=%d AND contact_id=%d', $members, $list_id, $cid));
         if (!$membership) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->insert($members, array('list_id' => $list_id, 'contact_id' => $cid,
                 'status' => $verified && $contact && $contact->status === 'unsubscribed' ? 'unsubscribed' :
                     ($verified ? 'confirmed' : 'pending'),
                 'consent_source' => $verified && (!$contact || $contact->status !== 'unsubscribed') ? $origin : '',
                 'consent_at' => $verified && (!$contact || $contact->status !== 'unsubscribed') ? $now : null));
         } elseif ($self_subscribed && $membership->status === 'unsubscribed') {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->update($members, array('status' => 'pending', 'consent_source' => '',
                 'consent_at' => null), array('id' => (int) $membership->id));
         } elseif ($verified && $membership->status === 'pending' &&
             (!$contact || $contact->status !== 'unsubscribed')) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->update($members, array('status' => 'confirmed',
                 'consent_source' => $origin, 'consent_at' => $now),
                 array('id' => (int) $membership->id));
@@ -374,8 +390,10 @@ final class Dendrila_Simple_Edit_Mailing
         foreach ($unique as $email) {
             $sanitized = strtolower(sanitize_email($email));
             if (!is_email($sanitized)) { continue; }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
             $existing = $wpdb->get_row($wpdb->prepare(
                 'SELECT id,status FROM %i WHERE email=%s', self::table('contacts'), $sanitized));
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
             $membership_status = $existing ? $wpdb->get_var($wpdb->prepare(
                 'SELECT status FROM %i WHERE contact_id=%d AND list_id=%d',
                 self::table('members'), (int)$existing->id,$list_id)) : null;
@@ -399,8 +417,10 @@ final class Dendrila_Simple_Edit_Mailing
         $id = self::id('contact_id');
         $table = self::table('contacts');
         $members = self::table('members');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $contact = $id ? $wpdb->get_row($wpdb->prepare(
             'SELECT * FROM %i WHERE id=%d', $table, $id)) : false;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $membership = $contact ? $wpdb->get_row($wpdb->prepare(
             'SELECT * FROM %i WHERE contact_id=%d AND list_id=%d', $members, $id, $list_id)) : false;
         if (!$contact || !$membership || !self::list_exists($list_id)) {
@@ -423,13 +443,16 @@ final class Dendrila_Simple_Edit_Mailing
                 self::redirect('consent_required');
             }
             if (!self::transport_ready()) { self::redirect('smtp_missing'); }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
             if ($wpdb->get_var($wpdb->prepare(
                 'SELECT id FROM %i WHERE email=%s', $table, $email))) {
                 self::redirect('duplicate_email');
             }
             $new_id = self::upsert_contact($email, $list_id, false, '', true);
             if (!$new_id) { self::redirect('error'); }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->update($table, array('display_name'=>$display_name), array('id'=>$new_id));
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
             $new_contact = $wpdb->get_row($wpdb->prepare(
                 'SELECT * FROM %i WHERE id=%d', $table, $new_id));
             $url = self::recipient_url($new_contact, 'confirm', $list_id);
@@ -438,15 +461,19 @@ final class Dendrila_Simple_Edit_Mailing
                 "Cliquez sur ce lien pour accepter de recevoir les messages :\n" . $url .
                 "\nSi vous n'avez rien demandé, ignorez ce message.");
             if (!$accepted) { self::redirect('test_failed'); }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->update($members, array('status'=>'unsubscribed'),
                 array('contact_id'=>$id, 'list_id'=>$list_id));
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
             $other = (int)$wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM %i WHERE contact_id=%d AND status='confirmed'", $members, $id));
             if (!$other) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
                 $wpdb->update($table, array('status'=>'unsubscribed'), array('id'=>$id));
             }
             self::redirect('edit_email_confirmation');
         }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $result = $wpdb->update($table, array('display_name'=>$display_name), array('id'=>$id));
         self::redirect($result !== false ? 'contact_updated' : 'error');
     }
@@ -465,8 +492,10 @@ final class Dendrila_Simple_Edit_Mailing
         $contacts = self::table('contacts');
         $members = self::table('members');
         $invites = self::table('reinvites');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $contact = $cid ? $wpdb->get_row($wpdb->prepare(
             'SELECT * FROM %i WHERE id=%d', $contacts, $cid)) : false;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $member = $contact ? $wpdb->get_row($wpdb->prepare(
             'SELECT * FROM %i WHERE contact_id=%d AND list_id=%d', $members, $cid,$lid)) : false;
         if (!$contact || !$member || !self::list_exists($lid)) {
@@ -482,12 +511,14 @@ final class Dendrila_Simple_Edit_Mailing
             self::redirect('invite_no_permission');
         }
         if (!self::transport_ready()) { self::redirect('smtp_missing'); }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $recent = (int) $wpdb->get_var($wpdb->prepare(
             'SELECT COUNT(*) FROM %i WHERE contact_id=%d AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)', $invites, $cid));
         if ($recent) { self::redirect('invite_rate_limited'); }
         $raw_token = bin2hex(random_bytes(32));
         $created = current_time('mysql', true);
         $expires = gmdate('Y-m-d H:i:s', time() + 7 * DAY_IN_SECONDS);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         if (!$wpdb->insert($invites, array('contact_id'=>$cid,'list_id'=>$lid,
             'token_hash'=>hash('sha256',$raw_token),
             'permission_source'=>$origin, 'created_at'=>$created,
@@ -495,6 +526,7 @@ final class Dendrila_Simple_Edit_Mailing
         $id = (int)$wpdb->insert_id;
         $url = add_query_arg(array('action'=>'dendrila_simple_edit_ml_reconfirm','rid'=>$id,
             'token'=>$raw_token), admin_url('admin-post.php'));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $list_name = (string) $wpdb->get_var($wpdb->prepare(
             'SELECT name FROM %i WHERE id=%d', self::table('lists'), $lid));
         $accepted = wp_mail($contact->email, 'Invitation à renouveler votre abonnement',
@@ -504,6 +536,7 @@ final class Dendrila_Simple_Edit_Mailing
             "\n\nSi vous ne souhaitez pas vous réabonner, ignorez ce message. " .
             "Aucune inscription ne sera effectuée sans votre confirmation.");
         if (!$accepted) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->delete($invites,array('id'=>$id));
             self::redirect('invite_failed');
         }
@@ -520,6 +553,7 @@ final class Dendrila_Simple_Edit_Mailing
         $token = isset($_REQUEST['token']) && is_string($_REQUEST['token']) ?
             sanitize_text_field(wp_unslash($_REQUEST['token'])) : '';
         $table = self::table('reinvites');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $invite = $rid ? $wpdb->get_row($wpdb->prepare(
             'SELECT * FROM %i WHERE id=%d', $table, $rid)) : false;
         if (!$invite || !preg_match('/^[a-f0-9]{64}$/',$token) ||
@@ -529,8 +563,10 @@ final class Dendrila_Simple_Edit_Mailing
             wp_die('Ce lien a expiré ou a déjà été utilisé.', 'Lien invalide',
                 array('response'=>400));
         }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $contact = $wpdb->get_row($wpdb->prepare(
             'SELECT * FROM %i WHERE id=%d', self::table('contacts'), (int)$invite->contact_id));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $member = $wpdb->get_row($wpdb->prepare(
             'SELECT * FROM %i WHERE contact_id=%d AND list_id=%d',
             self::table('members'), (int)$invite->contact_id, (int)$invite->list_id));
@@ -563,6 +599,7 @@ final class Dendrila_Simple_Edit_Mailing
                 'Confirmation nécessaire',array('response'=>400));
         }
         $now = current_time('mysql',true);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $updated = $wpdb->query($wpdb->prepare(
             'UPDATE %i SET confirmed_at=%s WHERE id=%d AND confirmed_at IS NULL AND expires_at > UTC_TIMESTAMP()', $table, $now,$rid));
         if ($updated !== 1) {
@@ -573,10 +610,12 @@ final class Dendrila_Simple_Edit_Mailing
             !Dendrila_Simple_Edit_Suppressions::reconsent($contact->email)) {
             wp_die('Réabonnement bloqué : historique non migré.', 'Réabonnement',array('response'=>503));
         }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $wpdb->update($members,array('status'=>'confirmed',
             'consent_source'=>'Réabonnement volontaire confirmé via lien',
             'consent_at'=>$now),
             array('list_id'=>(int)$invite->list_id,'contact_id'=>(int)$invite->contact_id));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $wpdb->update(self::table('contacts'),array('status'=>'confirmed',
             'consent_source'=>'Réabonnement volontaire confirmé via lien',
             'consent_at'=>$now),array('id'=>(int)$invite->contact_id));
@@ -634,11 +673,13 @@ final class Dendrila_Simple_Edit_Mailing
                 'Accès refusé',array('response'=>403));
         }
         if (!self::list_exists($list_id)) { self::redirect('empty_list'); }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $contacts = $wpdb->get_col($wpdb->prepare('SELECT c.id FROM %i c INNER JOIN %i m ON m.contact_id=c.id WHERE m.list_id=%d AND c.status=%s AND m.status=%s ORDER BY c.id ASC',
             self::table('contacts'), self::table('members'), $list_id, 'confirmed', 'confirmed'));
         if (!$contacts) { self::redirect('empty_list'); }
         $html = Dendrila_Simple_Edit_Block_Editor::document($post->post_content,
             Dendrila_Simple_Edit_Newsletter_Templates::for_post($post));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $ok = $wpdb->insert(self::table('campaigns'), array(
             'newsletter_id' => $post->ID, 'list_id' => $list_id,
             'subject' => $post->post_title, 'html_body' => $html, 'status' => 'prepared',
@@ -646,6 +687,7 @@ final class Dendrila_Simple_Edit_Mailing
         if (!$ok) { self::redirect('error'); }
         $campaign_id = (int) $wpdb->insert_id;
         foreach ($contacts as $cid) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->insert(self::table('queue'), array('campaign_id' => $campaign_id,
                 'contact_id' => (int) $cid, 'status' => 'queued'));
         }
@@ -660,6 +702,7 @@ final class Dendrila_Simple_Edit_Mailing
         global $wpdb;
         $id = self::id('campaign_id');
         $table = self::table('campaigns');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $campaign = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', $table, $id));
         if (!$campaign || !self::can_manage_campaign($campaign)) {
             wp_die('Vous ne pouvez pas lancer cette campagne.', 'Accès refusé', array('response' => 403));
@@ -676,11 +719,13 @@ final class Dendrila_Simple_Edit_Mailing
             $timestamp = $date->getTimestamp();
         }
         $now = current_time('mysql', true);
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $changed = $wpdb->update($table, array('status' => $when === '' ? 'sending' : 'scheduled',
             'started_at' => $now, 'send_at' => gmdate('Y-m-d H:i:s', $timestamp)),
             array('id' => $id, 'status' => $campaign->status));
         if ($changed !== 1) { self::redirect('not_ready'); }
         if (!wp_schedule_single_event($timestamp, self::CRON_HOOK, array($id))) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->update($table, array('status' => 'paused'), array('id' => $id));
             self::redirect('cron_failed');
         }
@@ -693,10 +738,12 @@ final class Dendrila_Simple_Edit_Mailing
         global $wpdb;
         $id = self::id('campaign_id');
         $table = self::table('campaigns');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $campaign = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', $table, $id));
         if (!self::can_manage_campaign($campaign)) {
             wp_die('Vous ne pouvez pas suspendre cette campagne.', 'Accès refusé', array('response' => 403));
         }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $wpdb->query($wpdb->prepare("UPDATE %i SET status='paused' WHERE id=%d AND status IN ('sending','scheduled')", $table, $id));
         self::redirect('paused');
     }
@@ -722,12 +769,16 @@ final class Dendrila_Simple_Edit_Mailing
     private static function contact_from_token($action)
     {
         global $wpdb;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public signed HMAC link, verified before action; no WP session nonce.
         $raw_cid = isset($_REQUEST['cid']) ? sanitize_text_field(wp_unslash($_REQUEST['cid'])) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public signed HMAC link, verified before action; no WP session nonce.
         $raw_lid = isset($_REQUEST['lid']) ? sanitize_text_field(wp_unslash($_REQUEST['lid'])) : '';
         $cid = ctype_digit((string) $raw_cid) ? (int) $raw_cid : 0;
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Public signed HMAC link, verified before action; no WP session nonce.
         $token = isset($_REQUEST['token']) ? sanitize_text_field(wp_unslash($_REQUEST['token'])) : '';
         $lid = ctype_digit((string) $raw_lid) ? (int) $raw_lid : 0;
         if (!$cid || !preg_match('/^[a-f0-9]{64}$/', $token) || ($action === 'confirm' && !$lid)) { return false; }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Signed contact link requires current contact record.
         $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', self::table('contacts'), $cid));
         if (!$contact || ($action === 'confirm' &&
             !get_transient('dendrila_simple_edit_ml_confirmation_' . (int) $cid . '_' . (int) $lid)) ||
@@ -754,7 +805,9 @@ final class Dendrila_Simple_Edit_Mailing
         if (!Dendrila_Simple_Edit_Suppressions::record($contact->email, 'désinscription e-mail')) {
             wp_die('Désinscription non enregistrée. Contactez le gestionnaire du site.', 'Erreur',array('response'=>503));
         }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $wpdb->update(self::table('contacts'), array('status' => 'unsubscribed'), array('id' => (int) $contact->id));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $wpdb->update(self::table('members'), array('status' => 'unsubscribed'), array('contact_id' => (int) $contact->id));
         wp_die('Votre désinscription a bien été enregistrée.', 'Désinscription', array('response' => 200));
     }
@@ -767,6 +820,7 @@ final class Dendrila_Simple_Edit_Mailing
         }
         global $wpdb;
         $members = self::table('members');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $status = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE contact_id=%d AND list_id=%d', $members, $contact->id, $contact->requested_list));
         if ($status !== 'pending') {
             wp_die('Lien déjà utilisé ou invalide.', 'Confirmation', array('response' => 400));
@@ -776,9 +830,11 @@ final class Dendrila_Simple_Edit_Mailing
             !Dendrila_Simple_Edit_Suppressions::reconsent($contact->email)) {
             wp_die('Migration des désinscriptions incomplète.', 'Inscription indisponible', array('response'=>503));
         }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $wpdb->update($members, array('status' => 'confirmed',
             'consent_source' => 'Formulaire avec double confirmation', 'consent_at' => $now),
             array('contact_id' => (int) $contact->id, 'list_id' => (int) $contact->requested_list));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $wpdb->update(self::table('contacts'), array('status' => 'confirmed',
             'consent_source' => 'Formulaire avec double confirmation', 'consent_at' => $now),
             array('id' => (int) $contact->id));
@@ -821,7 +877,9 @@ final class Dendrila_Simple_Edit_Mailing
             $cid = self::upsert_contact($email, $list_id, false, '', true);
             if ($cid) {
                 global $wpdb;
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
                 $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', self::table('contacts'), $cid));
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
                 $member_status = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE contact_id=%d AND list_id=%d', self::table('members'), $cid, $list_id));
                 if ($contact && $member_status === 'pending') {
                     $url = self::recipient_url($contact, 'confirm', $list_id);
@@ -843,7 +901,9 @@ final class Dendrila_Simple_Edit_Mailing
         $cid = self::upsert_contact($email, $list_id, false, '', true);
         if (!$cid) { return false; }
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $contact = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', self::table('contacts'), $cid));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $status = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE contact_id=%d AND list_id=%d', self::table('members'), $cid, $list_id));
         if ($contact && $status === 'pending') {
             $link = self::recipient_url($contact, 'confirm', $list_id);
@@ -871,12 +931,16 @@ final class Dendrila_Simple_Edit_Mailing
         $cid = self::id('contact_id');
         if (!$cid || !$lid) { self::redirect('error'); }
         // Remove membership for this list only; don't silently affect other lists.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
         $wpdb->update(self::table('members'), array('status' => 'unsubscribed'),
             array('contact_id' => $cid, 'list_id' => $lid));
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
         $remaining = (int) $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM %i WHERE contact_id=%d AND status=%s', self::table('members'), $cid, 'confirmed'));
         if ($remaining === 0) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Live custom-table read where a stale result changes eligibility.
             $email = $wpdb->get_var($wpdb->prepare('SELECT email FROM %i WHERE id=%d', self::table('contacts'), $cid));
             if (!$email || !Dendrila_Simple_Edit_Suppressions::record($email, 'retrait manuel')) { self::redirect('error'); }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate custom-table consent, contact or campaign state change.
             $wpdb->update(self::table('contacts'), array('status' => 'unsubscribed'), array('id' => $cid));
         }
         self::redirect('contact_removed');
@@ -913,31 +977,40 @@ final class Dendrila_Simple_Edit_Mailing
         $ct = self::table('campaigns');
         $qt = self::table('queue');
         $people = self::table('contacts');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
         $campaign = $wpdb->get_row($wpdb->prepare('SELECT * FROM %i WHERE id=%d', $ct, $campaign_id));
         if (!$campaign || !in_array($campaign->status, array('scheduled', 'sending'), true)) { return; }
         if ($campaign->status === 'scheduled' && strtotime($campaign->send_at . ' UTC') > time()) { return; }
         // Atomic lock protects against concurrent WP Cron requests on busy sites.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
         $claimed = $wpdb->query($wpdb->prepare("UPDATE %i SET locked_until=DATE_ADD(UTC_TIMESTAMP(), INTERVAL 120 SECOND), status='sending' WHERE id=%d AND (locked_until IS NULL OR locked_until < UTC_TIMESTAMP()) AND status IN ('scheduled','sending')", $ct, $campaign_id));
         if ($claimed !== 1) { return; }
         try {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
             $rows = $wpdb->get_results($wpdb->prepare("SELECT q.id,q.contact_id,c.email,c.status FROM %i q JOIN %i c ON c.id=q.contact_id WHERE q.campaign_id=%d AND q.status='queued' ORDER BY q.id ASC LIMIT %d", $qt, $people, $campaign_id, self::BATCH_SIZE));
             // Uncertain messages are never resent automatically after a worker crash.
             // A crash may happen after SMTP acceptance and before queue acknowledgement.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
             $wpdb->query($wpdb->prepare("UPDATE %i SET status='uncertain',error_message='Vérification manuelle requise après interruption' " .
                 "WHERE campaign_id=%d AND status='processing' AND " .
                 "processing_started_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 10 MINUTE)", $qt, $campaign_id));
             foreach ((array) $rows as $row) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
                 $wpdb->query($wpdb->prepare("UPDATE %i SET status='processing', processing_started_at=UTC_TIMESTAMP() WHERE id=%d AND status='queued'", $qt, (int) $row->id));
                 if ($wpdb->rows_affected !== 1) { continue; }
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
                 $still_sending = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE id=%d', $ct, $campaign_id));
                 if ($still_sending !== 'sending') {
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
                     $wpdb->update($qt, array('status' => 'queued'), array('id' => (int) $row->id));
                     break;
                 }
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
                 $eligible = (bool) $wpdb->get_var($wpdb->prepare('SELECT 1 FROM %i WHERE list_id=%d AND contact_id=%d AND status=%s',
                     self::table('members'), (int) $campaign->list_id, (int) $row->contact_id, 'confirmed'));
                 if ($row->status !== 'confirmed' || !$eligible ||
                     Dendrila_Simple_Edit_Suppressions::is_blocked($row->email)) {
+                    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
                     $wpdb->update($qt, array('status' => 'skipped'), array('id' => (int) $row->id));
                     continue;
                 }
@@ -961,21 +1034,26 @@ final class Dendrila_Simple_Edit_Mailing
                     $error = 'Erreur du transport de messagerie.';
                 }
                 // "accepted" means SMTP accepted the message, not inbox delivery.
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
                 $wpdb->update($qt, array('status' => $ok ? 'accepted' : 'failed',
                     'error_message' => $error,
                     'accepted_at' => $ok ? current_time('mysql', true) : null),
                     array('id' => (int) $row->id));
             }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
             $remaining = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM %i WHERE campaign_id=%d AND status='queued'", $qt, $campaign_id));
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
             $current_status = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE id=%d', $ct, $campaign_id));
             if ($current_status === 'paused') { return; }
             if ($remaining > 0) {
                 wp_schedule_single_event(time() + 60, self::CRON_HOOK, array($campaign_id));
             } else {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
                 $wpdb->update($ct, array('status' => 'completed',
                     'finished_at' => current_time('mysql', true)), array('id' => $campaign_id));
             }
         } finally {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic queue state or send eligibility; must use fresh SQL.
             $wpdb->update($ct, array('locked_until' => null), array('id' => $campaign_id));
         }
     }
@@ -1018,10 +1096,12 @@ final class Dendrila_Simple_Edit_Mailing
     {
         global $wpdb;
         if ($admin) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded, per-author live campaign status aggregate.
             $rows = $wpdb->get_results($wpdb->prepare(
                 'SELECT q.campaign_id,q.status,COUNT(*) AS total FROM %i q INNER JOIN (SELECT id FROM %i ORDER BY id DESC LIMIT 15) visible ON visible.id=q.campaign_id GROUP BY q.campaign_id,q.status',
                 self::table('queue'), self::table('campaigns')));
         } else {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded, per-author live campaign status aggregate.
             $rows = $wpdb->get_results($wpdb->prepare(
                 'SELECT q.campaign_id,q.status,COUNT(*) AS total FROM %i q INNER JOIN (SELECT c.id FROM %i c INNER JOIN %i p ON p.ID=c.newsletter_id WHERE p.post_type=%s AND p.post_author=%d ORDER BY c.id DESC LIMIT 15) visible ON visible.id=q.campaign_id GROUP BY q.campaign_id,q.status',
                 self::table('queue'), self::table('campaigns'), $wpdb->posts,
@@ -1081,6 +1161,7 @@ final class Dendrila_Simple_Edit_Mailing
             'cron_failed' => 'La programmation a échoué. Aucun envoi démarré.',
             'error' => 'Opération non enregistrée.',
         );
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
         $notice = isset($_GET['dendrila_simple_edit_ml_notice']) ? sanitize_key(wp_unslash($_GET['dendrila_simple_edit_ml_notice'])) : '';
         if (isset($notices[$notice])) {
             $bad_notice = in_array($notice, array('invite_failed','invite_no_permission','invite_rate_limited','invite_not_allowed',
@@ -1131,6 +1212,7 @@ final class Dendrila_Simple_Edit_Mailing
                 }
                 echo '<details class="dendrila-simple-edit-list-shortcode"><summary>Formulaire d’inscription</summary><p>Code à placer sur une page</p><code id="dendrila-simple-edit-list-code-' . (int)$list->id . '">[dse_newsletter_inscription liste="' .
                     (int)$list->id . '"]</code> <button class="button dendrila-simple-edit-copy" type="button" data-dendrila-simple-edit-copy="dendrila-simple-edit-list-code-' . (int)$list->id . '">Copier le code</button></details>';
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded admin read of live recipient and campaign statuses.
                 $members = $wpdb->get_results($wpdb->prepare(
                     'SELECT c.id,c.email,c.display_name,c.status AS contact_status,m.status AS membership_status FROM %i m JOIN %i c ON c.id=m.contact_id WHERE m.list_id=%d ORDER BY c.email ASC LIMIT 40',
                     self::table('members'), self::table('contacts'), (int)$list->id));
@@ -1224,6 +1306,7 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<p>Il faut au moins une newsletter que vous êtes autorisé à envoyer et une liste existante.</p>';
         }
         else {
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only GET navigation or notice; no state change.
             $selected = isset($_GET['dendrila_simple_edit_send_nid']) ? absint($_GET['dendrila_simple_edit_send_nid']) : 0;
             $choices = '<option value="">Choisir une newsletter</option>';
             foreach ($approved as $post) {
@@ -1240,11 +1323,13 @@ final class Dendrila_Simple_Edit_Mailing
         }
         if ($section === 'suivi') {
         if ($admin) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded admin read of live recipient and campaign statuses.
             $campaigns = $wpdb->get_results($wpdb->prepare(
                 'SELECT c.*, l.name AS list_name FROM %i c LEFT JOIN %i l ON l.id=c.list_id ORDER BY c.id DESC LIMIT 15',
                 self::table('campaigns'), self::table('lists')));
         } elseif (Dendrila_Simple_Edit_Newsletters::can_send()) {
             // Filter by owner before applying LIMIT; unrelated authors must not hide a campaign.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded admin read of live recipient and campaign statuses.
             $campaigns = $wpdb->get_results($wpdb->prepare(
                 'SELECT c.*, l.name AS list_name FROM %i c INNER JOIN %i p ON p.ID=c.newsletter_id LEFT JOIN %i l ON l.id=c.list_id WHERE p.post_type=%s AND p.post_author=%d ORDER BY c.id DESC LIMIT 15',
                 self::table('campaigns'), $wpdb->posts, self::table('lists'),

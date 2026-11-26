@@ -280,9 +280,11 @@ final class Dendrila_Simple_Edit_Plugin_Access
 
     private static function requested_group()
     {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Settings group read to verify its own native nonce before granting rights.
         if (!isset($_POST['option_page']) || !is_string($_POST['option_page'])) {
             return '';
         }
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Settings group read to verify its own native nonce before granting rights.
         $raw_group = wp_unslash($_POST['option_page']);
         $group = sanitize_text_field($raw_group);
         // Keep the exact registered key; reject manipulated names before

@@ -27,6 +27,7 @@ final class Dendrila_Simple_Edit_Suppressions
         if (isset(self::$existing_tables[$name])) { return true; }
         // Only a positive probe is memoized. A missing table may be created
         // later by dbDelta() in the same request and must be checked again.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Positive-only request-local table check; missing table rechecked.
         $exists = (string) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s',
             $wpdb->esc_like($name))) === $name;
         if ($exists) { self::$existing_tables[$name] = true; }
@@ -64,12 +65,14 @@ final class Dendrila_Simple_Edit_Suppressions
             list($contacts, $members) = $pair;
             if (!self::exists($contacts)) { continue; }
             // Preserve opt-outs even if a new installation has reimported the same address.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
             $rows = $wpdb->get_results($wpdb->prepare("SELECT email FROM %i WHERE status='unsubscribed'", $contacts));
             if ($rows === null) { return false; }
             foreach ($rows as $row) {
                 if (!self::record($row->email, 'migration')) { return false; }
             }
             if (!self::exists($members)) { continue; }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
             $rows = $wpdb->get_results($wpdb->prepare("SELECT DISTINCT c.email FROM %i c INNER JOIN %i m ON m.contact_id=c.id WHERE m.status='unsubscribed'", $contacts, $members));
             if ($rows === null) { return false; }
             foreach ($rows as $row) {
@@ -83,11 +86,14 @@ final class Dendrila_Simple_Edit_Suppressions
         $contacts = $wpdb->prefix . 'dendrila_simple_edit_ml_contacts';
         $members = $wpdb->prefix . 'dendrila_simple_edit_ml_members';
         if (self::exists($contacts)) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
             $rows = $wpdb->get_results($wpdb->prepare('SELECT id,email FROM %i', $contacts));
             if ($rows === null) { return false; }
             foreach ($rows as $row) {
                 if (!self::is_blocked($row->email)) { continue; }
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
                 if ($wpdb->update($contacts, array('status'=>'unsubscribed'), array('id'=>(int)$row->id)) === false) { return false; }
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
                 if (self::exists($members) && $wpdb->update($members,
                     array('status'=>'unsubscribed'), array('contact_id'=>(int)$row->id)) === false) { return false; }
             }
@@ -109,12 +115,15 @@ final class Dendrila_Simple_Edit_Suppressions
         if (!self::exists($old_lists) || !self::exists($old_contacts) || !self::exists($old_members)) { return true; }
         if (!self::exists($new_lists) || !self::exists($new_contacts) || !self::exists($new_members)) { return false; }
         $list_map = array();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
         $rows = $wpdb->get_results($wpdb->prepare('SELECT id,name,owner_user_id,created_at FROM %i', $old_lists));
         if ($rows === null) { return false; }
         foreach ($rows as $list) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
             $id = (int) $wpdb->get_var($wpdb->prepare('SELECT id FROM %i WHERE name=%s AND owner_user_id=%d LIMIT 1',
                 $new_lists, $list->name, (int)$list->owner_user_id));
             if (!$id) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
                 $ok = $wpdb->insert($new_lists, array('name'=>$list->name,
                     'owner_user_id'=>(int)$list->owner_user_id, 'created_at'=>$list->created_at));
                 if (!$ok) { return false; }
@@ -123,14 +132,17 @@ final class Dendrila_Simple_Edit_Suppressions
             $list_map[(int)$list->id] = $id;
         }
         $contact_map = array();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
         $rows = $wpdb->get_results($wpdb->prepare('SELECT * FROM %i', $old_contacts));
         if ($rows === null) { return false; }
         foreach ($rows as $contact) {
             $email = strtolower(sanitize_email($contact->email));
             if (!is_email($email)) { continue; }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
             $id = (int)$wpdb->get_var($wpdb->prepare('SELECT id FROM %i WHERE email=%s', $new_contacts, $email));
             if (!$id) {
                 $blocked = self::is_blocked($email);
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
                 $ok = $wpdb->insert($new_contacts,array('email'=>$email,
                     'display_name'=>(string)$contact->display_name,
                     'status'=>$blocked?'unsubscribed':($contact->status==='confirmed'?'confirmed':'pending'),
@@ -142,17 +154,21 @@ final class Dendrila_Simple_Edit_Suppressions
             }
             $contact_map[(int)$contact->id] = $id;
         }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
         $rows = $wpdb->get_results($wpdb->prepare('SELECT list_id,contact_id,status,consent_source,consent_at FROM %i', $old_members));
         if ($rows === null) { return false; }
         foreach ($rows as $old) {
             $lid = $list_map[(int)$old->list_id] ?? 0;
             $cid = $contact_map[(int)$old->contact_id] ?? 0;
             if (!$lid || !$cid) { continue; }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
             $exists = $wpdb->get_var($wpdb->prepare('SELECT id FROM %i WHERE list_id=%d AND contact_id=%d',$new_members,$lid,$cid));
             if ($exists) { continue; }
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
             $email = $wpdb->get_var($wpdb->prepare('SELECT email FROM %i WHERE id=%d',$new_contacts,$cid));
             $blocked = !$email || self::is_blocked($email);
             $status = $blocked?'unsubscribed':($old->status==='confirmed'?'confirmed':'pending');
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time historical opt-out migration; fresh reads/writes.
             if (!$wpdb->insert($new_members,array('list_id'=>$lid,'contact_id'=>$cid,'status'=>$status,
                 'consent_source'=>$blocked?'':(string)$old->consent_source,
                 'consent_at'=>$blocked?null:$old->consent_at))) { return false; }
@@ -168,6 +184,7 @@ final class Dendrila_Simple_Edit_Suppressions
         $hash = self::hash_email($email);
         // A second unsubscribe must suppress again even after voluntary re-consent.
         // Keep the first opt-out date and the last consent date for auditability.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate consent mutation; no cache allowed.
         return $wpdb->query($wpdb->prepare(
             "INSERT INTO %i (email_hash,status,reason,first_seen_at) VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE status='suppressed', reason=VALUES(reason)",
             self::table(), $hash, 'suppressed', sanitize_text_field($reason), current_time('mysql', true)
@@ -180,6 +197,7 @@ final class Dendrila_Simple_Edit_Suppressions
         // If the protection table is missing or SQL fails, treat addresses as
         // suppressed rather than accidentally sending marketing mail.
         if (!self::exists(self::table())) { return true; }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Fresh fail-closed opt-out verification; never cache consent.
         $status = $wpdb->get_var($wpdb->prepare('SELECT status FROM %i WHERE email_hash=%s', self::table(), self::hash_email($email)));
         if (!empty($wpdb->last_error)) { return true; }
         return $status === 'suppressed';
@@ -190,6 +208,7 @@ final class Dendrila_Simple_Edit_Suppressions
     {
         global $wpdb;
         if (!self::ready()) { return false; }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Immediate consent mutation; no cache allowed.
         return $wpdb->update(self::table(), array('status'=>'reconsented',
             'last_consent_at'=>current_time('mysql', true)),
             array('email_hash'=>self::hash_email($email))) !== false;
