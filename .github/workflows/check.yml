@@ -6,6 +6,7 @@ on:
       - '**.php'
       - '**.js'
       - '.github/workflows/check.yml'
+      - 'readme.txt'
   pull_request:
     paths:
       - '**.php'
