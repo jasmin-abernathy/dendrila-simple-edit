@@ -164,8 +164,11 @@ final class Dendrila_Simple_Edit_Mailing
 
     private static function input($key)
     {
-        $v = isset($_POST[$key]) ? sanitize_textarea_field(wp_unslash($_POST[$key])) : '';
-        return is_string($v) ? trim($v) : '';
+        if (!is_string($key) || !isset($_POST[$key]) || !is_string($_POST[$key])) {
+            return '';
+        }
+        // Callers that modify mailing data verify their nonce and capability.
+        return trim(sanitize_textarea_field(wp_unslash($_POST[$key])));
     }
 
     private static function id($key)
