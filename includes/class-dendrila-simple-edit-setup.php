@@ -185,7 +185,10 @@ final class Dendrila_Simple_Edit_Setup
                         'created_at'=>current_time('mysql',true)), array('%s','%d','%s'));
                     if (!$ok || !$wpdb->insert_id) { wp_die('Création de la liste impossible.', 'Configuration', array('response'=>500)); }
                     $list = (int)$wpdb->insert_id;
-                    if (function_exists('wp_cache_delete')) { wp_cache_delete('woo_mailing_lists', 'dendrila_simple_edit'); }
+                    if (function_exists('wp_cache_delete')) {
+                        wp_cache_delete('woo_mailing_lists', 'dendrila_simple_edit');
+                        wp_cache_delete('mailing_admin_lists', 'dendrila_simple_edit');
+                    }
                 }
             }
             if ($list && !Dendrila_Simple_Edit_Woo_Mailing::valid_list($list)) { wp_die('Liste introuvable.'); }
