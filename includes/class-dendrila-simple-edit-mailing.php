@@ -1023,24 +1023,13 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<h2>Mes listes</h2><a href="#dendrila-simple-edit-add-list" class="button dendrila-simple-edit-list-add-shortcut" ';
             echo 'aria-label="Ajouter une liste" title="Ajouter une liste" data-dendrila-simple-edit-list-open>+</a></div>';
             if (!$lists) { echo '<p>Aucune liste pour le moment. Utilisez « Ajouter une liste » ci-dessous.</p>'; }
-            // One indexed aggregate replaces one COUNT query per list (N+1).
-            // Only the permitted lists from self::lists() are rendered below.
-            $list_counts = array();
-            if ($lists) {
-                $list_ids = array();
-                foreach ($lists as $list) { $list_ids[] = (int) $list->id; }
-                $placeholders = implode(',', array_fill(0, count($list_ids), '%d'));
-                // Limit the aggregate to lists visible to the current editor.
-                $sql = 'SELECT m.list_id,COUNT(*) AS total FROM %i m JOIN %i c ON c.id=m.contact_id ' .
-                    'WHERE c.status=%s AND m.status=%s AND m.list_id IN (' . $placeholders . ') GROUP BY m.list_id';
-                $rows = $wpdb->get_results($wpdb->prepare($sql, array_merge(
-                    array(self::table('members'), self::table('contacts'), 'confirmed', 'confirmed'), $list_ids)));
-                foreach ((array) $rows as $row) {
-                    $list_counts[(int) $row->list_id] = (int) $row->total;
-                }
-            }
+            // An individually prepared query preserves the per-list access boundary.
+            // Dynamic SQL placeholder lists are rejected by Plugin Check and
+            // must not be substituted for a fixed, reviewed query.
             foreach ($lists as $list) {
-                $count = isset($list_counts[(int)$list->id]) ? $list_counts[(int)$list->id] : 0;
+                $count = (int) $wpdb->get_var($wpdb->prepare(
+                    'SELECT COUNT(*) FROM %i m JOIN %i c ON c.id=m.contact_id WHERE m.list_id=%d AND c.status=%s AND m.status=%s',
+                    self::table('members'), self::table('contacts'), $list->id, 'confirmed', 'confirmed'));
                 echo '<details class="dendrila-simple-edit-subcard dendrila-simple-edit-list-card"><summary><strong>' .
                     esc_html($list->name) . '</strong> · ' . esc_html((string)$count) .
                     ($count === 1 ? ' abonné confirmé' : ' abonnés confirmés') . '</summary>';
@@ -1185,22 +1174,11 @@ final class Dendrila_Simple_Edit_Mailing
             $campaigns = array();
         }
         echo '<section class="dendrila-simple-edit-card"><h2>' . esc_html__('Campagnes préparées et envoyées', 'dendrila-simple-edit') . '</h2>';
-        // Batch the per-campaign status counts rather than issuing N queries.
-        $campaign_counts = array();
-        if ($campaigns) {
-            $campaign_ids = array();
-            foreach ((array) $campaigns as $campaign) { $campaign_ids[] = (int) $campaign->id; }
-            $placeholders = implode(',', array_fill(0, count($campaign_ids), '%d'));
-            $sql = 'SELECT campaign_id,status,COUNT(*) AS total FROM %i WHERE campaign_id IN (' .
-                $placeholders . ') GROUP BY campaign_id,status';
-            $rows = $wpdb->get_results($wpdb->prepare($sql, array_merge(
-                array(self::table('queue')), $campaign_ids)));
-            foreach ((array) $rows as $row) {
-                $campaign_counts[(int) $row->campaign_id][] = $row;
-            }
-        }
+        // Keep each campaign query fixed and parameterized to pass Plugin Check.
         foreach ((array) $campaigns as $c) {
-            $counts = isset($campaign_counts[(int) $c->id]) ? $campaign_counts[(int) $c->id] : array();
+            $counts = $wpdb->get_results($wpdb->prepare(
+                'SELECT status,COUNT(*) AS total FROM %i WHERE campaign_id=%d GROUP BY status',
+                self::table('queue'), $c->id));
             $queue_labels = array(
                 'queued' => 'en attente',
                 'processing' => 'en cours de traitement',
