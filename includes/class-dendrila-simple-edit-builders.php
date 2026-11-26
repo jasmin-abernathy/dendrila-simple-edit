@@ -18,7 +18,9 @@ final class Dendrila_Simple_Edit_Builders
         }
         global $wpdb;
         $results = array();
-        $cache_key = 'elementor_shortcode_' . md5($field);
+        // The SQL candidate set is independent of $field; reuse it for all
+        // enabled fields on this page instead of running the same scan per field.
+        $cache_key = 'elementor_shortcode_candidates_v1';
         $cached_rows = function_exists('wp_cache_get') ?
             wp_cache_get($cache_key, 'dendrila_simple_edit') : false;
         if (is_array($cached_rows)) {
