@@ -187,9 +187,9 @@ final class Dendrila_Simple_Edit_Navigation
         if (!self::allowed()) { wp_die('Réorganisation du menu non autorisée.', 'Accès refusé', array('response'=>403)); }
         check_admin_referer('dendrila_simple_edit_nav_reorder');
         $menu = self::detect();
-        $raw = isset($_POST['dendrila_simple_edit_nav_ids']) ? wp_unslash($_POST['dendrila_simple_edit_nav_ids']) : null;
-        $parents = isset($_POST['dendrila_simple_edit_nav_parents']) ? wp_unslash($_POST['dendrila_simple_edit_nav_parents']) : null;
-        $mobile = isset($_POST['dendrila_simple_edit_nav_mobile']) ? wp_unslash($_POST['dendrila_simple_edit_nav_mobile']) : null;
+        $raw = isset($_POST['dendrila_simple_edit_nav_ids']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_nav_ids']), 'sanitize_text_field') : null;
+        $parents = isset($_POST['dendrila_simple_edit_nav_parents']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_nav_parents']), 'sanitize_text_field') : null;
+        $mobile = isset($_POST['dendrila_simple_edit_nav_mobile']) ? map_deep(wp_unslash($_POST['dendrila_simple_edit_nav_mobile']), 'sanitize_text_field') : null;
         $expected = isset($_POST['dendrila_simple_edit_nav_version']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_nav_version'])) : '';
         if (!$menu || !is_array($raw) || !is_array($parents) || !is_array($mobile) ||
             count($raw) !== count($menu['items']) || count($raw) > 100 ||
