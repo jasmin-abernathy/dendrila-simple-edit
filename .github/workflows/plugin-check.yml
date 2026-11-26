@@ -8,6 +8,7 @@ on:
       - 'dendrila-simple-edit.php'
       - 'readme.txt'
       - '.github/workflows/plugin-check.yml'
+      - '.github/workflows/check.yml'
   workflow_dispatch:
 permissions:
   contents: read
