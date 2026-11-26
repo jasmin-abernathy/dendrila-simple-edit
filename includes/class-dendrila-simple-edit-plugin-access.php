@@ -280,8 +280,12 @@ final class Dendrila_Simple_Edit_Plugin_Access
 
     private static function requested_group()
     {
-        return isset($_POST['option_page']) && is_string($_POST['option_page']) ?
-            wp_unslash($_POST['option_page']) : '';
+        if (!isset($_POST['option_page']) || !is_string($_POST['option_page'])) {
+            return '';
+        }
+        $group = wp_unslash($_POST['option_page']);
+        // Keep the exact registered key; reject malformed or manipulated names.
+        return $group === sanitize_text_field($group) ? $group : '';
     }
 
     public static function allows_settings_request()
@@ -296,6 +300,13 @@ final class Dendrila_Simple_Edit_Plugin_Access
         if (self::reserved_group($group) || !isset(self::$settings[$group]) ||
             !self::$settings[$group]['options'] ||
             !self::selected_for_current_user(self::$settings[$group]['plugin'])) { return false; }
+        // Check Settings API's native nonce *before* temporarily granting the
+        // selected plugin's capability. Core options.php validates it again
+        // before saving, but this adapter must fail closed independently.
+        if (!isset($_POST['_wpnonce']) || !is_string($_POST['_wpnonce']) ||
+            !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), $group . '-options')) {
+            return false;
+        }
         // options.php reads $_REQUEST. Conflicting GET/cookie values must not
         // make its selected group/action differ from our validated POST request.
         if ((isset($_REQUEST['option_page']) && $_REQUEST['option_page'] !== $_POST['option_page']) ||
