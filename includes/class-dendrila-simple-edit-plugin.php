@@ -582,7 +582,9 @@ final class Dendrila_Simple_Edit_Plugin
     {
         self::require_editor('dendrila_simple_edit_restore');
         $expected = self::submitted_revision('dendrila_simple_edit_restore');
-        $raw = isset($_POST['dendrila_simple_edit_restore_revision']) ? sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_restore_revision'])) : null;
+        $raw = isset($_POST['dendrila_simple_edit_restore_revision']) &&
+            is_string($_POST['dendrila_simple_edit_restore_revision']) ?
+            sanitize_text_field(wp_unslash($_POST['dendrila_simple_edit_restore_revision'])) : null;
         if (!is_string($raw) || !ctype_digit($raw)) {
             wp_die('Révision incorrecte.', 'Requête incorrecte', array('response' => 400));
         }
