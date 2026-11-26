@@ -13,6 +13,20 @@ $admin = get_user_by('login', 'menu_admin');
 $editor = get_user_by('login', 'menu_simple');
 gt_assert($admin && $editor, 'Fixture users');
 wp_set_current_user($admin->ID);
+// Read and edit source without invoking the shortcode or serializing other blocks.
+add_shortcode('dse_fixture', static function () { throw new RuntimeException('Shortcode executed by editor'); });
+foreach (array('[dse_fixture]', '<!-- wp:shortcode -->[dse_fixture]<!-- /wp:shortcode -->',
+    '<p>[dse_fixture]</p>') as $sample) {
+    $fields = Dendrila_Simple_Edit_Gutenberg::shortcode_sources($sample);
+    gt_assert(count($fields['fields'])===1 && !$fields['other'], 'Standalone shortcode identified');
+    gt_assert(Dendrila_Simple_Edit_Gutenberg::replace_shortcodes($sample, array('[dse_fixture mode="test"]')) ===
+        str_replace('[dse_fixture]', '[dse_fixture mode="test"]', $sample), 'Shortcode edited in place');
+}
+$sample = '<!-- wp:paragraph --><p>Bienvenue</p><!-- /wp:paragraph --><!-- wp:shortcode -->[dse_fixture]<!-- /wp:shortcode -->';
+gt_assert(Dendrila_Simple_Edit_Gutenberg::shortcode_sources($sample)['other'], 'Mixed page retains its other blocks');
+gt_assert(!Dendrila_Simple_Edit_Gutenberg::shortcode_sources('<code>[dse_fixture]</code> [[dse_fixture]]')['fields'], 'Literal examples excluded');
+gt_assert(false === Dendrila_Simple_Edit_Gutenberg::replace_shortcodes($sample,array('[dse_fixture]<p>extra</p>')), 'Exactly one shortcode required');
+remove_shortcode('dse_fixture');
 $source = '<!-- wp:group {"layout":{"type":"constrained"}} -->' . "\n" .
     '<div class="wp-block-group">' . "\n" .
     '<!-- wp:paragraph --><p>Bienvenue sur le site</p><!-- /wp:paragraph -->' . "\n" .

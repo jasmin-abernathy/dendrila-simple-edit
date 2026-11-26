@@ -662,3 +662,4 @@
 .dendrila-simple-edit-native { margin-block: 1rem; }
 .dendrila-simple-edit-native summary { cursor: pointer; font-weight: 600; }
 .dendrila-simple-edit-native iframe { display: block; width: 100%; height: 75vh; border: 0; }
+.dendrila-simple-edit-gutenberg-text textarea[name^="dendrila_simple_edit_shortcodes"] { display: block; width: 100%; box-sizing: border-box; margin-top: .35em; font-family: monospace; }

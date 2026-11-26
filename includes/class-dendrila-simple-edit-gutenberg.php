@@ -111,7 +111,80 @@ final class Dendrila_Simple_Edit_Gutenberg
     public static function uses_block_fields($content)
     {
         return is_string($content) && (strpos($content, '<!-- wp:') !== false ||
-            preg_match('~^\s*\[[a-zA-Z][\w-]*(?:\s+[^\[\]<>]*)?/?\]\s*$~D', $content));
+            preg_match('~^\s*\[[a-zA-Z][\w-]*(?:\s+[^\[\]<>]*)?/?\]\s*$~D', $content) ||
+            (strpos($content, '[') !== false && self::shortcode_sources($content)['fields']));
+    }
+
+    /** Read original shortcode spans without running their callbacks. */
+    public static function shortcode_sources($content)
+    {
+        $result = array('fields'=>array(), 'other'=>false);
+        if (strpos($content, '[') === false) { return $result; }
+        $offset = 0;
+        $blocks = array();
+        $literal = '';
+        foreach (wp_html_split($content) as $part) {
+            $start = $offset;
+            $offset += strlen($part);
+            if ($literal !== '') {
+                if (preg_match('~^</' . $literal . '\s*>~i', $part)) { $literal = ''; }
+                continue;
+            }
+            if (preg_match('~^<(pre|code|script|style|textarea)\b~i', $part, $m)) {
+                $literal = strtolower($m[1]);
+                $result['other'] = true;
+                continue;
+            }
+            if (preg_match('~^<!--\s+(/?)wp:([\w/-]+)~', $part, $m)) {
+                if ($m[1]) { array_pop($blocks); }
+                elseif (substr($part, -4) === '/-->') { $result['other'] = true; }
+                else { $blocks[] = $m[2]; }
+                continue;
+            }
+            if ($part === '' || $part[0] === '<') { continue; }
+            $kind = end($blocks);
+            if ($kind && !in_array($kind, array('shortcode','paragraph','freeform'), true)) {
+                if (trim($part) !== '') { $result['other'] = true; }
+                continue;
+            }
+            if (!preg_match_all('@\[([^<>&/\[\]\x00-\x20=]++)@', $part, $tags)) {
+                if (trim($part) !== '') { $result['other'] = true; }
+                continue;
+            }
+            preg_match_all('/' . get_shortcode_regex(array_unique($tags[1])) . '/', $part, $matches,
+                PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+            $consumed = 0;
+            foreach ($matches as $match) {
+                list($code, $pos) = $match[0];
+                $tag = $match[2][0];
+                if (($match[1][0] === '[' && $match[6][0] === ']') ||
+                    ($kind !== 'shortcode' && trim($part) !== $code && !shortcode_exists($tag))) { continue; }
+                if (trim(substr($part, $consumed, $pos - $consumed)) !== '') { $result['other'] = true; }
+                $result['fields'][] = array('tag'=>$tag, 'code'=>$code, 'offset'=>$start + $pos);
+                $consumed = $pos + strlen($code);
+            }
+            if (trim(substr($part, $consumed)) !== '') { $result['other'] = true; }
+        }
+        return $result;
+    }
+
+    public static function replace_shortcodes($content, $values)
+    {
+        if (!is_array($values)) { return false; }
+        $fields = self::shortcode_sources($content)['fields'];
+        if (count($fields) !== count($values)) { return false; }
+        foreach (array_reverse($fields, true) as $i => $field) {
+            if (!isset($values[$i]) || !is_string($values[$i])) { return false; }
+            $value = $values[$i];
+            if ($value === $field['code']) { continue; }
+            if (strlen($value) > self::MAX_TEXT || preg_match('/[<>\x00-\x1f]/', $value) ||
+                !preg_match('@^\[([^<>&/\[\]\x00-\x20=]++)@', $value, $name) ||
+                ($name[1] !== $field['tag'] && !shortcode_exists($name[1])) ||
+                !preg_match('/^' . get_shortcode_regex(array($name[1])) . '$/D', $value, $match) ||
+                strpos($match[3], '[') !== false || strpos($match[5] ?? '', '[') !== false) { return false; }
+            $content = substr_replace($content, $value, $field['offset'], strlen($field['code']));
+        }
+        return $content;
     }
 
     private static function paragraph($text)
