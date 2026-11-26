@@ -121,11 +121,18 @@ try {
         lab_check(!current_user_can(Dendrila_Simple_Edit_Admin_Access::plugin_capability($booking)),'Subscriber cannot use synthetic plugin permission');
     } elseif ($scenario==='settings') {
         lab_user('menu_simple'); lab_select(array($booking)); lab_menu(); do_action('admin_init');
-        $_POST=array('option_page'=>'dse_lab_booking_group','action'=>'update'); $_REQUEST=$_POST; $GLOBALS['pagenow']='options.php';
+        $_POST=array('option_page'=>'dse_lab_booking_group','action'=>'update',
+            '_wpnonce'=>wp_create_nonce('dse_lab_booking_group-options')); $_REQUEST=$_POST; $GLOBALS['pagenow']='options.php';
         $_GET=array(); $_SERVER['REQUEST_METHOD']='POST';
         $bookingCap=apply_filters('option_page_capability_dse_lab_booking_group','manage_options');
         lab_check(current_user_can($bookingCap),'Selected own Settings API group accepts synthetic cap');
         lab_check(Dendrila_Simple_Edit_Plugin_Access::allows_settings_request(),'Selected own settings save is routed');
+        $valid_nonce = $_POST['_wpnonce'];
+        unset($_POST['_wpnonce']); $_REQUEST=$_POST;
+        lab_check(!Dendrila_Simple_Edit_Plugin_Access::allows_settings_request(),'Missing settings nonce is rejected');
+        $_POST['_wpnonce']='invalid'; $_REQUEST=$_POST;
+        lab_check(!Dendrila_Simple_Edit_Plugin_Access::allows_settings_request(),'Invalid settings nonce is rejected');
+        $_POST['_wpnonce']=$valid_nonce; $_REQUEST=$_POST;
         $_POST['option_page']='dse_lab_reports_group'; $_REQUEST=$_POST;
         $reportsCap=apply_filters('option_page_capability_dse_lab_reports_group','manage_options');
         lab_check(!current_user_can($reportsCap),'Unselected Settings API group denied');
