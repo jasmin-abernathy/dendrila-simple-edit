@@ -1,7 +1,7 @@
 <?php
 /** SQL integration for mailing counters; only the disposable GitHub WordPress lab. */
 $root = getenv('DSE_WP_ROOT');
-if (!$root || !is_file($root . '/wp-load.php') || !getenv('DSE_PLUGIN_ACCESS_ALLOW_INSTALL')) {
+if (!$root || !is_file($root . '/wp-load.php')) {
     fwrite(STDERR, "Missing disposable WordPress lab.\n");
     exit(2);
 }
