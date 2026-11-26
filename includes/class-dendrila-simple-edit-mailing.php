@@ -1009,6 +1009,33 @@ final class Dendrila_Simple_Edit_Mailing
         return $counts;
     }
 
+    /**
+     * Count queue statuses for at most 15 visible campaigns in one query.
+     * The two SQL statements are fixed literals (no generated placeholders).
+     * Fresh values are important during sending, so no persistent cache.
+     */
+    private static function campaign_status_counts($admin)
+    {
+        global $wpdb;
+        if ($admin) {
+            $rows = $wpdb->get_results($wpdb->prepare(
+                'SELECT q.campaign_id,q.status,COUNT(*) AS total FROM %i q INNER JOIN (SELECT id FROM %i ORDER BY id DESC LIMIT 15) visible ON visible.id=q.campaign_id GROUP BY q.campaign_id,q.status',
+                self::table('queue'), self::table('campaigns')));
+        } else {
+            $rows = $wpdb->get_results($wpdb->prepare(
+                'SELECT q.campaign_id,q.status,COUNT(*) AS total FROM %i q INNER JOIN (SELECT c.id FROM %i c INNER JOIN %i p ON p.ID=c.newsletter_id WHERE p.post_type=%s AND p.post_author=%d ORDER BY c.id DESC LIMIT 15) visible ON visible.id=q.campaign_id GROUP BY q.campaign_id,q.status',
+                self::table('queue'), self::table('campaigns'), $wpdb->posts,
+                Dendrila_Simple_Edit_Newsletters::TYPE, get_current_user_id()));
+        }
+        $counts = array();
+        foreach ((array) $rows as $row) {
+            $id = (int) $row->campaign_id;
+            if (!isset($counts[$id])) { $counts[$id] = array(); }
+            $counts[$id][] = $row;
+        }
+        return $counts;
+    }
+
     public static function render_admin($section = 'envois')
     {
         $admin = current_user_can('manage_options');
@@ -1226,11 +1253,9 @@ final class Dendrila_Simple_Edit_Mailing
             $campaigns = array();
         }
         echo '<section class="dendrila-simple-edit-card"><h2>' . esc_html__('Campagnes préparées et envoyées', 'dendrila-simple-edit') . '</h2>';
-        // Keep each campaign query fixed and parameterized to pass Plugin Check.
+        $campaign_counts = $campaigns ? self::campaign_status_counts($admin) : array();
         foreach ((array) $campaigns as $c) {
-            $counts = $wpdb->get_results($wpdb->prepare(
-                'SELECT status,COUNT(*) AS total FROM %i WHERE campaign_id=%d GROUP BY status',
-                self::table('queue'), $c->id));
+            $counts = isset($campaign_counts[(int) $c->id]) ? $campaign_counts[(int) $c->id] : array();
             $queue_labels = array(
                 'queued' => 'en attente',
                 'processing' => 'en cours de traitement',
