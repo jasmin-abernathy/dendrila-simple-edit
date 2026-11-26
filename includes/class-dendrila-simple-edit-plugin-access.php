@@ -283,9 +283,11 @@ final class Dendrila_Simple_Edit_Plugin_Access
         if (!isset($_POST['option_page']) || !is_string($_POST['option_page'])) {
             return '';
         }
-        $group = wp_unslash($_POST['option_page']);
-        // Keep the exact registered key; reject malformed or manipulated names.
-        return $group === sanitize_text_field($group) ? $group : '';
+        $raw_group = wp_unslash($_POST['option_page']);
+        $group = sanitize_text_field($raw_group);
+        // Keep the exact registered key; reject manipulated names before
+        // looking up capabilities or verifying the group-specific nonce.
+        return $raw_group === $group ? $group : '';
     }
 
     public static function allows_settings_request()
