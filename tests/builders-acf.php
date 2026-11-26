@@ -3,7 +3,7 @@
 define('ABSPATH', __DIR__);
 $GLOBALS['allowed_caps'] = array('read', 'dendrila_simple_edit_access', 'dendrila_simple_edit_edit', 'dendrila_simple_edit_publish');
 $GLOBALS['configured'] = array(
-    'dendrila_simple_edit_enabled_fields' => array('zone_intro'),
+    'dendrila_simple_edit_enabled_fields' => array('zone_intro', 'zone_footer'),
     'dendrila_simple_edit_custom_fields' => array('zone_intro' => array('label' => 'Introduction', 'type' => 'textarea')),
     'dendrila_simple_edit_acf_mappings' => array(
         'acf_1234567890abcdef' => array('post_id' => 22, 'field_key' => 'field_intro')
@@ -66,9 +66,11 @@ class Dendrila_Simple_Edit_Test_Query {
     public $postmeta = 'wp_postmeta';
     public $posts = 'wp_posts';
     public $last_query = '';
+    public $query_count = 0;
     public function esc_like($s) { return addcslashes($s, '%_'); }
     public function prepare($sql, $value) { $this->last_query = $sql; return 'statement'; }
     public function get_results($sql) {
+        $this->query_count++;
         return array((object) array(
             'ID' => 22,
             'post_title' => 'Contenu visible',
@@ -80,6 +82,15 @@ class Dendrila_Simple_Edit_Test_Query {
             ))
         ));
     }
+}
+$GLOBALS['builder_query_cache'] = array();
+function wp_cache_get($key, $group = '') {
+    $key = $group . ':' . $key;
+    return array_key_exists($key, $GLOBALS['builder_query_cache']) ? $GLOBALS['builder_query_cache'][$key] : false;
+}
+function wp_cache_set($key, $value, $group = '', $expire = 0) {
+    $GLOBALS['builder_query_cache'][$group . ':' . $key] = $value;
+    return true;
 }
 $wpdb = new Dendrila_Simple_Edit_Test_Query();
 require_once dirname(__DIR__) . '/includes/class-dendrila-simple-edit-approvals.php';
@@ -118,4 +129,7 @@ check_it(!Dendrila_Simple_Edit_Builders::contains_shortcode_widget(array(
 check_it(Dendrila_Simple_Edit_Builders::elementor_shortcode_locations('zone_intro')[0]['id'] === 22, 'Elementor shortcode widget discovered');
 check_it(strpos($wpdb->last_query, "p.post_status = 'publish'") !== false, 'Elementor query excludes unpublished');
 check_it(Dendrila_Simple_Edit_Builders::elementor_shortcode_locations('hidden') === array(), 'Unconfigured field not searched');
+check_it(Dendrila_Simple_Edit_Builders::elementor_shortcode_locations('zone_footer') === array(),
+    'Different enabled field does not falsely match existing widget');
+check_it($wpdb->query_count === 1, 'Multiple enabled fields reuse the single builder candidate SQL scan');
 echo "OK — ACF mapping, post status, nested types, formatting, Elementor shortcode search\n";
