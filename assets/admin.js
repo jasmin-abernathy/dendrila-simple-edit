@@ -628,12 +628,24 @@
         });
     }
 
+    function initNavigationCardRemoval() {
+        Array.prototype.forEach.call(document.querySelectorAll('[data-dendrila-simple-edit-nav-remove]'), function (button) {
+            button.addEventListener('click', function (event) {
+                var label = button.getAttribute('data-nav-label') || t('ce lien');
+                if (!window.confirm(t('Retirer « ') + label + t(' » du menu ? La page ne sera pas supprimée.'))) {
+                    event.preventDefault();
+                }
+            });
+        });
+    }
+
     function init() {
         revealSelectedTab();
         initListCreator();
         initBulkRolePermissions();
         initTopFormActions();
         initNavigationSorter();
+        initNavigationCardRemoval();
         initAcfSelector();
         initMediaPicker();
         initPersonalUploads();
