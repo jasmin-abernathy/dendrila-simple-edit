@@ -30,6 +30,7 @@ $dendrila_simple_edit_dependencies = array(
     '/includes/class-dendrila-simple-edit-media.php',
     '/includes/class-dendrila-simple-edit-modules.php',
     '/includes/class-dendrila-simple-edit-block-editor.php',
+    '/includes/class-dendrila-simple-edit-gutenberg.php',
     '/includes/class-dendrila-simple-edit-post-editor.php',
     '/includes/class-dendrila-simple-edit-navigation.php',
     '/includes/class-dendrila-simple-edit-event-editor.php',
