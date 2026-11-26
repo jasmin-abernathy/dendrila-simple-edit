@@ -1067,14 +1067,14 @@ final class Dendrila_Simple_Edit_Mailing
     {
         global $wpdb;
         if ($admin) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Prepared read of custom mailing tables; live consent counts cannot be cached.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom tables; live confirmed-member counts must reflect the latest opt-outs.
             $rows = $wpdb->get_results($wpdb->prepare(
                 'SELECT m.list_id,COUNT(*) AS total FROM %i m INNER JOIN %i c ON c.id=m.contact_id INNER JOIN %i l ON l.id=m.list_id WHERE c.status=%s AND m.status=%s GROUP BY m.list_id',
                 self::table('members'), self::table('contacts'), self::table('lists'),
                 'confirmed', 'confirmed'));
         } else {
             // The database enforces ownership before aggregation.
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Prepared read scoped to owner and custom mailing tables.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Scoped custom-table counts require current membership and ownership.
             $rows = $wpdb->get_results($wpdb->prepare(
                 'SELECT m.list_id,COUNT(*) AS total FROM %i m INNER JOIN %i c ON c.id=m.contact_id INNER JOIN %i l ON l.id=m.list_id WHERE c.status=%s AND m.status=%s AND l.owner_user_id=%d GROUP BY m.list_id',
                 self::table('members'), self::table('contacts'), self::table('lists'),
