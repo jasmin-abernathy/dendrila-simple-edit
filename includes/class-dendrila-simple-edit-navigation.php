@@ -557,6 +557,12 @@ final class Dendrila_Simple_Edit_Navigation
             echo '<label class="dendrila-simple-edit-nav-convert"><input type="checkbox" name="dendrila_simple_edit_nav_convert_confirm" value="1"> ' . esc_html__('Je confirme la conversion en menu manuel si je crée un sous-menu (les nouvelles pages ne seront plus ajoutées automatiquement).', 'dendrila-simple-edit') . '</label>';
         }
         echo '<p><button type="submit" class="button button-primary">' . esc_html__('Enregistrer le menu et les sous-menus', 'dendrila-simple-edit') . '</button></p></form>';
+        // Buttons on the cards target nonce-checked forms outside the reorder form.
+        foreach ($remove_forms as $remove_form) { echo $remove_form; }
+        echo '<details class="dendrila-simple-edit-nav-customization">';
+        echo '<summary>' . esc_html__('Personnaliser le menu', 'dendrila-simple-edit') .
+            '<span>Ajouter des pages, des liens, des regroupements et régler les préférences</span></summary>';
+        echo '<div class="dendrila-simple-edit-nav-customization-body">';
         if ($menu['type'] !== 'page-list') {
             $pages = get_pages(array('post_status'=>'publish', 'sort_column'=>'post_title', 'hierarchical'=>false));
             $taken = array();
@@ -595,12 +601,7 @@ final class Dendrila_Simple_Edit_Navigation
             echo '<button class="button" type="submit" name="dendrila_simple_edit_nav_operation" value="add_link">'.esc_html__('Ajouter le lien', 'dendrila-simple-edit').'</button>';
             echo '<p><label>'.esc_html__('Titre de regroupement (sans page ni lien)', 'dendrila-simple-edit').' <input type="text" name="dendrila_simple_edit_nav_heading"></label> ';
             echo '<button class="button" type="submit" name="dendrila_simple_edit_nav_operation" value="add_heading">'.esc_html__('Ajouter un titre au menu', 'dendrila-simple-edit').'</button></p>';
-            echo '<p><label>'.esc_html__('Retirer du menu', 'dendrila-simple-edit').' <select name="dendrila_simple_edit_nav_item"><option value="0">—</option>';
-            foreach ($menu['items'] as $entry) {
-                echo '<option value="'.(int)$entry['id'].'">'.esc_html($entry['label']).'</option>';
-            }
-            echo '</select></label> ';
-            echo '<button class="button" type="submit" name="dendrila_simple_edit_nav_operation" value="remove" onclick="return confirm('.esc_attr(wp_json_encode(__('Retirer ce lien du menu sans supprimer sa page ?', 'dendrila-simple-edit'))).')">'.esc_html__('Retirer le lien', 'dendrila-simple-edit').'</button></p></form>';
+            echo '</form>';
         }
         echo '<form method="post" action="'.esc_url(admin_url('admin-post.php')).'">';
         wp_nonce_field('dendrila_simple_edit_nav_edit');
@@ -608,6 +609,7 @@ final class Dendrila_Simple_Edit_Navigation
         echo '<input type="hidden" name="dendrila_simple_edit_nav_operation" value="settings">';
         echo '<input type="hidden" name="dendrila_simple_edit_nav_version" value="'.esc_attr(self::fingerprint($menu)).'">';
         echo '<label><input type="checkbox" name="dendrila_simple_edit_nav_auto_add" value="1"'.checked(get_option(self::AUTO_ADD, 'no'), 'yes', false).'> '.esc_html__('Ajouter automatiquement au menu principal les nouvelles pages publiées', 'dendrila-simple-edit').'</label> ';
-        echo '<button type="submit" class="button">'.esc_html__('Enregistrer cette préférence', 'dendrila-simple-edit').'</button></form></section>';
+        echo '<button type="submit" class="button">'.esc_html__('Enregistrer cette préférence', 'dendrila-simple-edit').'</button></form>';
+        echo '</div></details></section>';
     }
 }
