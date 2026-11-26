@@ -729,6 +729,12 @@ final class Dendrila_Simple_Edit_Plugin
             return array();
         }
         global $wpdb;
+        // Advisory shortcode discovery can tolerate a short delay; unlike
+        // membership/consent checks, these matches do not authorize any action.
+        $cache_key = 'public_shortcode_locations_' . md5($field);
+        $cached = function_exists('wp_cache_get') ?
+            wp_cache_get($cache_key, 'dendrila_simple_edit') : false;
+        if (is_array($cached)) { return $cached; }
         $needle = '%' . $wpdb->esc_like('[dse_text') . '%';
         $field_needle = '%' . $wpdb->esc_like('field="' . $field . '"') . '%';
         $pages = $wpdb->get_results($wpdb->prepare(
@@ -741,6 +747,9 @@ final class Dendrila_Simple_Edit_Plugin
              LIMIT 30",
             $wpdb->posts, $needle, $field_needle
         ));
+        if (is_array($pages) && function_exists('wp_cache_set')) {
+            wp_cache_set($cache_key, $pages, 'dendrila_simple_edit', 30);
+        }
         return is_array($pages) ? $pages : array();
     }
 
