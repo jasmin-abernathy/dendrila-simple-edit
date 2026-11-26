@@ -25,6 +25,13 @@ gt_assert(!is_wp_error($id) && (int)$id>0,'Gutenberg post created');
 $post = get_post($id);
 gt_assert($post->post_content === $source,'Initial Gutenberg content stored intact');
 gt_assert(Dendrila_Simple_Edit_Post_Editor::is_layout_safe($post),'Mixed Gutenberg/Woo page is now editable');
+ob_start();
+Dendrila_Simple_Edit_Post_Editor::render('page');
+$editor_html = ob_get_clean();
+gt_assert(strpos($editor_html, 'id="dendrila-simple-edit-item-' . (int) $id . '"') !== false,
+    'Gutenberg page shown as editable, not restricted');
+gt_assert(strpos($editor_html, 'name="dendrila_simple_edit_gutenberg_text[0]"') !== false,
+    'Gutenberg text fields are visible and submitted by the page editor');
 $updated = Dendrila_Simple_Edit_Gutenberg::apply_edits($source,
     array('Bonjour & bienvenue','Nos nouveaux services'));
 gt_assert($updated!==false && strpos($updated,'<div class="checkout-protected">')!==false,
