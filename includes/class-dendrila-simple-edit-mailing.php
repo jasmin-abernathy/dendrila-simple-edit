@@ -485,7 +485,8 @@ final class Dendrila_Simple_Edit_Mailing
     public static function reconfirm()
     {
         global $wpdb;
-        $raw_rid = isset($_REQUEST['rid']) ? sanitize_text_field(wp_unslash($_REQUEST['rid'])) : '';
+        $raw_rid = isset($_REQUEST['rid']) && is_string($_REQUEST['rid']) ?
+            sanitize_text_field(wp_unslash($_REQUEST['rid'])) : '';
         $rid = ctype_digit((string) $raw_rid) ? (int) $raw_rid : 0;
         $token = isset($_REQUEST['token']) && is_string($_REQUEST['token']) ?
             sanitize_text_field(wp_unslash($_REQUEST['token'])) : '';
@@ -518,12 +519,17 @@ final class Dendrila_Simple_Edit_Mailing
             echo '<input type="hidden" name="action" value="dendrila_simple_edit_ml_reconfirm">';
             echo '<input type="hidden" name="rid" value="'.(int)$rid.'">';
             echo '<input type="hidden" name="token" value="'.esc_attr($token).'">';
+            // The single-use invitation token is the principal authorization;
+            // a WordPress nonce additionally protects the confirmation POST.
+            wp_nonce_field('dendrila_simple_edit_ml_reconfirm_' . $rid);
             echo '<p><label><input type="checkbox" name="confirm_optin" value="yes" required> Oui, ';
             echo 'je souhaite de nouveau recevoir ces newsletters. Je pourrai me désinscrire à tout moment.</label></p>';
             echo '<button type="submit">Confirmer mon abonnement</button></form></body></html>';
             exit;
         }
-        if (!isset($_POST['confirm_optin']) || sanitize_text_field(wp_unslash($_POST['confirm_optin'])) !== 'yes') {
+        check_admin_referer('dendrila_simple_edit_ml_reconfirm_' . $rid);
+        if (!isset($_POST['confirm_optin']) || !is_string($_POST['confirm_optin']) ||
+            sanitize_text_field(wp_unslash($_POST['confirm_optin'])) !== 'yes') {
             wp_die('Vous devez accepter explicitement le réabonnement.',
                 'Confirmation nécessaire',array('response'=>400));
         }
