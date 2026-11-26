@@ -18,6 +18,15 @@ final class Dendrila_Simple_Edit_Builders
         }
         global $wpdb;
         $results = array();
+        $cache_key = 'elementor_shortcode_' . md5($field);
+        $cached_rows = function_exists('wp_cache_get') ?
+            wp_cache_get($cache_key, 'dendrila_simple_edit') : false;
+        if (is_array($cached_rows)) {
+            $rows = $cached_rows;
+        } else {
+        // This is a bounded read-only diagnostic over builder-specific JSON.
+        // WordPress has no equivalent postmeta API for an indexed LIKE scan.
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Prepared, bounded custom builder discovery query.
         $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT p.ID, p.post_title, pm.meta_value
              FROM %i pm
@@ -29,6 +38,10 @@ final class Dendrila_Simple_Edit_Builders
              ORDER BY p.post_title ASC LIMIT 50",
             $wpdb->postmeta, $wpdb->posts, '%' . $wpdb->esc_like('dse_text') . '%'
         ));
+        if (is_array($rows) && function_exists('wp_cache_set')) {
+            wp_cache_set($cache_key, $rows, 'dendrila_simple_edit', 30);
+        }
+        }
         if (!is_array($rows)) { return array(); }
         foreach ($rows as $row) {
             if (!isset($row->ID, $row->meta_value) || !is_string($row->meta_value) ||
