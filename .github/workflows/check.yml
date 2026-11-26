@@ -50,6 +50,7 @@ jobs:
           php tests/navigation-subgroups.php convert
           node tests/navigation-drag.js
           node tests/navigation-mobile.js
+          node tests/admin-actions.js
   package:
     name: Installation ZIP
     needs: php

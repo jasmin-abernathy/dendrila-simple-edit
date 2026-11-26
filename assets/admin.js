@@ -619,7 +619,7 @@
             if (!button) { return; }
             var groupId = button.getAttribute('data-dendrila-simple-edit-select-all') ||
                 button.getAttribute('data-dendrila-simple-edit-select-none');
-            var fieldset = document.getElementById(groupId);
+            var fieldset = groupId ? document.getElementById(groupId) : button.closest('fieldset');
             if (!fieldset) { return; }
             var selected = button.hasAttribute('data-dendrila-simple-edit-select-all');
             Array.prototype.forEach.call(fieldset.querySelectorAll('input[type="checkbox"]'), function (checkbox) {
@@ -644,7 +644,6 @@
     } else {
         init();
     }
-}());
 
 // Native clipboard: visible feedback and fallback for browsers without Clipboard API.
 document.addEventListener('click', async function(event) {
@@ -663,8 +662,11 @@ document.addEventListener('click', async function(event) {
             temporary.style.opacity = '0';
             document.body.appendChild(temporary);
             temporary.select();
-            if (!document.execCommand('copy')) throw new Error('Copy unavailable');
-            temporary.remove();
+            try {
+                if (!document.execCommand('copy')) throw new Error('Copy unavailable');
+            } finally {
+                temporary.remove();
+            }
         }
         button.textContent = t('Copié !');
     } catch (error) {
@@ -793,16 +795,7 @@ document.addEventListener('click', async function(event) {
             },true);
             refresh();
         });
-        document.querySelectorAll('[data-dendrila-simple-edit-select-all]').forEach(function(btn){
-            btn.addEventListener('click',function(){
-                btn.closest('fieldset').querySelectorAll('input[type="checkbox"]').forEach(function(el){el.checked=true;});
-            });
-        });
-        document.querySelectorAll('[data-dendrila-simple-edit-select-none]').forEach(function(btn){
-            btn.addEventListener('click',function(){
-                btn.closest('fieldset').querySelectorAll('input[type="checkbox"]').forEach(function(el){el.checked=false;});
-            });
-        });
     }
     if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init,{once:true});}else{init();}
+}());
 }());
