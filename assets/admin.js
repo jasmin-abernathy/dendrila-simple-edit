@@ -581,7 +581,7 @@
             var submits = Array.prototype.filter.call(
                 form.querySelectorAll('button[type="submit"], input[type="submit"]'),
                 function (button) {
-                    return button.closest('form') === form &&
+                    return button.form === form &&
                         !button.closest('.dendrila-simple-edit-form-actions-top');
                 }
             );

@@ -52,6 +52,7 @@ jobs:
           php tests/navigation-subgroups.php
           php tests/navigation-subgroups.php missing-confirmation
           php tests/navigation-subgroups.php convert
+          php tests/navigation-subgroups.php convert-flat
           node tests/navigation-drag.js
           node tests/navigation-mobile.js
           node tests/admin-actions.js
@@ -121,10 +122,10 @@ jobs:
           mkdir -p dist/dendrila-simple-edit
           cp dendrila-simple-edit.php readme.txt LICENSE.txt dist/dendrila-simple-edit/
           cp -R includes assets languages dist/dendrila-simple-edit/
-          (cd dist && zip -qr ../dendrila-simple-edit-0.0.2.zip dendrila-simple-edit)
-          unzip -t dendrila-simple-edit-0.0.2.zip
-          test "$(unzip -Z1 dendrila-simple-edit-0.0.2.zip | grep -c '^dendrila-simple-edit/dendrila-simple-edit.php$')" -eq 1
-          if unzip -Z1 dendrila-simple-edit-0.0.2.zip | grep -E '(^|/)(tests|docs|\.git|\.github)/'; then
+          (cd dist && zip -qr ../dendrila-simple-edit-0.0.3.zip dendrila-simple-edit)
+          unzip -t dendrila-simple-edit-0.0.3.zip
+          test "$(unzip -Z1 dendrila-simple-edit-0.0.3.zip | grep -c '^dendrila-simple-edit/dendrila-simple-edit.php$')" -eq 1
+          if unzip -Z1 dendrila-simple-edit-0.0.3.zip | grep -E '(^|/)(tests|docs|\.git|\.github)/'; then
             echo 'Unexpected development files in the installable archive' >&2
             exit 1
           fi
@@ -132,6 +133,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dendrila-simple-edit-installation
-          path: dendrila-simple-edit-0.0.2.zip
+          path: dendrila-simple-edit-0.0.3.zip
           if-no-files-found: error
           retention-days: 14

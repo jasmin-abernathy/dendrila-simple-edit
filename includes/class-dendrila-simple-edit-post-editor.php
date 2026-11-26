@@ -285,14 +285,14 @@ final class Dendrila_Simple_Edit_Post_Editor
             }
             $submitted = isset($_POST['dendrila_simple_edit_gutenberg_text']) &&
                 is_array($_POST['dendrila_simple_edit_gutenberg_text']) ?
-                map_deep(wp_unslash($_POST['dendrila_simple_edit_gutenberg_text']), 'sanitize_text_field') : null;
+                wp_unslash($_POST['dendrila_simple_edit_gutenberg_text']) : null;
             $clean = Dendrila_Simple_Edit_Gutenberg::apply_edits($post->post_content, $submitted);
             if ($clean === false) {
                 wp_die('Les blocs transmis sont invalides. Aucun contenu n’a été modifié.',
                     'Requête incorrecte', array('response' => 400));
             }
         } else {
-            if (Dendrila_Simple_Edit_Gutenberg::supports($post->post_content)) {
+            if (has_blocks($post->post_content)) {
                 wp_die('Le contenu Gutenberg doit être enregistré par ses champs de texte.',
                     'Requête incorrecte', array('response' => 400));
             }
@@ -345,7 +345,7 @@ final class Dendrila_Simple_Edit_Post_Editor
         }
         // No native editing capabilities are added to the role; this precise write
         // is validated by the content allowlist/ownership, nonce and fingerprint.
-        $updated = wp_update_post($update, true);
+        $updated = $is_gutenberg_request ? Dendrila_Simple_Edit_Gutenberg::update_post($update) : wp_update_post($update, true);
         if (is_wp_error($updated) || !$updated) { self::redirect('error', $id); }
         self::apply_illustration($id, $image);
         update_post_meta($id, '_dendrila_simple_edit_last_edit', time());
@@ -512,16 +512,16 @@ final class Dendrila_Simple_Edit_Post_Editor
                 echo '<input type="hidden" name="dendrila_simple_edit_gutenberg_mode" value="text">';
                 echo '<fieldset class="dendrila-simple-edit-gutenberg-text"><legend>' .
                     esc_html__('Textes des blocs Gutenberg', 'dendrila-simple-edit') . '</legend>';
-                echo '<p class="description">Modifiez le texte des paragraphes, titres et éléments de liste ci-dessous. Les mises en page, blocs WooCommerce, styles et autres blocs sont conservés sans modification. Les blocs contenant des liens ou une mise en forme interne ne sont pas encore modifiables ici.</p>';
+                echo '<p class="description">Chaque champ correspond à un fragment de texte. Les liens, le gras et les sauts de ligne séparent les fragments. Les adresses des liens et la mise en page sont conservées.</p>';
                 foreach (Dendrila_Simple_Edit_Gutenberg::editable_blocks($post->post_content) as $block) {
                     $field_id = 'dendrila-simple-edit-gutenberg-' . $suffix . '-' . $block['id'];
                     $label = $block['kind'] === 'heading' ? 'Titre H' . $block['level'] :
-                        ($block['kind'] === 'list-item' ? 'Élément de liste' : 'Paragraphe');
+                        array('list-item' => 'Élément de liste', 'paragraph' => 'Paragraphe', 'button' => 'Bouton', 'image' => 'Légende')[$block['kind']];
                     echo '<div class="dendrila-simple-edit-gutenberg-text-card"><label for="' . esc_attr($field_id) . '"><strong>' .
                         esc_html($label . ' ' . ($block['id'] + 1)) . '</strong></label>';
                     echo '<textarea id="' . esc_attr($field_id) . '" name="dendrila_simple_edit_gutenberg_text[' .
                         (int) $block['id'] . ']" rows="' . ($block['kind'] === 'heading' ? '2' : '3') . '" maxlength="10000">' .
-                        esc_textarea($block['text']) . '</textarea></div>';
+                        "\n" . esc_textarea($block['text']) . '</textarea></div>';
                 }
                 echo '</fieldset>';
             } else {

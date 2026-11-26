@@ -16,7 +16,7 @@ wp_set_current_user($admin->ID);
 $source = '<!-- wp:group {"layout":{"type":"constrained"}} -->' . "\n" .
     '<div class="wp-block-group">' . "\n" .
     '<!-- wp:paragraph --><p>Bienvenue sur le site</p><!-- /wp:paragraph -->' . "\n" .
-    '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading">Nos services</h2><!-- /wp:heading -->' . "\n" .
+    '<!-- wp:heading {"level":2} --><h2 class="wp-block-heading"><strong>Nos services</strong></h2><!-- /wp:heading -->' . "\n" .
     '<!-- wp:woocommerce/checkout --><div class="checkout-protected">Contenu Woo préservé</div><!-- /wp:woocommerce/checkout -->' . "\n" .
     '</div><!-- /wp:group -->';
 $id = wp_insert_post(array('post_type'=>'page','post_title'=>'Gutenberg test',
@@ -37,10 +37,18 @@ $updated = Dendrila_Simple_Edit_Gutenberg::apply_edits($source,
 gt_assert($updated!==false && strpos($updated,'<div class="checkout-protected">')!==false,
     'Surgical text change');
 wp_set_current_user($editor->ID);
-$done = wp_update_post(array('ID'=>$id,'post_content'=>wp_slash($updated)),true);
+$update = array('ID'=>$id,'post_content'=>wp_slash($updated));
+$done = Dendrila_Simple_Edit_Gutenberg::update_post($update);
 gt_assert(!is_wp_error($done) && $done,'Native write as delegated account');
 $post = get_post($id);
 gt_assert($post->post_content === $updated,'WordPress persists the exact Gutenberg markup');
+gt_assert(in_array($source, wp_list_pluck(wp_get_post_revisions($id),'post_content'), true), 'Original revision available');
+gt_assert(serialize_blocks(parse_blocks($updated)) === serialize_blocks(parse_blocks($post->post_content)), 'Native block structure persisted');
+$rewrite = static function ($data) { $data['post_content'] .= ' changed'; return $data; };
+add_filter('wp_insert_post_data', $rewrite);
+$refused = Dendrila_Simple_Edit_Gutenberg::update_post(array('ID'=>$id,'post_content'=>wp_slash($source)));
+remove_filter('wp_insert_post_data', $rewrite);
+gt_assert(is_wp_error($refused) && get_post($id)->post_content === $updated, 'Filter rewrite aborted before storage');
 wp_set_current_user($admin->ID);
 update_option(Dendrila_Simple_Edit_Approvals::OPTION,array('require_page'=>true),false);
 $proposal = Dendrila_Simple_Edit_Gutenberg::apply_edits($updated,

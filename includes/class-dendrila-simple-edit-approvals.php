@@ -126,8 +126,9 @@ final class Dendrila_Simple_Edit_Approvals
         }
         if ($decision === 'approve') {
             if (!in_array($proposal['target_status'], array('draft','publish'), true) ||
-                !(Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($proposal['body']) ||
-                    Dendrila_Simple_Edit_Gutenberg::is_safe_transition($post->post_content, $proposal['body'])) ||
+                !(has_blocks($post->post_content) ?
+                    Dendrila_Simple_Edit_Gutenberg::is_safe_transition($post->post_content, $proposal['body']) :
+                    Dendrila_Simple_Edit_Block_Editor::is_safe_for_editor($proposal['body'])) ||
                 !Dendrila_Simple_Edit_Post_Editor::is_layout_safe($post)) {
                 self::redirect('invalid');
             }
@@ -139,10 +140,11 @@ final class Dendrila_Simple_Edit_Approvals
                     self::redirect('invalid');
                 }
             }
-            $done = wp_update_post(array('ID' => $id,
+            $update = array('ID' => $id,
                 'post_title' => wp_slash($proposal['title']),
                 'post_content' => wp_slash($proposal['body']),
-                'post_status' => $proposal['target_status']), true);
+                'post_status' => $proposal['target_status']);
+            $done = has_blocks($post->post_content) ? Dendrila_Simple_Edit_Gutenberg::update_post($update) : wp_update_post($update, true);
             if (is_wp_error($done) || !$done) { self::redirect('error'); }
             if ($post->post_type === 'post' && isset($proposal['image']) && is_array($proposal['image'])) {
                 Dendrila_Simple_Edit_Post_Editor::apply_illustration($id, $proposal['image']);

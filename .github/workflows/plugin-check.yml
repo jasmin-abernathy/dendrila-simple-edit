@@ -9,6 +9,13 @@ on:
       - 'readme.txt'
       - '.github/workflows/plugin-check.yml'
       - '.github/workflows/check.yml'
+  pull_request:
+    paths:
+      - 'includes/**'
+      - 'assets/**'
+      - 'dendrila-simple-edit.php'
+      - 'readme.txt'
+      - '.github/workflows/plugin-check.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,7 +36,6 @@ jobs:
           cp -R includes assets languages dist/dendrila-simple-edit/
       - name: Official WordPress Plugin Check (report all findings)
         id: plugin_check
-        continue-on-error: true
         uses: wordpress/plugin-check-action@v1
         with:
           build-dir: './dist/dendrila-simple-edit'

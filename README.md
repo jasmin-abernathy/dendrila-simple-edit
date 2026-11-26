@@ -1,6 +1,6 @@
 # Dendrila Simple Edit pour WordPress
 
-Dendrila Simple Edit donne à chaque rôle WordPress un espace de travail pour modifier les contenus qui lui sont confiés. L’administrateur choisit les types de contenus, les modules et les actions autorisées. La version de laboratoire est **0.0.2**, pour WordPress 6.5 ou ultérieur et PHP 7.4 ou ultérieur.
+Dendrila Simple Edit donne à chaque rôle WordPress un espace de travail pour modifier les contenus qui lui sont confiés. L’administrateur choisit les types de contenus, les modules et les actions autorisées. La version de laboratoire est **0.0.3**, pour WordPress 6.5 ou ultérieur et PHP 7.4 ou ultérieur.
 
 ## Installation et premier essai
 

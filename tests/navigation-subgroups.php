@@ -22,6 +22,7 @@ function get_permalink($page) { return 'https://example.test/p/'.(int)$page->ID.
 function wp_json_encode($a) { return json_encode($a); }
 function wp_slash($a) { return $a; }
 function serialize_blocks($blocks) { return json_encode($blocks); }
+function wp_save_post_revision($id) { return 1; }
 function wp_update_post($data,$error=false) {
     if ((int)$data['ID']===4) { $GLOBALS['nav_post']->post_content=$data['post_content']; $GLOBALS['last_saved']=$data; }
     else { $GLOBALS['pages'][$data['ID']]->menu_order=$data['menu_order']; }
@@ -74,6 +75,12 @@ nav_assert($tree[1]['attrs']['id']===11 && $tree[1]['attrs']['className']==='den
 nav_assert($tree[1]['innerBlocks'][0]['attrs']['id']===22 &&
     $tree[1]['innerBlocks'][0]['attrs']['url']==='https://example.test/p/22/', 'child retains its permalink');
 
+$GLOBALS['pages'][22]->post_parent=11;
+nav_assert(Dendrila_Simple_Edit_Navigation::detect()['items'][1]['parent']===11,'Automatic child retained');
+$GLOBALS['pages'][33]->post_parent=22;
+nav_assert(Dendrila_Simple_Edit_Navigation::detect()===false,'Third-level list stays native');
+unset($GLOBALS['pages'][22]->post_parent,$GLOBALS['pages'][33]->post_parent);
+
 // Editor renders independent parent and mobile selects and an explicit conversion warning.
 ob_start();Dendrila_Simple_Edit_Navigation::render();$html=ob_get_clean();
 nav_assert(substr_count($html,'name="dendrila_simple_edit_nav_ids[]"')===3,'all items have hidden IDs');
@@ -114,6 +121,17 @@ if ($argv[1]==='convert') {
         nav_assert($GLOBALS['pages'][11]->menu_order===0 && $GLOBALS['pages'][22]->menu_order===0,
             'conversion does not modify page menu_order');
         echo "OK: converted grouped menu, protected page metadata and URLs\n";
+    });
+    Dendrila_Simple_Edit_Navigation::save();
+}
+
+if ($argv[1]==='convert-flat') {
+    $_POST=$base;
+    $_POST['dendrila_simple_edit_nav_convert_confirm']='1';
+    register_shutdown_function(function () {
+        $blocks=json_decode($GLOBALS['last_saved']['post_content'],true);
+        nav_assert(count($blocks)===3 && $blocks[1]['attrs']['id']===22,'Flat conversion retains pages');
+        echo "OK: explicit conversion with unchanged flat order\n";
     });
     Dendrila_Simple_Edit_Navigation::save();
 }
