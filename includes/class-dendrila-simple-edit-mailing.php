@@ -1060,6 +1060,10 @@ final class Dendrila_Simple_Edit_Mailing
                     $list_counts[(int) $count_row->list_id] = (int) $count_row->total;
                 }
             }
+            // The administrator assignment choices are identical for every
+            // list; avoid running get_users() again inside every list card.
+            $assignment_users = $admin && $lists ?
+                get_users(array('role'=>Dendrila_Simple_Edit_Plugin::ROLE,'number'=>100)) : array();
             foreach ($lists as $list) {
                 $count = isset($list_counts[(int) $list->id]) ? $list_counts[(int) $list->id] : 0;
                 echo '<details class="dendrila-simple-edit-subcard dendrila-simple-edit-list-card"><summary><strong>' .
@@ -1067,7 +1071,7 @@ final class Dendrila_Simple_Edit_Mailing
                     ($count === 1 ? ' abonné confirmé' : ' abonnés confirmés') . '</summary>';
                 if ($admin) {
                     echo '<details class="dendrila-simple-edit-list-assignment"><summary>' . esc_html__('Attribuer cette liste à un éditeur', 'dendrila-simple-edit') . '</summary>';
-                    $users = get_users(array('role'=>Dendrila_Simple_Edit_Plugin::ROLE,'number'=>100));
+                    $users = $assignment_users;
                     $options = '<option value="0"' . selected((int)$list->owner_user_id,0,false) .
                         '>Administration (non attribuée)</option>';
                     foreach ($users as $user) {
