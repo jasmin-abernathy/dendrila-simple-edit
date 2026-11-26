@@ -565,7 +565,11 @@ final class Dendrila_Simple_Edit_Plugin
     {
         self::require_editor('dendrila_simple_edit_save');
         $expected = self::submitted_revision('dendrila_simple_edit_save');
-        $input = isset($_POST['dendrila_simple_edit_fields']) ? wp_unslash($_POST['dendrila_simple_edit_fields']) : array();
+        $input = isset($_POST['dendrila_simple_edit_fields']) && is_array($_POST['dendrila_simple_edit_fields']) ?
+            wp_unslash($_POST['dendrila_simple_edit_fields']) : array();
+        // validate_changes() only permits configured keys and sanitizes every value
+        // by its declared type. Sanitizing the whole payload here would erase
+        // intentional textarea formatting before field-specific validation.
         try {
             $result = self::commit_change($expected, $input);
         } catch (InvalidArgumentException $error) {
