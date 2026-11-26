@@ -409,7 +409,10 @@ final class Dendrila_Simple_Edit_Woo
                 self::redirect('conflict');
             }
         }
-        $submitted = isset($_POST['dendrila_simple_edit_pfields']) ? wp_unslash($_POST['dendrila_simple_edit_pfields']) : array();
+        $submitted = isset($_POST['dendrila_simple_edit_pfields']) && is_array($_POST['dendrila_simple_edit_pfields']) ?
+            wp_unslash($_POST['dendrila_simple_edit_pfields']) : array();
+        // clean_changes() enforces an allowlist and applies the correct type-
+        // specific sanitizer for each supported WooCommerce field.
         if (is_array($submitted) && isset($submitted['manage_stock']) && $submitted['manage_stock'] !== '1') {
             unset($submitted['stock_quantity']);
         }
