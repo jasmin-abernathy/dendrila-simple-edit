@@ -18,6 +18,7 @@ Dendrila Simple Edit provides a restricted editing interface where site owners c
 Features:
 
 * Guided editing by content type (pages, posts and events), with permissions per WordPress role, safe content blocks, image selection and optional approval before publication. Administrators keep their native access.
+* Safe, selective Gutenberg editing: change plain text in supported paragraph, heading and list-item blocks without reserializing the surrounding group, theme or WooCommerce blocks. Inline-rich and unsupported blocks remain untouched.
 * Role-based permissions with a five-step wizard shown on first installation only (never automatically on update or reactivation), inline mailing-list creation and an optional manual configuration review without erasing contacts or lists.
 * Compact administration settings: enable or disable modules (including newsletters) independently, manage content types and media under Content, and configure per-role permissions in collapsible groups.
 * Select additional active plugins under Permissions > Plugin access for the Simple Editing role. Registered plugin menus, owned custom content, dedicated Settings API forms and plugin permission checks are supported without assigning the administrator role or permanent global capabilities.
@@ -64,6 +65,9 @@ A database migration searches earlier mailing tables and records unsubscribed ad
 
 = Can I use WooCommerce and newsletters independently? =
 Yes. Each module is optional. Checkout opt-in is disabled by default and requires a mailing list and an email transport.
+
+= Can I edit existing Gutenberg pages and posts? =
+Yes, when they contain supported plain-text Paragraph, Heading or List Item blocks. Simple Edit updates only those text nodes and preserves other serialized Gutenberg blocks unchanged, including WooCommerce layouts. Blocks with inline links, rich formatting and unsupported/custom layouts are not yet editable here; they remain intact and can be edited in the native WordPress editor. Delegated permissions, content versions and optional approval still apply.
 
 = Is a Divi layout editable? =
 Not automatically. Unsupported layouts remain protected; administrators can choose safe shortcode placements, while native Divi content may need Divi's original editor.
