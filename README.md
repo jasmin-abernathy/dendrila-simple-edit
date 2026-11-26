@@ -1,6 +1,6 @@
 # Dendrila Simple Edit pour WordPress
 
-Dendrila Simple Edit donne à chaque rôle WordPress un espace de travail pour modifier les contenus qui lui sont confiés. L’administrateur choisit les types de contenus, les modules et les actions autorisées. La version de laboratoire est **0.0.1**, pour WordPress 6.5 ou ultérieur et PHP 7.4 ou ultérieur.
+Dendrila Simple Edit donne à chaque rôle WordPress un espace de travail pour modifier les contenus qui lui sont confiés. L’administrateur choisit les types de contenus, les modules et les actions autorisées. La version de laboratoire est **0.0.2**, pour WordPress 6.5 ou ultérieur et PHP 7.4 ou ultérieur.
 
 ## Installation et premier essai
 
@@ -16,6 +16,17 @@ Dendrila Simple Edit donne à chaque rôle WordPress un espace de travail pour m
 - **Boutique** — WooCommerce apporte les produits. Les actions sur leur contenu, leurs variations, le stock et la publication se délèguent séparément. Les commandes et les paiements restent dans WooCommerce.
 - **Newsletters** — préparation et aperçu des campagnes, listes, file d’envoi et désinscription. L’envoi nécessite FluentSMTP actif avec une connexion configurée. Pour essayer le module, utiliser une liste de test.
 - **Champs reliés** — placer par exemple `[dse_text field="phone"]` dans un bloc Code court. Un cache de page peut retarder l’affichage d’une modification.
+- **Accès aux plugins** — dans **Autorisations → Accès aux plugins**, cocher les extensions actives à ouvrir aux comptes **Édition simple**. Le choix est général : Calendar, un outil de réservation ou toute autre extension dont les écrans peuvent être identifiés. Décocher un plugin retire son accès dès la prochaine action.
+
+## Déléguer l’administration d’une extension
+
+La liste indique les menus détectés pour chaque plugin. L’autorisation s’applique à l’ensemble du rôle **Édition simple**, sans attribuer le rôle administrateur et sans enregistrer de droit global `manage_options` sur les comptes. Les menus autorisés restent disponibles dans la barre latérale, y compris les sous-menus placés sous un menu WordPress comme **Réglages** ou **Outils**.
+
+Les vérifications de permission propres au plugin, ses contenus personnalisés, taxonomies et formulaires Settings API dédiés sont pris en charge. Les appels AJAX et REST implémentés par ce plugin utilisent la même sélection. L’origine est établie à partir du code actif et des callbacks enregistrés ; un paramètre `page` ou un référent HTTP ne suffit jamais à donner un droit.
+
+L’accès porte sur les fonctions du plugin choisi : une extension de gestion des utilisateurs, de sauvegarde ou d’exécution de code peut elle-même proposer des actions sensibles. Ce mécanisme ne constitue pas un cloisonnement des fonctions internes de ces extensions. Les écrans WordPress non autorisés et l’administration de Simple Edit conservent leurs restrictions.
+
+Certaines extensions nécessitent une adaptation : contrôles directs du rôle administrateur, initialisation conditionnelle avant le chargement de Simple Edit, permissions internes supplémentaires non représentées dans leurs menus, formulaires partageant un groupe de réglages WordPress ou service externe. Une extension complémentaire peut nécessiter de sélectionner aussi son plugin parent. Les réglages partagés restent réservés à l’administration ; aucune permission générale n’est ajoutée pour contourner ces cas.
 
 Le [descriptif livré avec l’extension](readme.txt) détaille les prérequis, les données stockées et les limites. Le [bilan de la version 0.0.1](docs/RELEASE-AUDIT-0.0.1.md) et le [protocole pour un site pilote](docs/ESSAI-SITE-LIVE.md) distinguent les contrôles isolés des essais avec les extensions d’un site réel.
 

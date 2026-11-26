@@ -51,9 +51,55 @@ jobs:
           node tests/navigation-drag.js
           node tests/navigation-mobile.js
           node tests/admin-actions.js
+  integration:
+    name: WordPress plugin access
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      database:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: dse-integration-only
+          MARIADB_DATABASE: dse_access_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -pdse-integration-only"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+    env:
+      DSE_WP_ROOT: ${{ runner.temp }}/dse-wordpress
+      DSE_TEST_OUTPUT: ${{ runner.temp }}/dse-plugin-access-results
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mysqli
+          tools: wp-cli
+          coverage: none
+      - name: Prepare disposable WordPress
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp core download --path="$DSE_WP_ROOT" --version=7.1.5 --skip-content
+          wp config create --path="$DSE_WP_ROOT" --dbname=dse_access_test --dbuser=root --dbpass=dse-integration-only --dbhost=127.0.0.1
+          wp config set DISABLE_WP_CRON true --raw --path="$DSE_WP_ROOT"
+          wp config set AUTOMATIC_UPDATER_DISABLED true --raw --path="$DSE_WP_ROOT"
+          wp core install --path="$DSE_WP_ROOT" --url=http://127.0.0.1:8098 --title="Plugin access tests" --admin_user=bootstrap --admin_password="$(openssl rand -hex 24)" --admin_email=fixture@example.invalid --skip-email
+          mkdir -p "$DSE_WP_ROOT/wp-content/plugins"
+          ln -s "$GITHUB_WORKSPACE" "$DSE_WP_ROOT/wp-content/plugins/dendrila-simple-edit"
+          DSE_PLUGIN_ACCESS_ALLOW_INSTALL=1 php tests/plugin-access/install-fixtures.php
+      - name: Verify plugin permission boundaries and native forms
+        run: |
+          php tests/plugin-access/integration.php
+          php tests/plugin-access/http-integration.php
   package:
     name: Installation ZIP
-    needs: php
+    needs: [php, integration]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -67,10 +113,10 @@ jobs:
           mkdir -p dist/dendrila-simple-edit
           cp dendrila-simple-edit.php readme.txt LICENSE.txt dist/dendrila-simple-edit/
           cp -R includes assets languages dist/dendrila-simple-edit/
-          (cd dist && zip -qr ../dendrila-simple-edit-0.0.1.zip dendrila-simple-edit)
-          unzip -t dendrila-simple-edit-0.0.1.zip
-          test "$(unzip -Z1 dendrila-simple-edit-0.0.1.zip | grep -c '^dendrila-simple-edit/dendrila-simple-edit.php$')" -eq 1
-          if unzip -Z1 dendrila-simple-edit-0.0.1.zip | grep -E '(^|/)(tests|docs|\.git|\.github)/'; then
+          (cd dist && zip -qr ../dendrila-simple-edit-0.0.2.zip dendrila-simple-edit)
+          unzip -t dendrila-simple-edit-0.0.2.zip
+          test "$(unzip -Z1 dendrila-simple-edit-0.0.2.zip | grep -c '^dendrila-simple-edit/dendrila-simple-edit.php$')" -eq 1
+          if unzip -Z1 dendrila-simple-edit-0.0.2.zip | grep -E '(^|/)(tests|docs|\.git|\.github)/'; then
             echo 'Unexpected development files in the installable archive' >&2
             exit 1
           fi
@@ -78,6 +124,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dendrila-simple-edit-installation
-          path: dendrila-simple-edit-0.0.1.zip
+          path: dendrila-simple-edit-0.0.2.zip
           if-no-files-found: error
           retention-days: 14

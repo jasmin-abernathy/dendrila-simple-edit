@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dendrila Simple Edit
  * Description: Édition guidée de contenus explicitement autorisés, sans accès à la mise en page.
- * Version: 0.0.1
+ * Version: 0.0.2
  * Requires at least: 6.5
  * Requires PHP: 7.4
  * Text Domain: dendrila-simple-edit
@@ -16,11 +16,13 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('DENDRILA_SIMPLE_EDIT_VERSION', '0.0.1');
+define('DENDRILA_SIMPLE_EDIT_VERSION', '0.0.2');
 define('DENDRILA_SIMPLE_EDIT_PLUGIN_FILE', __FILE__);
 
 $dendrila_simple_edit_dependencies = array(
     '/includes/class-dendrila-simple-edit-plugin.php',
+    '/includes/class-dendrila-simple-edit-admin-access.php',
+    '/includes/class-dendrila-simple-edit-plugin-access.php',
     '/includes/class-dendrila-simple-edit-setup.php',
     '/includes/class-dendrila-simple-edit-approvals.php',
     '/includes/class-dendrila-simple-edit-acf.php',

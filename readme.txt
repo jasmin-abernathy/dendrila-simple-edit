@@ -5,7 +5,7 @@ Tags: editor, permissions, newsletter, content, woocommerce
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.0.1
+Stable tag: 0.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,6 +20,7 @@ Features:
 * Guided editing by content type (pages, posts and events), with permissions per WordPress role, safe content blocks, image selection and optional approval before publication. Administrators keep their native access.
 * Role-based permissions with a five-step wizard shown on first installation only (never automatically on update or reactivation), inline mailing-list creation and an optional manual configuration review without erasing contacts or lists.
 * Compact administration settings: enable or disable modules (including newsletters) independently, manage content types and media under Content, and configure per-role permissions in collapsible groups.
+* Select additional active plugins under Permissions > Plugin access for the Simple Editing role. Registered plugin menus, owned custom content, dedicated Settings API forms and plugin permission checks are supported without assigning the administrator role or permanent global capabilities.
 * Organize the primary navigation by drag-and-drop on touch and desktop, with keyboard/button alternatives, one-level submenus and an open/closed default for each mobile submenu. Converting an automatic Page List to manually managed navigation requires explicit confirmation; newly published pages will then need adding through WordPress.
 * Optional integration with Advanced Custom Fields (supported text fields), The Events Calendar (events) and WooCommerce (products).
 * WooCommerce simple, external, grouped and variable products with delegated creation, publishing, categories, variations and stock controls where authorized.
@@ -52,6 +53,9 @@ The support/donation link opens https://app.lepotager.org/soutenir/ only when an
 
 == Frequently Asked Questions ==
 
+= Can simple editors use another installed plugin? =
+Yes. An administrator can select active extensions under Permissions > Plugin access. This applies to the whole Simple Editing role and is not limited to Dendrila Calendar. Unchecking an extension revokes access on the next action. Plugin functionality can include sensitive operations; grant access only to the extensions the team should manage. Plugins with direct administrator-role checks, early conditional initialization, additional undocumented capabilities, shared core settings groups or external services may need an adapter. Shared WordPress settings remain restricted.
+
 = Can I delegate publishing without giving access to WooCommerce orders? =
 Yes. Product creation, publication, variations, categories, stock and other operations are independently authorized for WordPress roles. Order, refund and payment administration is not delegated.
 
@@ -71,6 +75,11 @@ No. Simple Edit changes only the navigation structure, not the parent or permali
 The plugin's administration includes an optional link to https://app.lepotager.org/soutenir/. No donation is required to use the extension.
 
 == Changelog ==
+
+= 0.0.2 =
+* Administrator selection of additional active plugins for simple editors, with detected menu labels and immediate revocation.
+* Request-local plugin permissions, owned content/taxonomy editing and dedicated Settings API forms, without permanent administrator capabilities.
+* Preserve restrictions on unselected plugins, WordPress settings and Simple Edit configuration.
 
 = 0.0.1 =
 * Initial guided content editor and granular WordPress role permissions.

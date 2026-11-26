@@ -120,9 +120,7 @@ final class Dendrila_Simple_Edit_Plugin
 
     public static function is_simple_editor()
     {
-        $user = wp_get_current_user();
-        return $user && in_array(self::ROLE, (array) $user->roles, true) &&
-            !current_user_can('manage_options');
+        return Dendrila_Simple_Edit_Admin_Access::is_restricted_user();
     }
 
     /**
@@ -160,20 +158,7 @@ final class Dendrila_Simple_Edit_Plugin
     /** Keep the admin interface restricted without altering core role permissions. */
     public static function limit_admin_menu()
     {
-        if (!self::is_simple_editor()) { return; }
-        global $menu, $submenu;
-        if (is_array($menu)) {
-            foreach ($menu as $index => $item) {
-                if (!isset($item[2]) || $item[2] !== 'dendrila-simple-edit') {
-                    unset($menu[$index]);
-                }
-            }
-        }
-        if (is_array($submenu)) {
-            foreach (array_keys($submenu) as $key) {
-                if ($key !== 'dendrila-simple-edit') { unset($submenu[$key]); }
-            }
-        }
+        Dendrila_Simple_Edit_Admin_Access::limit_admin_menu();
     }
 
     public static function restrict_admin_pages()
@@ -186,6 +171,7 @@ final class Dendrila_Simple_Edit_Plugin
             'async-upload.php', 'profile.php'), true)) { return; }
         if ($pagenow === 'admin.php' && isset($_GET['page']) &&
             $_GET['page'] === 'dendrila-simple-edit') { return; }
+        if (Dendrila_Simple_Edit_Admin_Access::allows_current_page()) { return; }
         wp_safe_redirect(admin_url('admin.php?page=dendrila-simple-edit'));
         exit;
     }
@@ -194,16 +180,17 @@ final class Dendrila_Simple_Edit_Plugin
     {
         add_action('init', array(__CLASS__, 'upgrade_editor_role'), 5);
         Dendrila_Simple_Edit_Setup::boot();
+        Dendrila_Simple_Edit_Admin_Access::boot();
         add_filter('woocommerce_prevent_admin_access',
             array(__CLASS__, 'allow_delegated_admin_access'), 999);
         add_filter('login_redirect', array(__CLASS__, 'redirect_wp_login'), 999, 3);
         add_filter('woocommerce_login_redirect',
             array(__CLASS__, 'redirect_woocommerce_login'), 999, 2);
         add_action('admin_menu', array(__CLASS__, 'register_menu'));
-        add_action('admin_menu', array(__CLASS__, 'limit_admin_menu'), 999);
+        add_action('admin_menu', array(__CLASS__, 'limit_admin_menu'), PHP_INT_MAX);
         // The final menu hook catches menu items added by other extensions later.
         add_action('adminmenu', array(__CLASS__, 'limit_admin_menu'), 999);
-        add_action('admin_init', array(__CLASS__, 'restrict_admin_pages'), 99);
+        add_action('admin_init', array(__CLASS__, 'restrict_admin_pages'), PHP_INT_MAX);
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_assets'));
         add_action('admin_post_dendrila_simple_edit_save', array(__CLASS__, 'save'));
         add_action('admin_post_dendrila_simple_edit_restore', array(__CLASS__, 'restore'));
@@ -1058,6 +1045,7 @@ final class Dendrila_Simple_Edit_Plugin
             'general' => __('Modules', 'dendrila-simple-edit'),
             'contenu' => __('Contenu', 'dendrila-simple-edit'),
             'roles' => __('Rôles et permissions', 'dendrila-simple-edit'),
+            'plugins' => __('Accès aux plugins', 'dendrila-simple-edit'),
             'validations' => __('Validation', 'dendrila-simple-edit'),
         );
         $section = isset($_GET['dendrila_simple_edit_settings_section']) && is_string($_GET['dendrila_simple_edit_settings_section']) ?
@@ -1110,7 +1098,7 @@ final class Dendrila_Simple_Edit_Plugin
 
             echo '<section class="dendrila-simple-edit-card"><h2>Qui peut modifier le site ?</h2>';
             echo '<p>Attribuez le rôle <strong>Édition simple</strong> aux comptes de votre choix. ' .
-                'Ces personnes verront uniquement cette interface dans leur administration WordPress.</p>';
+                'Ces personnes verront cette interface et les plugins autorisés dans leur administration WordPress.</p>';
             echo '<p><a class="button button-secondary" href="' .
                 esc_url(admin_url('users.php')) . '">Gérer les utilisateurs</a></p></section>';
             echo '<form class="dendrila-simple-edit-card" method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
@@ -1167,6 +1155,8 @@ final class Dendrila_Simple_Edit_Plugin
             Dendrila_Simple_Edit_Modules::render_admin();
         } elseif ($section === 'validations') {
             Dendrila_Simple_Edit_Approvals::render_settings();
+        } elseif ($section === 'plugins') {
+            Dendrila_Simple_Edit_Admin_Access::render_settings();
         }
         } elseif ($tab === 'aide') {
             echo '<section class="dendrila-simple-edit-card"><h3>Comment modifier un contenu ?</h3><ol class="dendrila-simple-edit-steps"><li>Ouvrez l’onglet Pages, Articles ou Événements.</li><li>Choisissez un contenu autorisé et modifiez son titre et les éléments nécessaires.</li><li>Enregistrez vos modifications.</li></ol><p>Si un texte n’apparaît pas, l’administrateur doit peut-être encore autoriser sa modification.</p></section>';

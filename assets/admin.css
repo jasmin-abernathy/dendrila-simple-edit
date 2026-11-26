@@ -612,3 +612,6 @@
  .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-drag-handle{min-width:48px;min-height:48px;}
  .dendrila-simple-edit-wrap .dendrila-simple-edit-nav-advanced label{flex-basis:100%;}
 }
+/* Plugin access: labels and long extension names remain readable on mobile. */
+.dendrila-simple-edit-plugin-access-item{padding:14px 0;border-bottom:1px solid #dce6df;overflow-wrap:anywhere}
+.dendrila-simple-edit-plugin-access-item .description{margin:6px 0 0 28px}
