@@ -103,6 +103,7 @@ jobs:
           php tests/plugin-access/integration.php
           php tests/plugin-access/http-integration.php
           php tests/plugin-access/mailing-sql-integration.php
+          php tests/plugin-access/gutenberg-integration.php
   package:
     name: Installation ZIP
     needs: [php, integration]
