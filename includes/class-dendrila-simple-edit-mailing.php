@@ -199,7 +199,18 @@ final class Dendrila_Simple_Edit_Mailing
         global $wpdb;
         $table = self::table('lists');
         if (current_user_can('manage_options')) {
-            return $wpdb->get_results($wpdb->prepare('SELECT id,name,owner_user_id FROM %i ORDER BY name ASC', $table));
+            // Cache only the administrator's catalog, never delegated ownership
+            // checks or recipient consent used by the sending path.
+            $cache_key = 'mailing_admin_lists';
+            $cached = function_exists('wp_cache_get') ?
+                wp_cache_get($cache_key, 'dendrila_simple_edit') : false;
+            if (is_array($cached)) { return $cached; }
+            $lists = $wpdb->get_results($wpdb->prepare(
+                'SELECT id,name,owner_user_id FROM %i ORDER BY name ASC', $table));
+            if (is_array($lists) && function_exists('wp_cache_set')) {
+                wp_cache_set($cache_key, $lists, 'dendrila_simple_edit', 15);
+            }
+            return $lists;
         }
         // Assigned lists can be used by send-only accounts without exposing others.
         if (!Dendrila_Simple_Edit_Newsletters::can_send() &&
@@ -247,7 +258,10 @@ final class Dendrila_Simple_Edit_Mailing
             'owner_user_id' => current_user_can('manage_options') ? 0 : get_current_user_id(),
             'created_at' => current_time('mysql', true)), array('%s', '%d', '%s'));
         if ($wpdb->insert_id) {
-            if (function_exists('wp_cache_delete')) { wp_cache_delete('woo_mailing_lists', 'dendrila_simple_edit'); }
+            if (function_exists('wp_cache_delete')) {
+                wp_cache_delete('woo_mailing_lists', 'dendrila_simple_edit');
+                wp_cache_delete('mailing_admin_lists', 'dendrila_simple_edit');
+            }
         }
         self::redirect($wpdb->insert_id ? 'list_created' : 'error');
     }
@@ -267,6 +281,9 @@ final class Dendrila_Simple_Edit_Mailing
         global $wpdb;
         $updated = $wpdb->update(self::table('lists'),
             array('owner_user_id'=>(int)$owner),array('id'=>$list_id),array('%d'),array('%d'));
+        if ($updated !== false && function_exists('wp_cache_delete')) {
+            wp_cache_delete('mailing_admin_lists', 'dendrila_simple_edit');
+        }
         self::redirect($updated !== false ? 'list_assigned' : 'error');
     }
 
